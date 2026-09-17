@@ -1,0 +1,6 @@
+.next
+node_modules
+bun.lock
+**/AGENTS.md
+docs/CODING-CONVENTION.md
+docs/CONTENT-GUIDE.md
