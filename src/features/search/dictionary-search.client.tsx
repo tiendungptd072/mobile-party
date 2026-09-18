@@ -1,18 +1,26 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
 import {
   searchConceptIndex,
   type ConceptSearchEntry,
 } from "@/lib/search/concept-index";
+import { formatMessage } from "@/lib/i18n/messages";
+import {
+  getLocaleFromPathname,
+  getLocalizedPath,
+  useLocaleMessages,
+} from "@/features/locale/use-locale-messages.client";
 
 type DictionarySearchProps = {
   index: readonly ConceptSearchEntry[];
 };
 
 export function DictionarySearch({ index }: DictionarySearchProps) {
+  const messages = useLocaleMessages();
+  const locale = getLocaleFromPathname(usePathname());
   const router = useRouter();
   const inputId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -54,14 +62,16 @@ export function DictionarySearch({ index }: DictionarySearchProps) {
       setActiveIndex(Math.max(results.length - 1, 0));
     } else if (event.key === "Enter" && results[activeIndex]) {
       event.preventDefault();
-      router.push(`/dictionary/${results[activeIndex].slug}`);
+      router.push(
+        getLocalizedPath(`/dictionary/${results[activeIndex].slug}`, locale),
+      );
     }
   }
 
   return (
-    <section className="mt-10" aria-label="Dictionary search">
+    <section className="mt-10" aria-label={messages.dictionary.search}>
       <label className="block" htmlFor={inputId}>
-        <span className="sr-only">Search the dictionary</span>
+        <span className="sr-only">{messages.dictionary.search}</span>
         <div className="relative">
           <input
             ref={inputRef}
@@ -75,7 +85,7 @@ export function DictionarySearch({ index }: DictionarySearchProps) {
             aria-expanded={results.length > 0}
             aria-autocomplete="list"
             className="h-12 w-full rounded-xl border border-subtle bg-surface px-4 pr-20 text-base shadow-sm placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-accent"
-            placeholder="Search useState, remember, FlatList, async…"
+            placeholder={messages.dictionary.placeholder}
             role="combobox"
             type="search"
             value={query}
@@ -98,13 +108,13 @@ export function DictionarySearch({ index }: DictionarySearchProps) {
           >
             <Link
               className="block rounded-xl border border-subtle bg-surface p-5 transition-colors hover:bg-surface-raised aria-selected:border-accent"
-              href={`/dictionary/${entry.slug}`}
+              href={getLocalizedPath(`/dictionary/${entry.slug}`, locale)}
               onMouseEnter={() => setActiveIndex(index)}
             >
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <h2 className="font-semibold">{entry.title}</h2>
                 <span className="rounded-full border border-subtle bg-surface-raised px-2.5 py-1 text-xs font-medium capitalize text-muted">
-                  {entry.category}
+                  {messages.categories[entry.category]}
                 </span>
               </div>
               <p className="mt-2 text-sm leading-6 text-muted">
@@ -120,8 +130,7 @@ export function DictionarySearch({ index }: DictionarySearchProps) {
 
       {results.length === 0 && (
         <p className="mt-6 rounded-xl border border-subtle bg-surface-raised p-5 text-sm text-muted">
-          No concepts match “{query}”. Try a framework API name, alias, or
-          broader term.
+          {formatMessage(messages.dictionary.noResults, { query })}
         </p>
       )}
     </section>

@@ -73,7 +73,8 @@ export function replaceTechnologyPairInPathname(
   pair: TechnologyPair,
 ): string {
   return pathname.replace(
-    /^\/(learn|compare)\/[^/]+\/[^/]+(?=\/|$)/,
-    (match, section: string) => `/${section}/${pair.source}/${pair.target}`,
+    /^\/((?:en|vi)\/)?(learn|compare)\/[^/]+\/[^/]+(?=\/|$)/,
+    (_match, localePrefix: string | undefined, section: string) =>
+      `/${localePrefix ?? ""}${section}/${pair.source}/${pair.target}`,
   );
 }

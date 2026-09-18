@@ -1,18 +1,26 @@
-import { Badge } from "@/components/ui/badge";
-import type { Relationship } from "@/types/concept";
+"use client";
 
-const relationshipDetails = {
-  equivalent: { label: "= Equivalent", variant: "success" },
-  similar: { label: "≈ Similar concept", variant: "accent" },
-  different: { label: "≠ Different mental model", variant: "warning" },
-} as const;
+import { Badge } from "@/components/ui/badge";
+import { useLocaleMessages } from "@/features/locale/use-locale-messages.client";
+import type { Relationship } from "@/types/concept";
 
 type RelationshipBadgeProps = {
   relationship: Relationship;
 };
 
 export function RelationshipBadge({ relationship }: RelationshipBadgeProps) {
-  const detail = relationshipDetails[relationship];
+  const messages = useLocaleMessages();
+  const detail = {
+    equivalent: {
+      label: messages.compare.equivalent,
+      variant: "success" as const,
+    },
+    similar: { label: messages.compare.similar, variant: "accent" as const },
+    different: {
+      label: messages.compare.different,
+      variant: "warning" as const,
+    },
+  }[relationship];
 
   return <Badge variant={detail.variant}>{detail.label}</Badge>;
 }

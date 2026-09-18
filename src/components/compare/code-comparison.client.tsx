@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs } from "@/components/ui/tabs.client";
 import { cn } from "@/lib/utils/cn";
 import type { TechnologyDefinition } from "@/types/technology";
+import { useLocaleMessages } from "@/features/locale/use-locale-messages.client";
 
 type CodePanel = {
   code: string;
@@ -23,6 +24,7 @@ export function CodeComparisonView({
   source,
   target,
 }: CodeComparisonViewProps) {
+  const messages = useLocaleMessages();
   const [isSwapped, setIsSwapped] = useState(false);
   const [isFullWidth, setIsFullWidth] = useState(false);
   const [copiedTechnology, setCopiedTechnology] = useState<string>();
@@ -41,14 +43,16 @@ export function CodeComparisonView({
   return (
     <section className={cn("w-full", isFullWidth ? "max-w-none" : "max-w-5xl")}>
       <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm font-medium text-muted">Side-by-side code</p>
+        <p className="text-sm font-medium text-muted">
+          {messages.code.sideBySide}
+        </p>
         <div className="flex flex-wrap gap-2">
           <Button
             size="small"
             variant="secondary"
             onClick={() => setIsSwapped((value) => !value)}
           >
-            Swap sides
+            {messages.code.swapSides}
           </Button>
           <Button
             size="small"
@@ -56,7 +60,9 @@ export function CodeComparisonView({
             aria-pressed={isFullWidth}
             onClick={() => setIsFullWidth((value) => !value)}
           >
-            {isFullWidth ? "Constrain width" : "Full width"}
+            {isFullWidth
+              ? messages.code.constrainWidth
+              : messages.code.fullWidth}
           </Button>
         </div>
       </div>
@@ -77,7 +83,7 @@ export function CodeComparisonView({
       <div className="md:hidden">
         <Tabs
           key={leftPanel.technology.id}
-          ariaLabel="Code comparison"
+          ariaLabel={messages.code.comparison}
           defaultValue={leftPanel.technology.id}
           items={[leftPanel, rightPanel].map((panel) => ({
             content: (
@@ -107,6 +113,7 @@ function CodePanelView({
   onCopy,
   panel,
 }: CodePanelViewProps) {
+  const messages = useLocaleMessages();
   const hasCopied = copiedTechnology === panel.technology.id;
 
   return (
@@ -117,7 +124,7 @@ function CodePanelView({
           <p className="mt-1 text-sm text-muted">{panel.implementationName}</p>
         </div>
         <Button size="small" variant="ghost" onClick={() => onCopy(panel)}>
-          {hasCopied ? "Copied" : "Copy"}
+          {hasCopied ? messages.code.copied : messages.code.copy}
         </Button>
       </header>
       <p className="border-b border-subtle px-4 py-2 font-mono text-xs text-muted">

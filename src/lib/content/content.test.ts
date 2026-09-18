@@ -1,6 +1,10 @@
 import { describe, expect, test } from "bun:test";
 import { rawConcepts } from "@content/concepts";
-import { getConcepts, findConceptByTerm } from "@/lib/content/concepts";
+import {
+  findConceptByTerm,
+  getConceptBySlug,
+  getConcepts,
+} from "@/lib/content/concepts";
 import {
   getRoadmap,
   getRoadmapLessonLocation,
@@ -28,19 +32,43 @@ describe("technology content", () => {
 });
 
 describe("concept content", () => {
+  test("localizes educational prose without changing technical identifiers", () => {
+    const english = getConceptBySlug("local-state", "en");
+    const vietnamese = getConceptBySlug("local-state", "vi");
+
+    expect(vietnamese?.title).toBe("State cục bộ");
+    expect(vietnamese?.slug).toBe(english?.slug);
+    expect(vietnamese?.implementations.kotlin?.code).toBe(
+      english?.implementations.kotlin?.code,
+    );
+  });
+
   test("loads concepts in stable order", () => {
     const concepts = getConcepts();
 
-    expect(concepts).toHaveLength(8);
+    expect(concepts).toHaveLength(21);
     expect(concepts.map((concept) => concept.slug)).toEqual([
       "component",
+      "props",
+      "children",
       "conditional-ui",
       "local-state",
+      "derived-state",
+      "global-state",
       "layout",
       "list",
       "text-input",
+      "form",
+      "side-effects",
+      "lifecycle",
       "async",
+      "loading-state",
+      "error-handling",
+      "navigation",
+      "route-parameters",
+      "deep-link",
       "api-request",
+      "local-storage",
     ]);
   });
 
@@ -50,7 +78,7 @@ describe("concept content", () => {
   });
 
   test("sorts raw concepts by order", () => {
-    const concepts = validateConcepts([rawConcepts[2], rawConcepts[0]]);
+    const concepts = validateConcepts([rawConcepts[4], rawConcepts[0]]);
 
     expect(concepts.map((concept) => concept.slug)).toEqual([
       "component",
@@ -79,10 +107,20 @@ describe("concept content", () => {
 });
 
 describe("roadmap content", () => {
+  test("localizes roadmap lessons with equivalent structure", () => {
+    const english = getRoadmap("react-native", "kotlin", "en");
+    const vietnamese = getRoadmap("react-native", "kotlin", "vi");
+
+    expect(vietnamese?.sections[0].title).toBe("UI cơ bản");
+    expect(getRoadmapLessonLocations(vietnamese!)).toHaveLength(
+      getRoadmapLessonLocations(english!).length,
+    );
+  });
+
   test("loads a roadmap using canonical concept references", () => {
     const roadmap = getRoadmap("react-native", "kotlin");
 
-    expect(roadmap?.sections).toHaveLength(3);
+    expect(roadmap?.sections).toHaveLength(7);
     expect(roadmap?.sections[0].lessons[0].conceptSlug).toBe("component");
   });
 
@@ -96,13 +134,26 @@ describe("roadmap content", () => {
       ),
     ).toEqual([
       "component",
+      "props",
+      "children",
       "conditional-ui",
       "layout",
       "list",
       "text-input",
       "local-state",
+      "derived-state",
+      "global-state",
+      "form",
+      "side-effects",
+      "lifecycle",
+      "navigation",
+      "route-parameters",
+      "deep-link",
       "async",
+      "loading-state",
+      "error-handling",
       "api-request",
+      "local-storage",
     ]);
     expect(getRoadmapLessonLocation(roadmap!, "local-state")?.section.id).toBe(
       "state",
@@ -155,6 +206,16 @@ describe("roadmap content", () => {
 });
 
 describe("recipe content", () => {
+  test("localizes recipe prose while preserving code", () => {
+    const english = getRecipeBySlug("api-request", "en");
+    const vietnamese = getRecipeBySlug("api-request", "vi");
+
+    expect(vietnamese?.title).toBe("Gọi API");
+    expect(vietnamese?.implementations["react-native"]?.code).toBe(
+      english?.implementations["react-native"]?.code,
+    );
+  });
+
   test("loads the MVP implementation recipes", () => {
     expect(getRecipes()).toHaveLength(6);
     expect(getRecipeBySlug("deep-links")?.implementations.kotlin).toBeDefined();

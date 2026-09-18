@@ -7,6 +7,12 @@ import { getCompareUrl } from "@/lib/compare";
 import type { Concept } from "@/types/concept";
 import type { Technology, TechnologyDefinition } from "@/types/technology";
 import { useState } from "react";
+import {
+  getLocaleFromPathname,
+  getLocalizedPath,
+  useLocaleMessages,
+} from "@/features/locale/use-locale-messages.client";
+import { usePathname } from "next/navigation";
 
 type CompareIndexProps = {
   concepts: readonly Concept[];
@@ -14,6 +20,8 @@ type CompareIndexProps = {
 };
 
 export function CompareIndex({ concepts, technologies }: CompareIndexProps) {
+  const messages = useLocaleMessages();
+  const locale = getLocaleFromPathname(usePathname());
   const { pair } = useTechnologyPair();
   const [visibleTechnologyIds, setVisibleTechnologyIds] = useState<
     readonly Technology[] | undefined
@@ -39,9 +47,11 @@ export function CompareIndex({ concepts, technologies }: CompareIndexProps) {
   }
 
   return (
-    <section aria-label="Concept comparison matrix" className="mt-8">
+    <section aria-label={messages.compare.matrix} className="mt-8">
       <fieldset className="flex flex-wrap gap-2">
-        <legend className="mb-3 text-sm font-medium">Show technologies</legend>
+        <legend className="mb-3 text-sm font-medium">
+          {messages.compare.showTechnologies}
+        </legend>
         {technologies.map((technology) => {
           const isSelected = selectedTechnologyIds.includes(technology.id);
 
@@ -66,14 +76,16 @@ export function CompareIndex({ concepts, technologies }: CompareIndexProps) {
         <table className="w-full min-w-[44rem] border-collapse text-left text-sm">
           <thead className="bg-surface-raised text-muted">
             <tr>
-              <th className="px-5 py-3 font-medium">Concept</th>
+              <th className="px-5 py-3 font-medium">
+                {messages.compare.concept}
+              </th>
               {selectedTechnologies.map((technology) => (
                 <th key={technology.id} className="px-5 py-3 font-medium">
                   {technology.name}
                 </th>
               ))}
               <th className="px-5 py-3 font-medium">
-                <span className="sr-only">Open comparison</span>
+                <span className="sr-only">{messages.compare.open}</span>
               </th>
             </tr>
           </thead>
@@ -92,15 +104,18 @@ export function CompareIndex({ concepts, technologies }: CompareIndexProps) {
                     className="px-5 py-4 align-top text-muted"
                   >
                     {concept.implementations[technology.id]?.name ??
-                      "Not available"}
+                      messages.compare.unavailable}
                   </td>
                 ))}
                 <td className="px-5 py-4 align-top">
                   <Link
                     className="font-medium text-accent hover:underline"
-                    href={getCompareUrl(concept.slug, pair)}
+                    href={getLocalizedPath(
+                      getCompareUrl(concept.slug, pair),
+                      locale,
+                    )}
                   >
-                    Compare
+                    {messages.compare.compare}
                   </Link>
                 </td>
               </tr>
@@ -127,16 +142,19 @@ export function CompareIndex({ concepts, technologies }: CompareIndexProps) {
                     </dt>
                     <dd>
                       {concept.implementations[technology.id]?.name ??
-                        "Not available"}
+                        messages.compare.unavailable}
                     </dd>
                   </div>
                 ))}
               </dl>
               <Link
                 className="mt-5 inline-flex h-10 w-full items-center justify-center rounded-lg border border-subtle bg-surface px-4 text-sm font-medium transition-colors hover:bg-surface-raised"
-                href={getCompareUrl(concept.slug, pair)}
+                href={getLocalizedPath(
+                  getCompareUrl(concept.slug, pair),
+                  locale,
+                )}
               >
-                Compare concept
+                {messages.compare.compareConcept}
               </Link>
             </CardContent>
           </Card>

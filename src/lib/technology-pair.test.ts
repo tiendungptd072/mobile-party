@@ -77,6 +77,15 @@ describe("technology pair", () => {
       }),
     ).toBe("/recipes/api-request");
   });
+
+  test("preserves the locale when switching a pair route", () => {
+    expect(
+      replaceTechnologyPairInPathname("/vi/learn/react-native/kotlin/list", {
+        source: "flutter",
+        target: "swiftui",
+      }),
+    ).toBe("/vi/learn/flutter/swiftui/list");
+  });
 });
 
 describe("technology pair storage", () => {

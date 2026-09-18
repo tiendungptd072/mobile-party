@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import type { ChangeEvent } from "react";
+import { useLocaleMessages } from "@/features/locale/use-locale-messages.client";
 
 const THEME_STORAGE_KEY = "mobile-guide:theme";
 
@@ -24,6 +25,7 @@ function applyTheme(theme: Theme) {
 }
 
 export function ThemeSelector() {
+  const messages = useLocaleMessages();
   const selectRef = useRef<HTMLSelectElement>(null);
 
   useEffect(() => {
@@ -57,17 +59,17 @@ export function ThemeSelector() {
 
   return (
     <label className="flex items-center gap-2 text-sm text-muted">
-      <span className="sr-only sm:not-sr-only">Theme</span>
+      <span className="sr-only sm:not-sr-only">{messages.theme}</span>
       <select
-        aria-label="Color theme"
+        aria-label={messages.colorTheme}
         className="rounded-md border border-subtle bg-surface px-2.5 py-1.5 text-sm text-foreground"
         defaultValue="system"
         onChange={handleThemeChange}
         ref={selectRef}
       >
-        <option value="system">System</option>
-        <option value="light">Light</option>
-        <option value="dark">Dark</option>
+        <option value="system">{messages.system}</option>
+        <option value="light">{messages.light}</option>
+        <option value="dark">{messages.dark}</option>
       </select>
     </label>
   );

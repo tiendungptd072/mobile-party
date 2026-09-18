@@ -1,0 +1,1043 @@
+export const viConceptTranslations = {
+  component: {
+    title: "Component",
+    description:
+      "So sánh đơn vị UI có thể tái sử dụng trong React Native và Jetpack Compose.",
+    implementations: {
+      "react-native": {
+        name: "Function component",
+        summary: "Một hàm trả về React element dựa trên props và state.",
+      },
+      kotlin: {
+        name: "Composable function",
+        summary: "Một hàm có annotation @Composable dùng để mô tả UI.",
+      },
+    },
+    relationship:
+      "Cả hai đều ghép UI từ các hàm, nhưng quá trình render của React và recomposition của Compose chạy trên những runtime khác nhau.",
+    mentalModel:
+      "Hãy chuyển một React function component thành composable function, sau đó học lại cách identity, recomposition và vòng đời state hoạt động trong Compose.",
+    differences: [
+      "Compose đánh dấu hàm UI bằng @Composable.",
+      "Hai framework có quy tắc khác nhau để bỏ qua và lên lịch công việc UI.",
+    ],
+    commonMistakes: [
+      "Xem mỗi lần gọi composable như một component instance tồn tại lâu dài.",
+    ],
+    productionNotes: [
+      "Giữ composable tập trung vào một trách nhiệm và hoist state khi caller cần sở hữu hoặc tái sử dụng.",
+    ],
+  },
+  props: {
+    title: "Props và tham số",
+    description:
+      "Truyền dữ liệu bất biến và event callback vào React component và composable function.",
+    implementations: {
+      "react-native": {
+        name: "Component props",
+        summary:
+          "Props object có type truyền giá trị và callback vào component.",
+      },
+      kotlin: {
+        name: "Tham số composable",
+        summary: "Tham số hàm đưa state đi xuống và event lambda đi lên.",
+      },
+    },
+    relationship:
+      "Props và tham số composable cùng đóng vai trò ranh giới: giá trị bất biến đi vào, còn user event đi ra qua callback.",
+    mentalModel:
+      "Hãy xem composable là một hàm có UI contract rõ ràng. Chỉ truyền state mà nó render và callback cho event mà nó phát ra.",
+    differences: [
+      "React gom input trong props object; Kotlin dùng named function parameter.",
+      "Lambda của Compose thường trả về Unit và có thể mang event data có type.",
+    ],
+    commonMistakes: [
+      "Truyền ViewModel xuyên qua mọi child thay vì chỉ đưa value và event cần thiết cho composable tái sử dụng.",
+    ],
+    productionNotes: [
+      "Ưu tiên tham số bất biến và event contract ổn định; giữ dependency cấp màn hình ở ranh giới screen.",
+    ],
+  },
+  children: {
+    title: "Children và content slot",
+    description:
+      "Ghép container tái sử dụng bằng React children và content lambda của Compose.",
+    implementations: {
+      "react-native": {
+        name: "ReactNode children",
+        summary:
+          "Prop children cho phép caller cung cấp React element lồng nhau.",
+      },
+      kotlin: {
+        name: "Composable content lambda",
+        summary:
+          "Lambda @Composable cho phép caller điền nội dung vào một slot có tên.",
+      },
+    },
+    relationship:
+      "Cả hai đều hỗ trợ UI lồng nhau do caller cung cấp, còn Compose mô hình hóa slot rõ ràng bằng tham số composable function.",
+    mentalModel:
+      "Chuyển children thành content lambda. Khi container có nhiều vị trí chèn, hãy đặt tên có ý nghĩa cho từng lambda slot.",
+    differences: [
+      "React có prop children theo quy ước.",
+      "Compose có thể cung cấp nhiều slot có type, receiver scope và tham số.",
+    ],
+    commonMistakes: [
+      "Tạo container lớn điều khiển bằng nhiều boolean thay vì cung cấp các slot tập trung để caller tự compose.",
+    ],
+    productionNotes: [
+      "Dùng slot API cho bố cục linh hoạt và để container chịu trách nhiệm về cấu trúc, không sở hữu content state của caller.",
+    ],
+  },
+  "conditional-ui": {
+    title: "UI có điều kiện",
+    description:
+      "Hiển thị một nhánh UI từ state rõ ràng trong React Native và Jetpack Compose.",
+    implementations: {
+      "react-native": {
+        name: "Conditional rendering trong JavaScript",
+        summary:
+          "Chọn JSX bằng biểu thức điều kiện trong lúc component render.",
+      },
+      kotlin: {
+        name: "Biểu thức if trong Kotlin",
+        summary: "Chọn composable được phát ra trong composition hiện tại.",
+      },
+    },
+    relationship:
+      "Cả hai đều mô tả UI như một nhánh của state hiện tại; Compose phát ra một cây con khác thay vì thay đổi trực tiếp view đang có.",
+    mentalModel:
+      "Hãy coi mỗi nhánh là mô tả của một trạng thái. Đừng bật hoặc ẩn native view theo kiểu imperative khi state thay đổi.",
+    differences: [
+      "React Native dùng biểu thức JavaScript trong JSX.",
+      "Compose dùng control flow của Kotlin khi tạo UI.",
+    ],
+    commonMistakes: [
+      "Không mô hình hóa rõ loading, empty và error khiến nội dung cũ vẫn còn hiển thị.",
+    ],
+    productionNotes: [
+      "Biểu diễn các trạng thái màn hình loại trừ nhau bằng sealed UI-state model.",
+    ],
+  },
+  "local-state": {
+    title: "State cục bộ",
+    description:
+      "So sánh state do view sở hữu với useState của React Native và các API state của Compose.",
+    implementations: {
+      "react-native": {
+        name: "useState",
+        summary: "Lưu state cho một component instance đang được mount.",
+      },
+      kotlin: {
+        name: "remember + mutableStateOf",
+        summary: "Giữ observable state qua các lần recomposition.",
+      },
+    },
+    relationship:
+      "Cả hai đều giữ state UI cục bộ và kích hoạt cập nhật, nhưng remember gắn với identity trong composition chứ không chỉ với vị trí hook của React.",
+    mentalModel:
+      "Hãy xem remember kết hợp mutableStateOf là state cục bộ của composition, không phải bản thay thế máy móc cho mọi lời gọi useState.",
+    differences: [
+      "React cập nhật state qua setter; Compose có thể dùng cú pháp delegated property.",
+      "remember không sống sót sau khi Activity được tạo lại nếu không kết hợp saveable state.",
+    ],
+    commonMistakes: [
+      "Dùng remember cho state đáng ra phải thuộc ViewModel hoặc cần sống sót sau recreation.",
+    ],
+    productionNotes: [
+      "Hoist state và cung cấp event khi composable cần dễ tái sử dụng và kiểm thử.",
+    ],
+  },
+  "derived-state": {
+    title: "State dẫn xuất",
+    description:
+      "Tính giá trị UI từ state hiện có mà không tạo thêm một source of truth.",
+    implementations: {
+      "react-native": {
+        name: "Dẫn xuất khi render",
+        summary:
+          "Tính trực tiếp một giá trị ít tốn kém từ props và state hiện tại.",
+      },
+      kotlin: {
+        name: "Dẫn xuất khi recompose",
+        summary:
+          "Tính trực tiếp một giá trị ít tốn kém từ tham số composable mới nhất.",
+      },
+    },
+    relationship:
+      "Cả hai nên dẫn xuất giá trị ít tốn kém trong lúc render thay vì đồng bộ một mutable state bị trùng lặp.",
+    mentalModel:
+      "Nếu một giá trị có thể tính từ input hiện tại, hãy tính nó. Chỉ dùng useMemo hoặc derivedStateOf khi chi phí đã đo được hoặc tần suất cập nhật thực sự cần memoization.",
+    differences: [
+      "Memoization của React phụ thuộc vào dependency array.",
+      "derivedStateOf hữu ích nhất khi input state thay đổi thường xuyên hơn mức UI cần cập nhật.",
+    ],
+    commonMistakes: [
+      "Sao chép giá trị dẫn xuất vào mutable state rồi dùng effect để giữ chúng đồng bộ.",
+    ],
+    productionNotes: [
+      "Giữ một source of truth; chỉ tối ưu phép dẫn xuất sau khi xác định chi phí tính toán hoặc recomposition đáng kể.",
+    ],
+  },
+  "global-state": {
+    title: "State màn hình và state dùng chung",
+    description:
+      "So sánh external React store với quyền sở hữu state bằng ViewModel và StateFlow trên Android.",
+    implementations: {
+      "react-native": {
+        name: "External store selector",
+        summary: "Component subscribe vào phần state nhỏ nhất mà nó render.",
+      },
+      kotlin: {
+        name: "ViewModel + StateFlow",
+        summary:
+          "Màn hình collect state bất biến từ state holder nhận biết lifecycle.",
+      },
+    },
+    relationship:
+      "Cả hai cung cấp shared observable state, nhưng ViewModel là screen state holder có lifecycle scope, không phải bản thay thế trực tiếp cho JavaScript store toàn process.",
+    mentalModel:
+      "Bắt đầu bằng việc giao state cho owner thấp nhất cần nó. Dùng ViewModel cho screen state và business logic; đừng chuyển mọi global store thành một Android object toàn cục.",
+    differences: [
+      "Vòng đời ViewModel do ViewModelStoreOwner như destination hoặc navigation graph kiểm soát.",
+      "Việc collect StateFlow trong Android Compose UI nên nhận biết lifecycle.",
+    ],
+    commonMistakes: [
+      "Đưa toàn bộ app state vào một ViewModel hoặc truyền ViewModel sâu vào các composable tái sử dụng.",
+    ],
+    productionNotes: [
+      "Cung cấp UI state bất biến và intent method từ ViewModel, sau đó truyền plain state và callback cho nội dung màn hình.",
+    ],
+  },
+  layout: {
+    title: "Bố cục",
+    description:
+      "Sắp xếp UI bằng flex direction trong React Native và layout composable trong Jetpack Compose.",
+    implementations: {
+      "react-native": {
+        name: "View với Flexbox style",
+        summary: "React Native dùng style object để cấu hình bố cục cho View.",
+      },
+      kotlin: {
+        name: "Row với Modifier",
+        summary: "Compose dùng layout composable và chuỗi modifier để định vị.",
+      },
+    },
+    relationship:
+      "Cả hai dùng mô hình gần với flex, nhưng Compose biểu diễn bố cục qua tham số composable và Modifier thay vì một style object duy nhất.",
+    mentalModel:
+      "Trong Compose, Row hoặc Column chịu trách nhiệm đo và đặt vị trí, còn Modifier trang trí hoặc ràng buộc từng phần tử con.",
+    differences: [
+      "Style của React Native là object JavaScript thông thường.",
+      "Thứ tự Modifier có ý nghĩa; đổi thứ tự có thể làm thay đổi bố cục và cách vẽ.",
+    ],
+    commonMistakes: [
+      "Cho rằng Modifier tác động lên parent hoặc sibling thay vì composable được gắn Modifier đó.",
+    ],
+    productionNotes: [
+      "Tách spacing và alignment lặp lại thành composable dùng chung hoặc design token.",
+    ],
+  },
+  list: {
+    title: "Danh sách",
+    description:
+      "So sánh danh sách ảo hóa bằng FlatList của React Native và LazyColumn của Compose.",
+    implementations: {
+      "react-native": {
+        name: "FlatList",
+        summary: "Ảo hóa các hàng từ một mảng và callback renderItem.",
+      },
+      kotlin: {
+        name: "LazyColumn",
+        summary: "Compose các item đang hiển thị thông qua lazy list scope.",
+      },
+    },
+    relationship:
+      "Cả hai đều render collection cuộn theo cách lazy, nhưng DSL item và layout engine khác nhau.",
+    mentalModel:
+      "Ánh xạ cấu hình FlatList sang content DSL của LazyColumn, đồng thời giữ key ổn định và công việc trong mỗi row đủ nhẹ.",
+    differences: [
+      "LazyColumn xây dựng nội dung qua receiver scope thay vì prop renderItem.",
+      "API đo lường và tinh chỉnh khác nhau giữa hai cách triển khai native list.",
+    ],
+    commonMistakes: [
+      "Bỏ qua stable key khi identity của item phải được giữ qua thao tác sắp xếp lại.",
+    ],
+    productionNotes: [
+      "Dùng item model bất biến và stable key; đưa phép biến đổi tốn kém ra ngoài row composition.",
+    ],
+  },
+  "text-input": {
+    title: "Nhập văn bản",
+    description:
+      "Giữ text field được điều khiển bằng state trong React Native và Jetpack Compose.",
+    implementations: {
+      "react-native": {
+        name: "TextInput được điều khiển",
+        summary:
+          "Giá trị hiển thị và change handler được component state sở hữu.",
+      },
+      kotlin: {
+        name: "TextField được điều khiển",
+        summary: "Giá trị đi xuống và change event yêu cầu cập nhật state.",
+      },
+    },
+    relationship:
+      "Cả hai input đều được điều khiển bởi value và event callback; bên sở hữu state quyết định giá trị tiếp theo.",
+    mentalModel:
+      "Một field không tự sở hữu form state chuẩn chỉ vì nó hiển thị giá trị đó. State đi xuống và edit event đi lên.",
+    differences: [
+      "React Native đặt tên callback là onChangeText.",
+      "Compose cung cấp onValueChange và hỗ trợ state hoisting tự nhiên.",
+    ],
+    commonMistakes: [
+      "Truyền value cố định nhưng không cập nhật trong callback khiến input trông như chỉ đọc.",
+    ],
+    productionNotes: [
+      "Đặt validation và submit state bên ngoài các field component có thể tái sử dụng.",
+    ],
+  },
+  form: {
+    title: "Form state và validation",
+    description:
+      "Phối hợp controlled field, validation và trạng thái submit mà không gắn input tái sử dụng với một màn hình.",
+    implementations: {
+      "react-native": {
+        name: "Controlled form state",
+        summary: "Màn hình sở hữu giá trị field, validation và submit event.",
+      },
+      kotlin: {
+        name: "Form state được hoist",
+        summary:
+          "Màn hình dẫn xuất validation từ field state và phát submit intent.",
+      },
+    },
+    relationship:
+      "Cả hai giữ giá trị field dưới dạng state, dẫn xuất validation từ các giá trị đó và gửi submit event đến state owner.",
+    mentalModel:
+      "Form là một state machine nhỏ. Giữ field tái sử dụng tập trung vào value và event; để screen hoặc ViewModel sở hữu validation, submit và server error.",
+    differences: [
+      "Compose dùng rememberSaveable khi field cần sống qua configuration change.",
+      "State hoisting của Compose giúp API field stateless trở nên tự nhiên mà không cần controller riêng.",
+    ],
+    commonMistakes: [
+      "Lưu cờ isValid dẫn xuất tách riêng với field hoặc trộn server error vào generic input component.",
+    ],
+    productionNotes: [
+      "Mô hình hóa rõ submitting, success và failure, đồng thời giúp đường retry hoặc sửa lỗi dễ tiếp cận.",
+    ],
+  },
+  "side-effects": {
+    title: "Side effect",
+    description:
+      "Chạy tác vụ nhận biết lifecycle bằng React useEffect và các effect API của Compose.",
+    implementations: {
+      "react-native": {
+        name: "useEffect",
+        summary:
+          "Chạy effect sau render và khởi động lại khi dependency thay đổi.",
+      },
+      kotlin: {
+        name: "LaunchedEffect",
+        summary:
+          "Khởi chạy coroutine có composition scope và chạy lại khi key thay đổi.",
+      },
+    },
+    relationship:
+      "Hai API có phần giao nhau cho tác vụ theo lifecycle và key, nhưng Compose tách riêng API cho coroutine, cleanup và việc đưa state ra ngoài Compose.",
+    mentalModel:
+      "Đừng thay mọi useEffect bằng LaunchedEffect một cách máy móc. Trước tiên hãy xác định công việc có thuộc composition, có cần cleanup hay nên nằm trong ViewModel.",
+    differences: [
+      "LaunchedEffect sở hữu coroutine và coroutine bị hủy khi rời composition.",
+      "DisposableEffect là API riêng cho việc đăng ký cần cleanup.",
+    ],
+    commonMistakes: [
+      "Khởi chạy business work trực tiếp trong composable body hoặc dùng effect key cố định mà không hiểu vòng đời của nó.",
+    ],
+    productionNotes: [
+      "Giữ effect liên quan đến UI; chuyển data loading sống lâu và business orchestration sang state holder nhận biết lifecycle.",
+    ],
+  },
+  lifecycle: {
+    title: "Vòng đời và cleanup",
+    description:
+      "Đăng ký và gỡ external observer an toàn khi UI đi vào hoặc rời vòng đời.",
+    implementations: {
+      "react-native": {
+        name: "Effect cleanup",
+        summary:
+          "Hàm được trả về sẽ gỡ subscription khi dependency đổi hoặc component unmount.",
+      },
+      kotlin: {
+        name: "DisposableEffect",
+        summary: "Đăng ký observer theo key và gỡ observer trong onDispose.",
+      },
+    },
+    relationship:
+      "Cả hai gắn cleanup của subscription với vòng đời UI, còn Compose dùng effect key và block onDispose rõ ràng.",
+    mentalModel:
+      "Chỉ ánh xạ setup và cleanup subscription sang DisposableEffect khi resource thuộc composition. Với observable screen state, nên ưu tiên API collection nhận biết Android lifecycle.",
+    differences: [
+      "Composable có thể đi vào hoặc rời composition độc lập với lifecycle transition của Activity.",
+      "DisposableEffect yêu cầu onDispose là câu lệnh cuối cùng.",
+    ],
+    commonMistakes: [
+      "Cho rằng recomposition tương đương mount hoặc unmount rồi đăng ký observer lặp lại trong composable body.",
+    ],
+    productionNotes: [
+      "Ưu tiên adapter nhận biết lifecycle cho Flow và dùng DisposableEffect cho external listener thực sự cần gỡ thủ công.",
+    ],
+  },
+  async: {
+    title: "Tác vụ bất đồng bộ",
+    description:
+      "So sánh JavaScript Promise với structured concurrency bằng Kotlin coroutine.",
+    implementations: {
+      "react-native": {
+        name: "Promise + async/await",
+        summary: "Chờ Promise và xử lý lỗi bằng control flow thông thường.",
+      },
+      kotlin: {
+        name: "Coroutine + suspend",
+        summary: "Chạy tác vụ suspend bên trong coroutine scope sở hữu nó.",
+      },
+    },
+    relationship:
+      "Cả hai đều biểu diễn công việc bất đồng bộ, nhưng coroutine bổ sung scope có cấu trúc, dispatcher và cơ chế hủy hợp tác.",
+    mentalModel:
+      "Suspend function giống async function tại call site, nhưng vòng đời của nó thuộc coroutine scope thay vì chỉ thuộc Promise.",
+    differences: [
+      "Coroutine scope xác định quyền sở hữu và việc hủy tác vụ.",
+      "Kotlin dispatcher làm rõ execution context khi cần chuyển context.",
+    ],
+    commonMistakes: [
+      "Khởi chạy coroutine không có scope như một cách thay thế trực tiếp cho việc tạo Promise.",
+    ],
+    productionNotes: [
+      "Khởi chạy công việc từ scope nhận biết lifecycle và giữ suspend function có thể hủy.",
+    ],
+  },
+  "api-request": {
+    title: "Gọi API",
+    description:
+      "So sánh request bằng Axios với Retrofit service và coroutine.",
+    implementations: {
+      "react-native": {
+        name: "Axios",
+        summary:
+          "HTTP client JavaScript trả về Promise chứa dữ liệu đã decode.",
+      },
+      kotlin: {
+        name: "Retrofit + OkHttp",
+        summary: "Service interface có type giao việc truyền tải cho OkHttp.",
+      },
+    },
+    relationship:
+      "Cả hai đều bao bọc HTTP call, nhưng Retrofit mô hình hóa endpoint bằng interface còn Axios cung cấp request client tổng quát.",
+    mentalModel:
+      "Chuyển Axios instance đã cấu hình thành OkHttp client kết hợp Retrofit service interface, rồi giữ orchestration của request trong repository.",
+    differences: [
+      "Retrofit sinh implementation từ interface có annotation.",
+      "Serialization, interceptor và error body cần cấu hình Kotlin rõ ràng.",
+    ],
+    commonMistakes: [
+      "Xem HTTP response không thành công và transport exception là cùng một loại lỗi.",
+    ],
+    productionNotes: [
+      "Giữ service definition gọn và ánh xạ transport model tại ranh giới repository.",
+    ],
+  },
+  navigation: {
+    title: "Điều hướng",
+    description:
+      "Di chuyển giữa các destination bằng React Navigation và Navigation Compose.",
+    implementations: {
+      "react-native": {
+        name: "React Navigation",
+        summary: "Một màn hình yêu cầu điều hướng qua navigation object.",
+      },
+      kotlin: {
+        name: "Navigation Compose",
+        summary:
+          "Callback ở cấp route yêu cầu NavController đi đến destination.",
+      },
+    },
+    relationship:
+      "Cả hai điều hướng qua graph và back stack, nhưng Navigation Compose hiện đại có thể mô hình hóa destination bằng serializable route type.",
+    mentalModel:
+      "Giữ navigation ở ranh giới route. Presentational screen nên nhận navigation callback, không nhận navigation controller, để dễ kiểm thử.",
+    differences: [
+      "React Navigation thường truyền navigation object cho screen.",
+      "Navigation Compose gắn một NavController với một NavHost và graph.",
+    ],
+    commonMistakes: [
+      "Truyền NavController sâu vào composable tái sử dụng hoặc xem navigation như local UI state thông thường.",
+    ],
+    productionNotes: [
+      "Định nghĩa một graph cho mỗi navigation scope và kiểm thử NavHost riêng với destination UI.",
+    ],
+  },
+  "route-parameters": {
+    title: "Tham số route",
+    description:
+      "Truyền identifier nhỏ, có thể tuần tự hóa qua route và tải screen data từ lớp sở hữu.",
+    implementations: {
+      "react-native": {
+        name: "Route params",
+        summary:
+          "Destination đọc identifier có thể tuần tự hóa từ route.params.",
+      },
+      kotlin: {
+        name: "Typed route argument",
+        summary: "NavHost decode route argument trước khi gọi screen content.",
+      },
+    },
+    relationship:
+      "Cả hai hệ route nên mang argument nhỏ có thể tuần tự hóa như ID, không mang full mutable domain object.",
+    mentalModel:
+      "Route parameter xác định thứ cần hiển thị chứ không phải toàn bộ dữ liệu cần hiển thị. Hãy resolve dữ liệu hiện tại trong repository hoặc screen state holder.",
+    differences: [
+      "React Navigation đọc params từ route object.",
+      "Navigation Compose có thể dùng serializable route class và decode từ back stack entry.",
+    ],
+    commonMistakes: [
+      "Truyền toàn bộ user object qua navigation làm dữ liệu cũ bị nhân bản và deep link khó validate hơn.",
+    ],
+    productionNotes: [
+      "Validate argument tại destination boundary và giữ route type ổn định vì external link có thể tồn tại lâu.",
+    ],
+  },
+  "deep-link": {
+    title: "Deep link",
+    description:
+      "Ánh xạ URL nhận vào đến destination đã được xác thực trong React Navigation và Navigation Compose.",
+    implementations: {
+      "react-native": {
+        name: "Linking configuration",
+        summary:
+          "React Navigation ánh xạ URL pattern đến screen name và params.",
+      },
+      kotlin: {
+        name: "Navigation deep link",
+        summary: "Composable destination khai báo URI pattern mà nó chấp nhận.",
+      },
+    },
+    relationship:
+      "Cả hai ánh xạ external URL pattern vào navigation state, nhưng platform registration và graph configuration vẫn riêng theo framework.",
+    mentalModel:
+      "Deep link là input không đáng tin nhưng tình cờ chọn một destination. Hãy parse route, validate argument rồi tải dữ liệu hiện tại đã được cấp quyền.",
+    differences: [
+      "React Navigation tập trung việc parse URL trong linking configuration.",
+      "Navigation Compose có thể khai báo deep link cạnh từng destination trong graph.",
+    ],
+    commonMistakes: [
+      "Điều hướng trực tiếp với path data chưa validate hoặc tự xử lý incoming link ngoài navigation system.",
+    ],
+    productionNotes: [
+      "Giữ URL pattern, Android App Links hoặc iOS Universal Links, authorization check và in-app route đồng bộ.",
+    ],
+  },
+  "loading-state": {
+    title: "Trạng thái tải",
+    description:
+      "Biểu diễn rõ một tác vụ đang chạy thay vì suy ra từ dữ liệu chưa có.",
+    implementations: {
+      "react-native": {
+        name: "ActivityIndicator với UI state",
+        summary:
+          "Một status riêng điều khiển UI đang tải, còn dữ liệu vẫn là giá trị độc lập.",
+      },
+      kotlin: {
+        name: "CircularProgressIndicator với sealed UI state",
+        summary:
+          "Biểu thức when đầy đủ nhánh render trạng thái rõ ràng do screen owner cung cấp.",
+      },
+    },
+    relationship:
+      "Cả hai render progress indicator từ state; sealed type của Kotlin giúp tập hợp trạng thái render được trở nên rõ ràng và đầy đủ.",
+    mentalModel:
+      "Loading là một UI state thực sự, không phải sự vắng mặt của content. Hãy tách nó khỏi empty, error và dữ liệu tải thành công.",
+    differences: [
+      "React thường dùng discriminated union hoặc boolean cùng data; Compose thường mô hình hóa bằng sealed interface.",
+      "Compose kiểm tra mọi sealed branch trong biểu thức when khi biên dịch.",
+    ],
+    commonMistakes: [
+      "Dùng list rỗng hoặc data null để biểu thị cả loading lẫn một kết quả thật sự rỗng.",
+    ],
+    productionNotes: [
+      "Xác định refresh có giữ content hiện tại hay không, rồi thể hiện chính sách đó rõ ràng trong immutable screen state.",
+    ],
+  },
+  "error-handling": {
+    title: "Xử lý lỗi",
+    description:
+      "Chuyển request failure thành UI phục hồi có chủ đích thay vì hiển thị raw transport error.",
+    implementations: {
+      "react-native": {
+        name: "Typed failure UI",
+        summary:
+          "Một error state có thể phục hồi cung cấp retry action cho screen.",
+      },
+      kotlin: {
+        name: "Recoverable sealed UI state",
+        summary:
+          "ViewModel ánh xạ expected failure thành displayable state và retry event.",
+      },
+    },
+    relationship:
+      "Cả hai chuyển expected failure thành UI state kèm recovery event; Compose thường dùng sealed state model để render đầy đủ các nhánh.",
+    mentalModel:
+      "Exception thuộc về ranh giới thực thi công việc. UI chỉ nên nhận một failure model nhỏ, có thể hành động thay vì HTTP client exception.",
+    differences: [
+      "JavaScript thường catch error quanh awaited promise; Kotlin xử lý exception quanh suspend work trong coroutine sở hữu nó.",
+      "Kotlin cũng có thể mô hình hóa domain failure dự kiến bằng Result hoặc sealed type riêng.",
+    ],
+    commonMistakes: [
+      "Hiển thị trực tiếp exception message cho người dùng hoặc xem cancellation là lỗi cần hiển thị.",
+    ],
+    productionNotes: [
+      "Ánh xạ transport và parsing failure sang domain error ổn định, log chi tiết an toàn và cố gắng làm retry có tính idempotent.",
+    ],
+  },
+  "local-storage": {
+    title: "Lưu trữ cục bộ",
+    description:
+      "Lưu app preference nhỏ và cached value với AsyncStorage hoặc Android DataStore.",
+    implementations: {
+      "react-native": {
+        name: "AsyncStorage",
+        summary:
+          "Key-value store dựa trên promise lưu các giá trị đã được serialize trên thiết bị.",
+      },
+      kotlin: {
+        name: "Preferences DataStore",
+        summary:
+          "Flow có type đọc preference một cách reactive và edit transaction ghi cập nhật.",
+      },
+    },
+    relationship:
+      "Cả hai lưu key-value data, nhưng AsyncStorage đọc qua promise còn DataStore phát các cập nhật qua Flow.",
+    mentalModel:
+      "Storage là nguồn dữ liệu bất đồng bộ. Hãy đọc qua repository hoặc state holder; đừng làm output render phụ thuộc vào một disk read đồng bộ.",
+    differences: [
+      "AsyncStorage lưu string nên caller tự serialize giá trị.",
+      "DataStore có transactional edit và reactive observation qua Flow.",
+    ],
+    commonMistakes: [
+      "Lưu secret trong preference store phổ thông hoặc dùng storage làm source of truth duy nhất cho screen state.",
+    ],
+    productionNotes: [
+      "Version stored schema, chọn default có chủ đích và xem persisted data lỗi định dạng là input có thể phục hồi.",
+    ],
+  },
+} as const;
+
+export const viRecipeTranslations = {
+  "api-request": {
+    title: "Gọi API",
+    description: "Tải dữ liệu từ xa với trạng thái loading và error rõ ràng.",
+    category: "networking",
+    flow: [
+      "Bắt đầu request",
+      "Hiện trạng thái loading",
+      "Xử lý response",
+      "Render kết quả",
+    ],
+    implementationSummaries: {
+      "react-native":
+        "Fetch dữ liệu và cập nhật UI state dạng discriminated union.",
+      kotlin: "Khởi chạy tác vụ từ ViewModel và cung cấp UI state bất biến.",
+    },
+    architectureNotes: [
+      "Ẩn chi tiết transport sau ranh giới repository.",
+      "Mô hình hóa rõ loading, success và failure.",
+    ],
+  },
+  "refresh-token": {
+    title: "Làm mới token",
+    description:
+      "Thử lại authenticated request sau khi làm mới access token đã hết hạn.",
+    category: "xác thực",
+    flow: ["Gửi request", "Nhận mã 401", "Làm mới token", "Thử lại một lần"],
+    implementationSummaries: {
+      "react-native": "Tập trung retry policy quanh một fetch wrapper.",
+      kotlin: "Dùng OkHttp authenticator để làm mới token và thử lại một lần.",
+    },
+    architectureNotes: [
+      "Chỉ làm mới một lần để tránh vòng lặp retry.",
+      "Xem refresh thất bại là một chuyển đổi sang trạng thái đăng xuất.",
+    ],
+  },
+  pagination: {
+    title: "Phân trang",
+    description:
+      "Nối trang tiếp theo trong khi giữ ổn định các kết quả hiện có.",
+    category: "danh sách",
+    flow: [
+      "Render item",
+      "Cuộn đến cuối",
+      "Tải cursor tiếp theo",
+      "Nối thêm trang",
+    ],
+    implementationSummaries: {
+      "react-native": "Bảo vệ request cuối danh sách của FlatList bằng cursor.",
+      kotlin: "Để Paging quản lý list state và UI loading khi nối trang.",
+    },
+    architectureNotes: [
+      "Dùng cursor ổn định thay vì offset thay đổi.",
+      "Ngăn các request nối trang bị lặp.",
+    ],
+  },
+  "secure-storage": {
+    title: "Lưu trữ bảo mật",
+    description:
+      "Lưu credential nhạy cảm bằng kho mã hóa được nền tảng hỗ trợ.",
+    category: "lưu trữ",
+    flow: [
+      "Nhận credential",
+      "Mã hóa khi lưu",
+      "Đọc khi cần",
+      "Xóa khi đăng xuất",
+    ],
+    implementationSummaries: {
+      "react-native": "Dùng secure-storage adapter thay vì AsyncStorage.",
+      kotlin: "Ẩn encrypted preferences sau một credential-store interface.",
+    },
+    architectureNotes: [
+      "Không lưu credential trong preferences thông thường.",
+      "Xóa credential tại một ranh giới đăng xuất duy nhất.",
+    ],
+  },
+  "biometric-login": {
+    title: "Đăng nhập sinh trắc học",
+    description: "Bảo vệ credential lưu cục bộ bằng biometric prompt.",
+    category: "xác thực",
+    flow: [
+      "Yêu cầu xác thực sinh trắc học",
+      "Xác minh người dùng",
+      "Đọc credential",
+      "Khôi phục phiên",
+    ],
+    implementationSummaries: {
+      "react-native": "Tách biometric prompt khỏi quá trình khôi phục session.",
+      kotlin: "Chỉ tiếp tục từ success callback của BiometricPrompt.",
+    },
+    architectureNotes: [
+      "Sinh trắc học xác minh sự hiện diện cục bộ, không xác minh danh tính trên server.",
+      "Cung cấp đường khôi phục khi người dùng hủy hoặc phần cứng không khả dụng.",
+    ],
+  },
+  "deep-links": {
+    title: "Deep link",
+    description: "Điều hướng URL nhận được đến đúng đích bên trong ứng dụng.",
+    category: "điều hướng",
+    flow: [
+      "Nhận URL",
+      "Phân tích route",
+      "Xác thực dữ liệu",
+      "Điều hướng an toàn",
+    ],
+    implementationSummaries: {
+      "react-native":
+        "Ánh xạ URL pattern đến màn hình navigation qua một cấu hình duy nhất.",
+      kotlin: "Khai báo URI pattern bên cạnh route của Navigation Compose.",
+    },
+    architectureNotes: [
+      "Xác thực path parameter trước khi tải dữ liệu.",
+      "Giữ định nghĩa route bên ngoài và trong ứng dụng đồng bộ.",
+    ],
+  },
+} as const;
+
+export const viRoadmapTranslations = {
+  sections: {
+    "ui-basics": "UI cơ bản",
+    state: "State",
+    forms: "Form",
+    lifecycle: "Vòng đời",
+    navigation: "Điều hướng",
+    "async-networking": "Bất đồng bộ và networking",
+    storage: "Lưu trữ",
+  },
+  lessons: {
+    component: {
+      title: "Component",
+      exercise: "Viết lại profile card của React Native thành một composable.",
+      checklist: ["Mô tả được input", "Phát ra được event"],
+      stages: [
+        "Render component nhỏ với input rõ ràng.",
+        "Tách visual state khỏi user event.",
+        "Giữ composable có thể tái sử dụng bằng cách truyền state và callback.",
+      ],
+    },
+    props: {
+      title: "Props và tham số",
+      exercise:
+        "Chuyển một React Native card có value và callback props được định kiểu thành stateless composable.",
+      checklist: [
+        "Truyền state bất biến đi xuống",
+        "Phát user event qua callback",
+      ],
+      stages: [
+        "Ánh xạ props object sang named parameter và function type của Kotlin.",
+        "Giữ composable tái sử dụng ở trạng thái stateless bằng cách nhận value và event callback.",
+        "Cung cấp UI contract tập trung thay vì truyền screen dependency hoặc ViewModel xuyên qua cây.",
+      ],
+    },
+    children: {
+      title: "Children và content slot",
+      exercise:
+        "Viết lại React Native panel nhận children thành Compose container có content slot.",
+      checklist: [
+        "Ánh xạ được children sang content lambda",
+        "Dùng named slot khi container có nhiều vị trí chèn",
+      ],
+      stages: [
+        "Nhận và gọi một @Composable content lambda.",
+        "Tạo slot header, content và action riêng với trách nhiệm rõ ràng.",
+        "Chỉ dùng scoped slot khi caller thực sự cần khả năng có cấu trúc, không dùng như abstraction mặc định.",
+      ],
+    },
+    "conditional-ui": {
+      title: "UI có điều kiện",
+      exercise:
+        "Tạo màn hình profile hiển thị loading, content và empty state mà không để lại UI cũ.",
+      checklist: [
+        "Giải thích được mỗi nhánh UI là mô tả của state hiện tại.",
+        "Mô hình hóa rõ loading, content và empty state.",
+      ],
+      stages: [
+        "Chọn giữa hai composable bằng if expression, tương tự conditional expression trong JSX.",
+        "Render trọn một nhánh loading, content hoặc empty từ một screen state.",
+        "Dùng sealed UI-state model để các trạng thái vẫn exhaustive khi tính năng phát triển.",
+      ],
+    },
+    layout: {
+      title: "Bố cục",
+      exercise:
+        "Tạo lại profile header React Native gồm avatar, tiêu đề và action bằng Row, Column và Modifier.",
+      checklist: [
+        "Ánh xạ được ý đồ row và column sang layout composable.",
+        "Giải thích được vì sao thứ tự Modifier làm thay đổi kết quả.",
+      ],
+      stages: [
+        "Đặt hai phần tử trong Row hoặc Column với alignment và spacing có chủ đích.",
+        "Chuyển các flexbox layout phổ biến và đưa constraint riêng vào Modifier của từng child.",
+        "Tách spacing và alignment lặp lại thành composable tập trung hoặc design token.",
+      ],
+    },
+    list: {
+      title: "Danh sách",
+      exercise: "Chuyển một row của FlatList thành item của LazyColumn.",
+      checklist: ["Dùng stable key", "Xử lý loading state"],
+      stages: [
+        "Render một collection nhỏ.",
+        "Xử lý tương tác item và empty state.",
+        "Dùng identity ổn định và ranh giới phân trang.",
+      ],
+    },
+    "text-input": {
+      title: "Nhập văn bản",
+      exercise:
+        "Chuyển name field được điều khiển trong React Native thành Compose TextField được hoist state, với validation do parent sở hữu.",
+      checklist: [
+        "Theo dõi được value đi xuống và edit event đi lên.",
+        "Xác định được vì sao field trở thành chỉ đọc khi state không được cập nhật.",
+      ],
+      stages: [
+        "Render TextField với value và onValueChange theo controlled-input model.",
+        "Hoist giá trị field để parent phối hợp validation, label và submit.",
+        "Giữ field tái sử dụng tập trung vào trình bày, còn form state thuộc screen state owner.",
+      ],
+    },
+    "local-state": {
+      title: "State cục bộ",
+      exercise: "Chuyển counter từ useState sang state được remember.",
+      checklist: [
+        "Giải thích được recomposition",
+        "Biết khi nào cần hoist state",
+      ],
+      stages: [
+        "Cập nhật UI state cục bộ.",
+        "Hoist state cho child có thể tái sử dụng.",
+        "Chọn ViewModel hoặc saveable state khi vòng đời thay đổi.",
+      ],
+    },
+    "derived-state": {
+      title: "State dẫn xuất",
+      exercise:
+        "Xóa total state bị trùng trong giỏ hàng và dẫn xuất total từ danh sách item hiện tại.",
+      checklist: [
+        "Giữ một source of truth",
+        "Biết khi nào memoization không cần thiết",
+      ],
+      stages: [
+        "Tính trực tiếp một giá trị ít tốn kém từ tham số hiện tại.",
+        "Loại bỏ mutable state đồng bộ và dẫn xuất dữ liệu UI đã lọc hoặc tổng hợp.",
+        "Chỉ dùng derivedStateOf khi state đổi thường xuyên hơn kết quả UI và profiling chứng minh cần thiết.",
+      ],
+    },
+    "global-state": {
+      title: "State màn hình và state dùng chung",
+      exercise:
+        "Chuyển màn hình profile từ external React store sang UI state bất biến do ViewModel sở hữu.",
+      checklist: [
+        "Chọn state owner thấp nhất phù hợp",
+        "Collect StateFlow có nhận biết lifecycle",
+      ],
+      stages: [
+        "Cung cấp screen state bất biến và intent method từ ViewModel.",
+        "Collect state trong route composable rồi truyền plain value và callback cho screen content.",
+        "Scope mỗi state holder vào đúng destination hoặc navigation graph và chỉ lưu state cần thiết.",
+      ],
+    },
+    "side-effects": {
+      title: "Side effect",
+      exercise:
+        "Phân loại ba React effect thành công việc của composition, đăng ký cần dispose hoặc công việc của ViewModel trước khi chuyển đổi.",
+      checklist: [
+        "Chọn effect API theo quyền sở hữu",
+        "Dùng effect key có chủ đích",
+      ],
+      stages: [
+        "Chạy suspend UI task bằng LaunchedEffect với key có ý nghĩa.",
+        "Phân biệt LaunchedEffect, DisposableEffect và công việc thuộc ngoài composition.",
+        "Giữ effect API tập trung vào UI và làm rõ cancellation, restart behavior cùng quyền sở hữu.",
+      ],
+    },
+    lifecycle: {
+      title: "Vòng đời và cleanup",
+      exercise:
+        "Chuyển React subscription có cleanup thành DisposableEffect đăng ký và gỡ đúng một observer.",
+      checklist: [
+        "Gỡ mọi observer được đăng ký thủ công",
+        "Không nhầm recomposition với lifecycle entry",
+      ],
+      stages: [
+        "Đăng ký listener và gỡ trong onDispose.",
+        "Chỉ đăng ký lại khi resource owner hoặc key thực sự thay đổi.",
+        "Ưu tiên adapter nhận biết lifecycle cho observable state và chỉ dispose thủ công với external listener API.",
+      ],
+    },
+    form: {
+      title: "Form state và validation",
+      exercise:
+        "Tạo form đăng nhập có email field được điều khiển, validation dẫn xuất và submit state rõ ràng.",
+      checklist: [
+        "Tách field state khỏi server state",
+        "Dẫn xuất validation thay vì đồng bộ nó",
+      ],
+      stages: [
+        "Sở hữu value của field và dẫn xuất kết quả validation đơn giản.",
+        "Hoist value để parent phối hợp nhiều field và submit event.",
+        "Mô hình hóa submitting, error, correction và success mà không gắn field tái sử dụng với ViewModel.",
+      ],
+    },
+    navigation: {
+      title: "Điều hướng",
+      exercise:
+        "Đưa profile navigation action ra khỏi presentational screen và đặt vào route-level callback.",
+      checklist: [
+        "Giữ NavController tại route boundary",
+        "Giải thích được quyền sở hữu back stack",
+      ],
+      stages: [
+        "Điều hướng giữa hai destination qua graph.",
+        "Truyền navigation callback vào screen content thay vì controller.",
+        "Tổ chức graph theo scope và kiểm thử navigation behavior độc lập với destination UI.",
+      ],
+    },
+    "route-parameters": {
+      title: "Tham số route",
+      exercise:
+        "Thay full user object trong navigation param bằng user ID và tải profile hiện tại tại destination.",
+      checklist: [
+        "Chỉ truyền route data có thể tuần tự hóa",
+        "Validate destination argument",
+      ],
+      stages: [
+        "Truyền compact identifier qua route.",
+        "Decode identifier tại route boundary rồi truyền vào screen content.",
+        "Giữ route schema ổn định và resolve dữ liệu hiện tại đã được cấp quyền ngoài navigation payload.",
+      ],
+    },
+    "deep-link": {
+      title: "Deep link",
+      exercise:
+        "Cấu hình profile URL pattern và từ chối profile identifier không hợp lệ trước khi tải dữ liệu.",
+      checklist: [
+        "Xem URL là input không đáng tin",
+        "Giữ link pattern đồng bộ với route",
+      ],
+      stages: [
+        "Ánh xạ một URL pattern vào destination.",
+        "Parse và validate route data trước khi render destination.",
+        "Phối hợp platform link registration, authorization và hành vi điều hướng trong ứng dụng.",
+      ],
+    },
+    "loading-state": {
+      title: "Trạng thái tải",
+      exercise:
+        "Render initial loading, refresh và empty result thành các state khác nhau cho một profile list.",
+      checklist: [
+        "Không dùng null để biểu thị mọi state chưa sẵn sàng",
+        "Giải thích được refresh policy",
+      ],
+      stages: [
+        "Render một trạng thái đang chạy rõ ràng.",
+        "Mô hình hóa loading, ready và empty result mà không chồng lấp ý nghĩa.",
+        "Giữ content hữu ích khi refresh nếu trải nghiệm sản phẩm cần điều đó.",
+      ],
+    },
+    "error-handling": {
+      title: "Xử lý lỗi",
+      exercise:
+        "Ánh xạ offline request failure sang copy thân thiện và retry event mà không lộ raw exception.",
+      checklist: [
+        "Tách cancellation khỏi failure",
+        "Cung cấp recovery action có chủ đích",
+      ],
+      stages: [
+        "Render một error state có thể phục hồi.",
+        "Ánh xạ transport error thành displayable failure model và retry event.",
+        "Giữ diagnostic an toàn trong khi trình bày user copy ổn định, có thể dịch.",
+      ],
+    },
+    "local-storage": {
+      title: "Lưu trữ cục bộ",
+      exercise:
+        "Lưu theme preference, tải default an toàn và cập nhật screen khi stored value thay đổi.",
+      checklist: [
+        "Xem persisted data là input không đáng tin",
+        "Giữ storage access ngoài reusable UI",
+      ],
+      stages: [
+        "Đọc và ghi bất đồng bộ một preference nhỏ.",
+        "Expose stored preference qua state holder thay vì trực tiếp từ UI component.",
+        "Version stored value, phục hồi khi data lỗi và chọn store phù hợp cho độ nhạy cảm và quy mô.",
+      ],
+    },
+    async: {
+      title: "Tác vụ bất đồng bộ",
+      exercise:
+        "Thay request chạy qua effect bằng coroutine nhận biết lifecycle.",
+      checklist: ["Hiểu cơ chế hủy", "Không chạy công việc trong composition"],
+      stages: [
+        "Khởi chạy tác vụ bất đồng bộ từ effect được kiểm soát.",
+        "Khởi động lại tác vụ khi key thay đổi.",
+        "Giữ tác vụ sống lâu trong ViewModel.",
+      ],
+    },
+    "api-request": {
+      title: "Gọi API",
+      exercise: "Mô hình hóa loading, success và failure cho request profile.",
+      checklist: ["Mô hình hóa từng trạng thái", "Tách transport khỏi UI"],
+      stages: [
+        "Render loading và success.",
+        "Thêm retry và error UI.",
+        "Cung cấp UI state bất biến từ ViewModel có repository hỗ trợ.",
+      ],
+    },
+  },
+  stageTitles: ["Cơ bản", "Áp dụng", "Production"],
+} as const;

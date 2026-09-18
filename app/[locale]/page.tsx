@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import type { Metadata } from "next";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -11,15 +12,29 @@ import { TechnologyPairForm } from "@/features/technology-switcher/technology-pa
 import { getTechnologies } from "@/lib/content/technologies";
 import { getMessages } from "@/lib/i18n/messages";
 import { isLocale } from "@/lib/i18n/locale";
+import { createLocalizedPageMetadata } from "@/lib/site";
 
 type LocaleHomePageProps = { params: Promise<{ locale: string }> };
+
+export async function generateMetadata({
+  params,
+}: LocaleHomePageProps): Promise<Metadata> {
+  const { locale } = await params;
+  if (!isLocale(locale)) return {};
+  const messages = getMessages(locale);
+  return createLocalizedPageMetadata({
+    locale,
+    path: "/",
+    title: "Mobile Party",
+    description: messages.home.description,
+  });
+}
 
 export default async function LocaleHomePage({ params }: LocaleHomePageProps) {
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
 
   const messages = getMessages(locale);
-  const isVietnamese = locale === "vi";
 
   return (
     <Container className="flex-1 py-12 sm:py-16 lg:py-24">
@@ -38,14 +53,8 @@ export default async function LocaleHomePage({ params }: LocaleHomePageProps) {
         </section>
         <Card className="shadow-md">
           <CardHeader>
-            <CardTitle>
-              {isVietnamese ? "Chọn lộ trình học" : "Choose your learning path"}
-            </CardTitle>
-            <CardDescription>
-              {isVietnamese
-                ? "Lựa chọn được lưu trên thiết bị này và có thể thay đổi bất cứ lúc nào."
-                : "Your selection is saved on this device and can be changed anytime."}
-            </CardDescription>
+            <CardTitle>{messages.home.choosePath}</CardTitle>
+            <CardDescription>{messages.home.selectionNote}</CardDescription>
           </CardHeader>
           <div className="px-5 pb-5">
             <TechnologyPairForm technologies={getTechnologies()} />

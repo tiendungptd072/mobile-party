@@ -4,6 +4,7 @@ import type { RecipeImplementation } from "@/types/recipe";
 import type { TechnologyDefinition } from "@/types/technology";
 
 type RecipeCodeTabsProps = {
+  ariaLabel?: string;
   implementations: Readonly<
     Partial<Record<TechnologyDefinition["id"], RecipeImplementation>>
   >;
@@ -12,6 +13,7 @@ type RecipeCodeTabsProps = {
 
 /** Renders server-highlighted recipe implementations inside accessible tabs. */
 export function RecipeCodeTabs({
+  ariaLabel = "Recipe implementations",
   implementations,
   technologies,
 }: RecipeCodeTabsProps) {
@@ -42,5 +44,5 @@ export function RecipeCodeTabs({
     ];
   });
 
-  return <Tabs ariaLabel="Recipe implementations" items={items} />;
+  return <Tabs ariaLabel={ariaLabel} items={items} />;
 }

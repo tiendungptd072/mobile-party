@@ -1,5 +1,7 @@
 import { highlightCode } from "@/lib/shiki/highlighter";
 import type { CodeLanguage } from "@/types/technology";
+import { DEFAULT_LOCALE } from "@/lib/i18n/locale";
+import { getMessages } from "@/lib/i18n/messages";
 
 type CodeBlockProps = {
   code: string;
@@ -14,7 +16,7 @@ export async function CodeBlock({ code, filename, language }: CodeBlockProps) {
   return (
     <figure className="overflow-hidden rounded-lg border border-subtle bg-surface">
       <figcaption className="flex items-center justify-between gap-3 border-b border-subtle bg-surface-raised px-4 py-2 font-mono text-xs text-muted">
-        <span>{filename ?? "Code example"}</span>
+        <span>{filename ?? getMessages(DEFAULT_LOCALE).codeExample}</span>
         <span>{language}</span>
       </figcaption>
       <div

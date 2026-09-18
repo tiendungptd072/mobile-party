@@ -1,9 +1,15 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useBookmarks } from "@/features/bookmarks/use-bookmarks.client";
 import type { Concept } from "@/types/concept";
 import type { Recipe } from "@/types/recipe";
+import {
+  getLocaleFromPathname,
+  getLocalizedPath,
+  useLocaleMessages,
+} from "@/features/locale/use-locale-messages.client";
 
 type BookmarkListProps = {
   concepts: readonly Concept[];
@@ -11,6 +17,8 @@ type BookmarkListProps = {
 };
 
 export function BookmarkList({ concepts, recipes }: BookmarkListProps) {
+  const messages = useLocaleMessages();
+  const locale = getLocaleFromPathname(usePathname());
   const { bookmarks } = useBookmarks();
   const items = bookmarks.flatMap((bookmark) => {
     if (bookmark.kind === "concept") {
@@ -29,8 +37,7 @@ export function BookmarkList({ concepts, recipes }: BookmarkListProps) {
   if (items.length === 0) {
     return (
       <p className="mt-8 rounded-xl border border-subtle bg-surface-raised p-5 text-sm text-muted">
-        You have not saved anything yet. Save a concept or recipe to return to
-        it later.
+        {messages.bookmarksPage.empty}
       </p>
     );
   }
@@ -41,10 +48,15 @@ export function BookmarkList({ concepts, recipes }: BookmarkListProps) {
         <li key={`${bookmark.kind}:${bookmark.slug}`}>
           <Link
             className="block rounded-xl border border-subtle bg-surface p-5 transition-colors hover:bg-surface-raised"
-            href={`/${bookmark.kind === "concept" ? "dictionary" : "recipes"}/${bookmark.slug}`}
+            href={getLocalizedPath(
+              `/${bookmark.kind === "concept" ? "dictionary" : "recipes"}/${bookmark.slug}`,
+              locale,
+            )}
           >
             <p className="text-sm font-medium capitalize text-accent">
-              {bookmark.kind}
+              {bookmark.kind === "concept"
+                ? messages.bookmarksPage.concept
+                : messages.bookmarksPage.recipe}
             </p>
             <h2 className="mt-2 font-semibold">{title}</h2>
             <p className="mt-2 text-sm leading-6 text-muted">{description}</p>

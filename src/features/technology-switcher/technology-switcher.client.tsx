@@ -10,12 +10,14 @@ import {
   type TechnologyPair,
 } from "@/lib/technology-pair";
 import type { TechnologyDefinition } from "@/types/technology";
+import { useLocaleMessages } from "@/features/locale/use-locale-messages.client";
 
 type TechnologySwitcherProps = {
   technologies: readonly TechnologyDefinition[];
 };
 
 export function TechnologySwitcher({ technologies }: TechnologySwitcherProps) {
+  const messages = useLocaleMessages();
   const pathname = usePathname();
   const router = useRouter();
   const { pair, setPair } = useTechnologyPair();
@@ -32,14 +34,14 @@ export function TechnologySwitcher({ technologies }: TechnologySwitcherProps) {
 
   return (
     <div
-      aria-label="Technology learning path"
+      aria-label={messages.technology.path}
       className="flex min-w-0 items-center gap-2"
       role="group"
     >
       <TechnologySelector
         className="w-28 sm:w-36"
         isLabelVisuallyHidden
-        label="Source technology"
+        label={messages.technology.source}
         technologies={technologies}
         value={pair.source}
         onChange={(technology) =>
@@ -52,7 +54,7 @@ export function TechnologySwitcher({ technologies }: TechnologySwitcherProps) {
       <TechnologySelector
         className="w-28 sm:w-36"
         isLabelVisuallyHidden
-        label="Target technology"
+        label={messages.technology.target}
         technologies={technologies}
         value={pair.target}
         onChange={(technology) =>

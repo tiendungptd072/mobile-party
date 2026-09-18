@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import type { FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { TechnologySelector } from "@/features/technology-switcher/technology-selector.client";
@@ -11,12 +11,19 @@ import {
   getLearnUrl,
 } from "@/lib/technology-pair";
 import type { TechnologyDefinition } from "@/types/technology";
+import {
+  getLocaleFromPathname,
+  useLocaleMessages,
+} from "@/features/locale/use-locale-messages.client";
 
 type TechnologyPairFormProps = {
   technologies: readonly TechnologyDefinition[];
 };
 
 export function TechnologyPairForm({ technologies }: TechnologyPairFormProps) {
+  const messages = useLocaleMessages();
+  const pathname = usePathname();
+  const locale = getLocaleFromPathname(pathname);
   const router = useRouter();
   const { pair, setPair } = useTechnologyPair();
   const source = technologies.find(
@@ -28,14 +35,14 @@ export function TechnologyPairForm({ technologies }: TechnologyPairFormProps) {
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    router.push(getLearnUrl(pair));
+    router.push(`/${locale}${getLearnUrl(pair)}`);
   }
 
   return (
     <form className="grid gap-6" onSubmit={handleSubmit}>
       <div className="grid gap-5 sm:grid-cols-2">
         <TechnologySelector
-          label="I know"
+          label={messages.technology.know}
           technologies={technologies}
           value={pair.source}
           onChange={(technology) =>
@@ -43,7 +50,7 @@ export function TechnologyPairForm({ technologies }: TechnologyPairFormProps) {
           }
         />
         <TechnologySelector
-          label="I want to learn"
+          label={messages.technology.learn}
           technologies={technologies}
           value={pair.target}
           onChange={(technology) =>
@@ -54,33 +61,34 @@ export function TechnologyPairForm({ technologies }: TechnologyPairFormProps) {
 
       <div className="rounded-lg border border-subtle bg-surface-raised p-4">
         <p className="text-xs font-medium uppercase tracking-wider text-muted">
-          Your learning path
+          {messages.technology.learningPath}
         </p>
         <p className="mt-2 text-lg font-semibold">
           {source?.shortName} <span aria-hidden="true">→</span>{" "}
-          <span className="sr-only">to</span> {target?.shortName}
+          <span className="sr-only">{messages.technology.to}</span>{" "}
+          {target?.shortName}
         </p>
       </div>
 
       <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
         <Button className="sm:min-w-36" size="large" type="submit">
-          Start Learning
+          {messages.technology.start}
         </Button>
         <Button
           size="large"
           type="button"
           variant="secondary"
-          onClick={() => router.push("/compare")}
+          onClick={() => router.push(`/${locale}/compare`)}
         >
-          Compare Concepts
+          {messages.technology.compare}
         </Button>
         <Button
           size="large"
           type="button"
           variant="ghost"
-          onClick={() => router.push("/dictionary")}
+          onClick={() => router.push(`/${locale}/dictionary`)}
         >
-          Browse Dictionary
+          {messages.technology.dictionary}
         </Button>
       </div>
     </form>
