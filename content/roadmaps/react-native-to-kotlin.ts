@@ -1310,10 +1310,24 @@ fun SignInForm(state: SignInUiState, onEvent: (SignInEvent) -> Unit) {
               description:
                 "Navigate from one destination to another through the graph.",
               examples: {
-                "react-native": { name: "Navigate by route name", summary: "The navigation object pushes a destination onto the active stack.", language: "tsx", filename: "HomeScreen.tsx", code: `<Button title="Open profile" onPress={() => navigation.navigate("Profile")} />` },
-                kotlin: { name: "Navigate with NavController", summary: "NavController moves to a destination declared in the graph.", language: "kotlin", filename: "HomeScreen.kt", code: `Button(onClick = { navController.navigate("profile") }) {
+                "react-native": {
+                  name: "Navigate by route name",
+                  summary:
+                    "The navigation object pushes a destination onto the active stack.",
+                  language: "tsx",
+                  filename: "HomeScreen.tsx",
+                  code: `<Button title="Open profile" onPress={() => navigation.navigate("Profile")} />`,
+                },
+                kotlin: {
+                  name: "Navigate with NavController",
+                  summary:
+                    "NavController moves to a destination declared in the graph.",
+                  language: "kotlin",
+                  filename: "HomeScreen.kt",
+                  code: `Button(onClick = { navController.navigate("profile") }) {
     Text("Open profile")
-}` },
+}`,
+                },
               },
             },
             {
@@ -1322,14 +1336,27 @@ fun SignInForm(state: SignInUiState, onEvent: (SignInEvent) -> Unit) {
               description:
                 "Pass navigation callbacks into screen content instead of the controller.",
               examples: {
-                "react-native": { name: "Route boundary callback", summary: "Only the route component knows about the navigation object.", language: "tsx", filename: "ProfileRoute.tsx", code: `function ProfileRoute({ navigation }: Props) {
+                "react-native": {
+                  name: "Route boundary callback",
+                  summary:
+                    "Only the route component knows about the navigation object.",
+                  language: "tsx",
+                  filename: "ProfileRoute.tsx",
+                  code: `function ProfileRoute({ navigation }: Props) {
   return <ProfileScreen onEdit={() => navigation.navigate("EditProfile")} />;
 }
 
 function ProfileScreen({ onEdit }: ScreenProps) {
   return <Button title="Edit" onPress={onEdit} />;
-}` },
-                kotlin: { name: "Route boundary callback", summary: "The route owns NavController and content receives a plain event.", language: "kotlin", filename: "ProfileRoute.kt", code: `@Composable
+}`,
+                },
+                kotlin: {
+                  name: "Route boundary callback",
+                  summary:
+                    "The route owns NavController and content receives a plain event.",
+                  language: "kotlin",
+                  filename: "ProfileRoute.kt",
+                  code: `@Composable
 fun ProfileRoute(navController: NavController) {
     ProfileScreen(onEdit = { navController.navigate("edit-profile") })
 }
@@ -1337,7 +1364,8 @@ fun ProfileRoute(navController: NavController) {
 @Composable
 fun ProfileScreen(onEdit: () -> Unit) {
     Button(onClick = onEdit) { Text("Edit") }
-}` },
+}`,
+                },
               },
             },
             {
@@ -1346,20 +1374,34 @@ fun ProfileScreen(onEdit: () -> Unit) {
               description:
                 "Organize graphs by scope and test navigation behavior separately from destination UI.",
               examples: {
-                "react-native": { name: "Feature navigator", summary: "A feature owns its stack while screens expose navigation intent.", language: "tsx", filename: "ProfileNavigator.tsx", code: `function ProfileNavigator() {
+                "react-native": {
+                  name: "Feature navigator",
+                  summary:
+                    "A feature owns its stack while screens expose navigation intent.",
+                  language: "tsx",
+                  filename: "ProfileNavigator.tsx",
+                  code: `function ProfileNavigator() {
   return <Stack.Navigator>
     <Stack.Screen name="Profile" component={ProfileRoute} />
     <Stack.Screen name="EditProfile" component={EditProfileRoute} />
   </Stack.Navigator>;
-}` },
-                kotlin: { name: "Feature graph", summary: "A graph builder owns destinations and wires route-level callbacks.", language: "kotlin", filename: "ProfileGraph.kt", code: `fun NavGraphBuilder.profileGraph(navController: NavController) {
+}`,
+                },
+                kotlin: {
+                  name: "Feature graph",
+                  summary:
+                    "A graph builder owns destinations and wires route-level callbacks.",
+                  language: "kotlin",
+                  filename: "ProfileGraph.kt",
+                  code: `fun NavGraphBuilder.profileGraph(navController: NavController) {
     navigation(startDestination = "profile", route = "profile-graph") {
         composable("profile") {
             ProfileRoute(onEdit = { navController.navigate("edit-profile") })
         }
         composable("edit-profile") { EditProfileRoute() }
     }
-}` },
+}`,
+                },
               },
             },
           ],
@@ -1380,15 +1422,28 @@ fun ProfileScreen(onEdit: () -> Unit) {
               title: "Basic",
               description: "Pass a compact identifier through a route.",
               examples: {
-                "react-native": { name: "Typed route parameter", summary: "Navigation carries only the profile identifier.", language: "tsx", filename: "routes.tsx", code: `type RootStackParams = {
+                "react-native": {
+                  name: "Typed route parameter",
+                  summary: "Navigation carries only the profile identifier.",
+                  language: "tsx",
+                  filename: "routes.tsx",
+                  code: `type RootStackParams = {
   Profile: { userId: string };
 };
 
-navigation.navigate("Profile", { userId: user.id });` },
-                kotlin: { name: "Type-safe route", summary: "A serializable destination carries only the profile identifier.", language: "kotlin", filename: "Routes.kt", code: `@Serializable
+navigation.navigate("Profile", { userId: user.id });`,
+                },
+                kotlin: {
+                  name: "Type-safe route",
+                  summary:
+                    "A serializable destination carries only the profile identifier.",
+                  language: "kotlin",
+                  filename: "Routes.kt",
+                  code: `@Serializable
 data class ProfileRoute(val userId: String)
 
-navController.navigate(ProfileRoute(user.id))` },
+navController.navigate(ProfileRoute(user.id))`,
+                },
               },
             },
             {
@@ -1397,15 +1452,29 @@ navController.navigate(ProfileRoute(user.id))` },
               description:
                 "Decode the identifier at the route boundary and pass it into screen content.",
               examples: {
-                "react-native": { name: "Route parameter boundary", summary: "The route reads params and supplies a plain identifier to screen state.", language: "tsx", filename: "ProfileRoute.tsx", code: `function ProfileRoute({ route }: Props) {
+                "react-native": {
+                  name: "Route parameter boundary",
+                  summary:
+                    "The route reads params and supplies a plain identifier to screen state.",
+                  language: "tsx",
+                  filename: "ProfileRoute.tsx",
+                  code: `function ProfileRoute({ route }: Props) {
   const { userId } = route.params;
   const profile = useProfile(userId);
   return <ProfileScreen profile={profile} />;
-}` },
-                kotlin: { name: "Destination boundary", summary: "The destination decodes its typed route before loading screen data.", language: "kotlin", filename: "ProfileGraph.kt", code: `composable<ProfileRoute> { entry ->
+}`,
+                },
+                kotlin: {
+                  name: "Destination boundary",
+                  summary:
+                    "The destination decodes its typed route before loading screen data.",
+                  language: "kotlin",
+                  filename: "ProfileGraph.kt",
+                  code: `composable<ProfileRoute> { entry ->
     val route = entry.toRoute<ProfileRoute>()
     ProfileRoute(userId = route.userId)
-}` },
+}`,
+                },
               },
             },
             {
@@ -1414,22 +1483,36 @@ navController.navigate(ProfileRoute(user.id))` },
               description:
                 "Keep route schemas stable and resolve authorized, current data outside the navigation payload.",
               examples: {
-                "react-native": { name: "ID-backed screen state", summary: "The state owner resolves current authorized data from the repository.", language: "tsx", filename: "use-profile.ts", code: `function useProfile(userId: string) {
+                "react-native": {
+                  name: "ID-backed screen state",
+                  summary:
+                    "The state owner resolves current authorized data from the repository.",
+                  language: "tsx",
+                  filename: "use-profile.ts",
+                  code: `function useProfile(userId: string) {
   const [state, setState] = useState<ProfileState>({ status: "loading" });
   useEffect(() => profileRepository.loadAuthorized(userId).then(
     (profile) => setState({ status: "ready", profile }),
     () => setState({ status: "unavailable" }),
   ), [userId]);
   return state;
-}` },
-                kotlin: { name: "Saved route ID", summary: "SavedStateHandle supplies the ID; the repository remains the source of current data.", language: "kotlin", filename: "ProfileViewModel.kt", code: `class ProfileViewModel(
+}`,
+                },
+                kotlin: {
+                  name: "Saved route ID",
+                  summary:
+                    "SavedStateHandle supplies the ID; the repository remains the source of current data.",
+                  language: "kotlin",
+                  filename: "ProfileViewModel.kt",
+                  code: `class ProfileViewModel(
     savedStateHandle: SavedStateHandle,
     repository: ProfileRepository,
 ) : ViewModel() {
     private val route = savedStateHandle.toRoute<ProfileRoute>()
     val state = repository.observeAuthorized(route.userId)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), Loading)
-}` },
+}`,
+                },
               },
             },
           ],
@@ -1449,18 +1532,102 @@ navController.navigate(ProfileRoute(user.id))` },
               id: "basic",
               title: "Basic",
               description: "Map one URL pattern to a destination.",
+              examples: {
+                "react-native": {
+                  name: "Linking configuration",
+                  summary:
+                    "A URL pattern maps to the Profile screen and its userId parameter.",
+                  language: "typescript",
+                  filename: "linking.ts",
+                  code: `export const linking = {
+  prefixes: ["https://example.com"],
+  config: { screens: { Profile: "users/:userId" } },
+};`,
+                },
+                kotlin: {
+                  name: "Navigation deep link",
+                  summary:
+                    "The destination declares the external URI pattern it accepts.",
+                  language: "kotlin",
+                  filename: "ProfileGraph.kt",
+                  code: `composable<ProfileRoute>(
+    deepLinks = listOf(
+        navDeepLink { uriPattern = "https://example.com/users/{userId}" },
+    ),
+) { entry -> ProfileRoute(entry.toRoute<ProfileRoute>().userId) }`,
+                },
+              },
             },
             {
               id: "applied",
               title: "Applied",
               description:
                 "Parse and validate route data before rendering the destination.",
+              examples: {
+                "react-native": {
+                  name: "Validated link parameter",
+                  summary:
+                    "The route rejects malformed external identifiers before loading data.",
+                  language: "tsx",
+                  filename: "ProfileRoute.tsx",
+                  code: `function ProfileRoute({ route }: Props) {
+  const userId = parseUserId(route.params.userId);
+  if (!userId) return <InvalidLinkScreen />;
+  return <AuthorizedProfileRoute userId={userId} />;
+}`,
+                },
+                kotlin: {
+                  name: "Validated destination argument",
+                  summary:
+                    "The destination validates decoded external data before creating screen state.",
+                  language: "kotlin",
+                  filename: "ProfileGraph.kt",
+                  code: `composable<ProfileRoute> { entry ->
+    val userId = UserId.parse(entry.toRoute<ProfileRoute>().userId)
+    if (userId == null) InvalidLinkScreen()
+    else AuthorizedProfileRoute(userId)
+}`,
+                },
+              },
             },
             {
               id: "production",
               title: "Production",
               description:
                 "Coordinate platform link registration, authorization, and in-app navigation behavior.",
+              examples: {
+                "react-native": {
+                  name: "Session-aware link handling",
+                  summary:
+                    "An unauthenticated link is retained until sign-in completes.",
+                  language: "typescript",
+                  filename: "link-handler.ts",
+                  code: `async function handleIncomingUrl(url: string) {
+  const destination = parseAndValidateLink(url);
+  if (!destination) return;
+  if (!session.isSignedIn()) {
+    pendingLinks.save(destination);
+    return navigation.navigate("SignIn");
+  }
+  navigation.navigate(destination.name, destination.params);
+}`,
+                },
+                kotlin: {
+                  name: "Authorized deep-link boundary",
+                  summary:
+                    "Validated navigation waits for session state and checks access before opening data.",
+                  language: "kotlin",
+                  filename: "DeepLinkHandler.kt",
+                  code: `suspend fun handleDeepLink(uri: Uri) {
+    val destination = parser.parseAndValidate(uri) ?: return
+    if (!session.isSignedIn()) {
+        pendingLinks.save(destination)
+        return navigator.openSignIn()
+    }
+    if (authorization.canOpen(destination)) navigator.open(destination)
+}`,
+                },
+              },
             },
           ],
         },

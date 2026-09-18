@@ -28,8 +28,9 @@ import { stackConcept } from "@content/concepts/stack";
 import { textInputConcept } from "@content/concepts/text-input";
 import { verticalLayoutConcept } from "@content/concepts/vertical-layout";
 import { themeConcept } from "@content/concepts/theme";
+import { getConceptReferences } from "@content/concepts/references";
 
-export const rawConcepts = [
+const conceptDefinitions = [
   componentConcept,
   propsConcept,
   childrenConcept,
@@ -61,3 +62,8 @@ export const rawConcepts = [
   authenticationConcept,
   themeConcept,
 ] as const;
+
+export const rawConcepts = conceptDefinitions.map((concept) => ({
+  ...concept,
+  references: getConceptReferences(concept.slug),
+}));

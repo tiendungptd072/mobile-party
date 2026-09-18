@@ -50,6 +50,15 @@ export type ConceptRelationship = {
   explanation: string;
 };
 
+export type ContentReference = {
+  title: string;
+  url: string;
+  kind: "official-docs" | "sample" | "spec" | "further-reading";
+  technology?: Technology;
+  version?: string;
+  verifiedAt: string;
+};
+
 export type Concept = {
   id: string;
   slug: string;
@@ -65,6 +74,7 @@ export type Concept = {
   differences?: readonly string[];
   commonMistakes?: readonly string[];
   productionNotes?: readonly string[];
+  references: readonly ContentReference[];
 };
 ```
 
@@ -83,6 +93,16 @@ export type RoadmapLesson = {
   conceptSlug: string;
   title: string;
   order: number;
+  exercise: string;
+  checklist: readonly string[];
+  stages: readonly LessonStage[];
+};
+
+export type LessonStage = {
+  id: "basic" | "applied" | "production";
+  title: string;
+  description: string;
+  examples?: Partial<Record<Technology, ConceptImplementation>>;
 };
 
 export type RoadmapSection = {
@@ -151,6 +171,8 @@ The Phase 2 validator must reject:
 - implementations with unsupported language identifiers
 - roadmap lessons referencing unknown concept slugs
 - related content references that are not canonical
+- external references that are not HTTPS, contain duplicate URLs, or omit a
+  valid ISO verification date
 
 Validation runs at build time and reports the content file and failing field.
 

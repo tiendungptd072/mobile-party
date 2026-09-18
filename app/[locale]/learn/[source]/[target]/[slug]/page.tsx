@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { CodeComparison } from "@/components/compare/code-comparison";
 import { MentalModel } from "@/components/compare/mental-model";
 import { CompleteLessonButton } from "@/components/learning/complete-lesson-button.client";
+import { ContentReferences } from "@/components/learning/content-references";
 import { LearningSidebar } from "@/components/learning/learning-sidebar.client";
 import { LessonStages } from "@/components/learning/lesson-stages";
 import { Badge } from "@/components/ui/badge";
@@ -96,6 +97,12 @@ export default async function LocaleLessonPage({
   const previousLesson = lessons[lessonIndex - 1]?.lesson;
   const nextLesson = lessons[lessonIndex + 1]?.lesson;
   const pair = { source, target };
+  const references = concept.references.filter(
+    (reference) =>
+      !reference.technology ||
+      reference.technology === source ||
+      reference.technology === target,
+  );
   const sourceImplementation = concept.implementations[source];
   const targetImplementation = concept.implementations[target];
   const codeComparison =
@@ -230,6 +237,19 @@ export default async function LocaleLessonPage({
               </ul>
             </Callout>
           </section>
+          <ContentReferences
+            description={messages.learn.referencesDescription}
+            kindLabels={messages.learn.referenceKinds}
+            opensInNewTab={messages.learn.opensInNewTab}
+            references={references}
+            technologyNames={{
+              [source]: sourceTechnology.name,
+              [target]: targetTechnology.name,
+            }}
+            title={messages.learn.references}
+            verifiedLabel={messages.learn.verifiedReference}
+            versionLabel={messages.learn.referenceVersion}
+          />
           <div className="mt-10 flex flex-wrap items-center justify-between gap-4 border-t border-subtle pt-6">
             <CompleteLessonButton pair={pair} slug={slug} />
             <nav

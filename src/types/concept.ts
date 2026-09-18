@@ -20,6 +20,25 @@ export type ConceptCategory = (typeof CONCEPT_CATEGORIES)[number];
 
 export type Relationship = "equivalent" | "similar" | "different";
 
+export const CONTENT_REFERENCE_KINDS = [
+  "official-docs",
+  "sample",
+  "spec",
+  "further-reading",
+] as const;
+
+export type ContentReferenceKind = (typeof CONTENT_REFERENCE_KINDS)[number];
+
+/** An external source used to verify or expand educational content. */
+export type ContentReference = {
+  kind: ContentReferenceKind;
+  technology?: Technology;
+  title: string;
+  url: string;
+  verifiedAt: string;
+  version?: string;
+};
+
 export type ConceptImplementation = {
   code?: string;
   filename?: string;
@@ -48,6 +67,7 @@ export type Concept = {
   mentalModel: string;
   order: number;
   productionNotes: readonly string[];
+  references: readonly ContentReference[];
   relationships: readonly ConceptRelationship[];
   slug: string;
   title: string;

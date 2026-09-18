@@ -41,6 +41,23 @@ describe("concept content", () => {
     expect(vietnamese?.implementations.kotlin?.code).toBe(
       english?.implementations.kotlin?.code,
     );
+    expect(vietnamese?.references).toEqual(english?.references);
+  });
+
+  test("provides verified references for both roadmap technologies", () => {
+    for (const concept of getConcepts()) {
+      expect(concept.references.length).toBeGreaterThanOrEqual(2);
+      expect(
+        concept.references.some(
+          (reference) => reference.technology === "react-native",
+        ),
+      ).toBe(true);
+      expect(
+        concept.references.some(
+          (reference) => reference.technology === "kotlin",
+        ),
+      ).toBe(true);
+    }
   });
 
   test("loads concepts in stable order", () => {
@@ -113,6 +130,30 @@ describe("concept content", () => {
       /missing required react-native implementation/,
     );
   });
+
+  test("rejects unverified or insecure external references", () => {
+    const insecureReference = {
+      ...rawConcepts[0],
+      references: [
+        {
+          ...rawConcepts[0].references[0],
+          url: "http://example.com/docs",
+        },
+      ],
+    };
+    const invalidDate = {
+      ...rawConcepts[0],
+      references: [
+        {
+          ...rawConcepts[0].references[0],
+          verifiedAt: "2026-02-31",
+        },
+      ],
+    };
+
+    expect(() => validateConcept(insecureReference)).toThrow(/HTTPS URL/);
+    expect(() => validateConcept(invalidDate)).toThrow(/ISO date/);
+  });
 });
 
 describe("roadmap content", () => {
@@ -133,21 +174,10 @@ describe("roadmap content", () => {
   test("provides progressive code comparisons for expanded lessons", () => {
     const roadmap = getRoadmap("react-native", "kotlin");
 
-    for (const slug of [
-      "local-state",
-      "derived-state",
-      "global-state",
-      "text-input",
-      "button",
-      "form",
-      "side-effects",
-      "lifecycle",
-    ]) {
-      const lesson = getRoadmapLessonLocation(roadmap!, slug)?.lesson;
-
-      expect(lesson?.stages).toHaveLength(3);
+    for (const { lesson } of getRoadmapLessonLocations(roadmap!)) {
+      expect(lesson.stages).toHaveLength(3);
       expect(
-        lesson?.stages.every(
+        lesson.stages.every(
           (stage) =>
             stage.examples?.["react-native"]?.code &&
             stage.examples.kotlin?.code,
@@ -164,21 +194,23 @@ describe("roadmap content", () => {
     expect(getRoadmapLessonLocations(vietnamese!)).toHaveLength(
       getRoadmapLessonLocations(english!).length,
     );
-    const englishLocalState = getRoadmapLessonLocation(
+    for (const { lesson: englishLesson } of getRoadmapLessonLocations(
       english!,
-      "local-state",
-    )?.lesson;
-    const vietnameseLocalState = getRoadmapLessonLocation(
-      vietnamese!,
-      "local-state",
-    )?.lesson;
+    )) {
+      const vietnameseLesson = getRoadmapLessonLocation(
+        vietnamese!,
+        englishLesson.conceptSlug,
+      )?.lesson;
 
-    expect(englishLocalState?.stages.every((stage) => stage.examples)).toBe(
-      true,
-    );
-    expect(vietnameseLocalState?.stages[0].examples?.kotlin?.code).toBe(
-      englishLocalState?.stages[0].examples?.kotlin?.code,
-    );
+      englishLesson.stages.forEach((stage, index) => {
+        expect(
+          vietnameseLesson?.stages[index].examples?.["react-native"]?.code,
+        ).toBe(stage.examples?.["react-native"]?.code);
+        expect(vietnameseLesson?.stages[index].examples?.kotlin?.code).toBe(
+          stage.examples?.kotlin?.code,
+        );
+      });
+    }
   });
 
   test("loads a roadmap using canonical concept references", () => {

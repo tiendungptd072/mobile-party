@@ -1,8 +1,11 @@
 import {
+  CONTENT_REFERENCE_KINDS,
   CONCEPT_CATEGORIES,
   type Concept,
   type ConceptCategory,
   type ConceptImplementation,
+  type ContentReference,
+  type ContentReferenceKind,
   type ConceptRelationship,
   type Relationship,
 } from "@/types/concept";
@@ -18,6 +21,7 @@ import {
 
 const RELATIONSHIPS = ["equivalent", "similar", "different"] as const;
 const KEBAB_CASE_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
 export class ContentValidationError extends Error {
   constructor(path: string, message: string) {
@@ -104,6 +108,92 @@ function readTechnology(value: unknown, path: string): Technology {
 
 function readCodeLanguage(value: unknown, path: string): CodeLanguage {
   return readLiteral(value, CODE_LANGUAGES, path);
+}
+
+function readHttpsUrl(value: unknown, path: string): string {
+  const text = readString(value, path);
+
+  try {
+    const url = new URL(text);
+
+    if (url.protocol !== "https:") {
+      throw new ContentValidationError(path, "expected an HTTPS URL");
+    }
+  } catch (error) {
+    if (error instanceof ContentValidationError) throw error;
+    throw new ContentValidationError(path, "expected a valid HTTPS URL");
+  }
+
+  return text;
+}
+
+function readIsoDate(value: unknown, path: string): string {
+  const text = readString(value, path);
+  const date = new Date(`${text}T00:00:00.000Z`);
+
+  if (
+    !ISO_DATE_PATTERN.test(text) ||
+    Number.isNaN(date.getTime()) ||
+    date.toISOString().slice(0, 10) !== text
+  ) {
+    throw new ContentValidationError(path, "expected an ISO date (YYYY-MM-DD)");
+  }
+
+  return text;
+}
+
+function validateReferences(
+  value: unknown,
+  path: string,
+): readonly ContentReference[] {
+  if (!Array.isArray(value) || value.length === 0) {
+    throw new ContentValidationError(path, "expected at least one reference");
+  }
+
+  const urls = new Set<string>();
+
+  return value.map((entry, index) => {
+    const referencePath = `${path}[${index}]`;
+    const reference = readRecord(entry, referencePath);
+    const url = readHttpsUrl(reference.url, `${referencePath}.url`);
+    const normalizedUrl = url.toLocaleLowerCase();
+
+    if (urls.has(normalizedUrl)) {
+      throw new ContentValidationError(
+        referencePath,
+        "duplicate reference URL",
+      );
+    }
+
+    urls.add(normalizedUrl);
+
+    return {
+      title: readString(reference.title, `${referencePath}.title`),
+      url,
+      kind: readLiteral(
+        reference.kind,
+        CONTENT_REFERENCE_KINDS,
+        `${referencePath}.kind`,
+      ) as ContentReferenceKind,
+      verifiedAt: readIsoDate(
+        reference.verifiedAt,
+        `${referencePath}.verifiedAt`,
+      ),
+      ...(reference.technology === undefined
+        ? {}
+        : {
+            technology: readTechnology(
+              reference.technology,
+              `${referencePath}.technology`,
+            ),
+          }),
+      ...(reference.version === undefined
+        ? {}
+        : {
+            version: readString(reference.version, `${referencePath}.version`),
+          }),
+    };
+  });
 }
 
 function validateImplementation(
@@ -254,6 +344,7 @@ export function validateConcept(value: unknown, path = "concept"): Concept {
       concept.productionNotes,
       `${path}.productionNotes`,
     ),
+    references: validateReferences(concept.references, `${path}.references`),
   };
 }
 
