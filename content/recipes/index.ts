@@ -14,7 +14,9 @@ export const rawRecipes = [
         code: `async function loadProfile() {
   setState({ status: "loading" });
   try {
-    const profile = await fetch("/profile").then((r) => r.json());
+    const response = await fetch("/profile");
+    if (!response.ok) throw new Error("HTTP " + response.status);
+    const profile = await response.json();
     setState({ status: "success", profile });
   } catch (error) {
     setState({ status: "error", error });
@@ -145,15 +147,16 @@ export async function clearToken() {
       },
       kotlin: {
         summary:
-          "Hide encrypted preferences behind a credential-store interface.",
+          "Hide Keystore-backed encryption behind a credential-store interface.",
         language: "kotlin",
         filename: "CredentialStore.kt",
-        code: `class CredentialStore(private val preferences: SharedPreferences) {
-    fun saveToken(token: String) {
-        preferences.edit().putString("access-token", token).apply()
-    }
-    fun clear() = preferences.edit().remove("access-token").apply()
-}`,
+        code: `interface CredentialStore {
+    suspend fun saveToken(token: String)
+    suspend fun readToken(): String?
+    suspend fun clear()
+}
+
+// The Android implementation encrypts values with a Keystore-held key.`,
       },
     },
     architectureNotes: [

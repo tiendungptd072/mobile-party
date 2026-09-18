@@ -1,3 +1,4 @@
+import type { ConceptImplementation } from "@/types/concept";
 import type { Technology } from "@/types/technology";
 
 export type RoadmapLesson = {
@@ -11,6 +12,7 @@ export type RoadmapLesson = {
 
 export type LessonStage = {
   description: string;
+  examples?: Partial<Record<Technology, ConceptImplementation>>;
   id: "basic" | "applied" | "production";
   title: string;
 };

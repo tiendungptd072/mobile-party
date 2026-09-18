@@ -46,7 +46,7 @@ describe("concept content", () => {
   test("loads concepts in stable order", () => {
     const concepts = getConcepts();
 
-    expect(concepts).toHaveLength(21);
+    expect(concepts).toHaveLength(30);
     expect(concepts.map((concept) => concept.slug)).toEqual([
       "component",
       "props",
@@ -56,7 +56,13 @@ describe("concept content", () => {
       "derived-state",
       "global-state",
       "layout",
+      "vertical-layout",
+      "horizontal-layout",
+      "stack",
       "list",
+      "grid",
+      "pagination",
+      "button",
       "text-input",
       "form",
       "side-effects",
@@ -69,6 +75,9 @@ describe("concept content", () => {
       "deep-link",
       "api-request",
       "local-storage",
+      "secure-storage",
+      "authentication",
+      "theme",
     ]);
   });
 
@@ -107,6 +116,46 @@ describe("concept content", () => {
 });
 
 describe("roadmap content", () => {
+  test("covers every React Native to Kotlin concept exactly once", () => {
+    const roadmap = getRoadmap("react-native", "kotlin");
+    const lessonSlugs = getRoadmapLessonLocations(roadmap!).map(
+      ({ lesson }) => lesson.conceptSlug,
+    );
+
+    expect(new Set(lessonSlugs).size).toBe(lessonSlugs.length);
+    expect([...lessonSlugs].sort()).toEqual(
+      getConcepts()
+        .map((concept) => concept.slug)
+        .sort(),
+    );
+  });
+
+  test("provides progressive code comparisons for expanded lessons", () => {
+    const roadmap = getRoadmap("react-native", "kotlin");
+
+    for (const slug of [
+      "local-state",
+      "derived-state",
+      "global-state",
+      "text-input",
+      "button",
+      "form",
+      "side-effects",
+      "lifecycle",
+    ]) {
+      const lesson = getRoadmapLessonLocation(roadmap!, slug)?.lesson;
+
+      expect(lesson?.stages).toHaveLength(3);
+      expect(
+        lesson?.stages.every(
+          (stage) =>
+            stage.examples?.["react-native"]?.code &&
+            stage.examples.kotlin?.code,
+        ),
+      ).toBe(true);
+    }
+  });
+
   test("localizes roadmap lessons with equivalent structure", () => {
     const english = getRoadmap("react-native", "kotlin", "en");
     const vietnamese = getRoadmap("react-native", "kotlin", "vi");
@@ -115,12 +164,27 @@ describe("roadmap content", () => {
     expect(getRoadmapLessonLocations(vietnamese!)).toHaveLength(
       getRoadmapLessonLocations(english!).length,
     );
+    const englishLocalState = getRoadmapLessonLocation(
+      english!,
+      "local-state",
+    )?.lesson;
+    const vietnameseLocalState = getRoadmapLessonLocation(
+      vietnamese!,
+      "local-state",
+    )?.lesson;
+
+    expect(englishLocalState?.stages.every((stage) => stage.examples)).toBe(
+      true,
+    );
+    expect(vietnameseLocalState?.stages[0].examples?.kotlin?.code).toBe(
+      englishLocalState?.stages[0].examples?.kotlin?.code,
+    );
   });
 
   test("loads a roadmap using canonical concept references", () => {
     const roadmap = getRoadmap("react-native", "kotlin");
 
-    expect(roadmap?.sections).toHaveLength(7);
+    expect(roadmap?.sections).toHaveLength(8);
     expect(roadmap?.sections[0].lessons[0].conceptSlug).toBe("component");
   });
 
@@ -138,11 +202,16 @@ describe("roadmap content", () => {
       "children",
       "conditional-ui",
       "layout",
+      "vertical-layout",
+      "horizontal-layout",
+      "stack",
       "list",
+      "grid",
       "text-input",
       "local-state",
       "derived-state",
       "global-state",
+      "button",
       "form",
       "side-effects",
       "lifecycle",
@@ -153,7 +222,11 @@ describe("roadmap content", () => {
       "loading-state",
       "error-handling",
       "api-request",
+      "pagination",
       "local-storage",
+      "secure-storage",
+      "authentication",
+      "theme",
     ]);
     expect(getRoadmapLessonLocation(roadmap!, "local-state")?.section.id).toBe(
       "state",

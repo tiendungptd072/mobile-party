@@ -568,6 +568,281 @@ export const viConceptTranslations = {
       "Xác định refresh có giữ content hiện tại hay không, rồi thể hiện chính sách đó rõ ràng trong immutable screen state.",
     ],
   },
+  button: {
+    title: "Button",
+    description:
+      "Ánh xạ press event, disabled state và accessible label giữa React Native và Compose.",
+    implementations: {
+      "react-native": {
+        name: "Pressable",
+        summary: "Control có thể nhấn phát event và biểu thị disabled state.",
+      },
+      kotlin: {
+        name: "Button",
+        summary:
+          "Composable button nhận onClick lambda và enabled state rõ ràng.",
+      },
+    },
+    relationship:
+      "Cả hai biểu thị user action bằng callback và render khả năng thực hiện từ state.",
+    mentalModel:
+      "Button mô tả intent; screen owner quyết định việc xảy ra sau press và action hiện có khả dụng không.",
+    differences: [
+      "React Native thường dùng Pressable cho custom visual; Compose có Material button và Modifier.clickable.",
+      "Standard Compose control tự có semantics; custom clickable UI có thể cần semantics rõ ràng.",
+    ],
+    commonMistakes: [
+      "Khởi chạy async work trong reusable button hoặc để action chạy lại khi request chưa hoàn thành.",
+    ],
+    productionNotes: [
+      "Cung cấp label rõ, touch target đủ lớn và action contract idempotent.",
+    ],
+  },
+  "vertical-layout": {
+    title: "Bố cục dọc",
+    description:
+      "Chuyển flex-direction column thành Compose Column với arrangement và alignment có chủ đích.",
+    implementations: {
+      "react-native": {
+        name: "View column",
+        summary:
+          "View sắp xếp child theo chiều dọc khi flexDirection là column.",
+      },
+      kotlin: {
+        name: "Column",
+        summary:
+          "Column sắp xếp child dọc với arrangement và alignment rõ ràng.",
+      },
+    },
+    relationship:
+      "Cả hai đặt child trên trục dọc và hỗ trợ spacing cùng cross-axis alignment.",
+    mentalModel:
+      "Trước hết ánh xạ main-axis intent: React Native column thành Column. Sau đó dịch cross-axis alignment và child sizing riêng.",
+    differences: [
+      "React Native dùng style object; Compose dùng typed parameter và Modifier.",
+      "Nhiều ràng buộc riêng của child trong Compose đặt ở child Modifier.",
+    ],
+    commonMistakes: [
+      "Đặt fillMaxSize hoặc weight sai child làm thay đổi không gian của sibling.",
+    ],
+    productionNotes: [
+      "Dùng scroll container hoặc LazyColumn khi content có thể vượt viewport.",
+    ],
+  },
+  "horizontal-layout": {
+    title: "Bố cục ngang",
+    description:
+      "Chuyển flex-direction row thành Compose Row với phân phối không gian rõ ràng.",
+    implementations: {
+      "react-native": {
+        name: "View row",
+        summary: "View đặt child trên trục ngang.",
+      },
+      kotlin: {
+        name: "Row",
+        summary:
+          "Row dùng weight cho flexible child và verticalAlignment cho cross axis.",
+      },
+    },
+    relationship:
+      "Row và flex row đều có horizontal main axis, nhưng Compose chia phần rộng còn lại bằng Modifier.weight.",
+    mentalModel:
+      "Chuyển flex: 1 trên row child thành weight(1f), rồi kiểm tra Modifier tác động đến dimension nào trong parent.",
+    differences: [
+      "Flex style của React Native giống CSS; Compose weight có scope Row hoặc Column.",
+      "Compose dùng Spacer rõ ràng khi fixed gap dễ hiểu hơn.",
+    ],
+    commonMistakes: [
+      "Kỳ vọng weight hoạt động ngoài Row/Column hoặc dùng nó khi cần intrinsic width.",
+    ],
+    productionNotes: [
+      "Kiểm thử text dài, RTL, font scale lớn và màn hình hẹp.",
+    ],
+  },
+  stack: {
+    title: "Stack",
+    description:
+      "Chồng content bằng React Native absolute positioning hoặc Compose Box alignment.",
+    implementations: {
+      "react-native": {
+        name: "Absolute-positioned View",
+        summary: "Relative parent neo overlay child bằng absolute positioning.",
+      },
+      kotlin: {
+        name: "Box",
+        summary: "Box layer child và mỗi child có thể chọn alignment.",
+      },
+    },
+    relationship:
+      "Cả hai layer child; Box diễn tả common alignment rõ ràng mà không cần manual coordinate.",
+    mentalModel:
+      "Chỉ dùng stack khi visual relationship là overlap. Parent tạo coordinate space, overlay mô tả anchor của nó.",
+    differences: [
+      "React Native thường dùng position: absolute; Compose Box dùng Modifier.align.",
+      "Compose draw order theo composition order nếu không cần zIndex.",
+    ],
+    commonMistakes: [
+      "Dùng absolute positioning cho row/column thông thường, dễ vỡ với dynamic content và accessibility.",
+    ],
+    productionNotes: [
+      "Đảm bảo overlay không che control cần thiết và vẫn accessible.",
+    ],
+  },
+  grid: {
+    title: "Lưới",
+    description:
+      "Render grid có thể mở rộng bằng FlatList columns hoặc LazyVerticalGrid với stable item identity.",
+    implementations: {
+      "react-native": {
+        name: "FlatList columns",
+        summary:
+          "FlatList virtualize collection, numColumns điều khiển row layout.",
+      },
+      kotlin: {
+        name: "LazyVerticalGrid",
+        summary:
+          "LazyVerticalGrid virtualize cell với adaptive hoặc fixed column.",
+      },
+    },
+    relationship:
+      "Cả hai virtualize collection lớn và cần stable key; Compose có lazy grid container riêng.",
+    mentalModel:
+      "Grid vẫn là lazy collection. Giữ identity, render từng cell độc lập và để layout thích nghi với width hiện có.",
+    differences: [
+      "FlatList thêm column cho list; Compose chọn LazyVerticalGrid rõ ràng.",
+      "Compose dùng adaptive GridCells trong khi React Native thường tính dimension trong style.",
+    ],
+    commonMistakes: [
+      "Dùng array index làm key hoặc lồng grid không giới hạn trong vertical scroll khác.",
+    ],
+    productionNotes: [
+      "Xác định loading, empty, pagination và image-sizing trước khi tối ưu mật độ hiển thị.",
+    ],
+  },
+  "secure-storage": {
+    title: "Lưu trữ bảo mật",
+    description:
+      "Lưu credential bằng secure storage do nền tảng bảo vệ thay vì key-value preference store phổ thông.",
+    implementations: {
+      "react-native": {
+        name: "react-native-keychain",
+        summary:
+          "Native Keychain hoặc Keystore wrapper lưu credential qua async API.",
+      },
+      kotlin: {
+        name: "Android Keystore-backed storage",
+        summary:
+          "Storage abstraction mã hóa data bằng key do Android Keystore giữ.",
+      },
+    },
+    relationship:
+      "Cả hai ủy quyền bảo vệ key cho nền tảng qua asynchronous storage boundary.",
+    mentalModel:
+      "Secure storage giảm nguy cơ lộ secret đã lưu; nó không biến client không đáng tin thành trusted authority và không thay thế server authorization.",
+    differences: [
+      "React Native thường dùng cross-platform native wrapper.",
+      "Android cần chọn Keystore-backed encryption strategy và device-authentication policy phù hợp.",
+    ],
+    commonMistakes: [
+      "Đặt access token trong AsyncStorage thông thường hoặc log credential khi debug.",
+    ],
+    productionNotes: [
+      "Giữ storage API nhỏ, clear secret khi sign-out, xử lý invalidated key và không xem client storage là bằng chứng identity.",
+    ],
+  },
+  authentication: {
+    title: "Xác thực",
+    description:
+      "Mô hình hóa signed-in state và session recovery tại app boundary, không phải điều kiện rải rác trong từng screen.",
+    implementations: {
+      "react-native": {
+        name: "Auth provider và navigation gate",
+        summary:
+          "App-level state owner chọn public hoặc authenticated navigation theo session state.",
+      },
+      kotlin: {
+        name: "Session ViewModel và navigation gate",
+        summary:
+          "Root composable collect immutable session state rồi chọn graph phù hợp.",
+      },
+    },
+    relationship:
+      "Cả hai để root state owner chọn public hoặc authenticated navigation sau session restoration.",
+    mentalModel:
+      "Authentication là state transition và navigation policy. Restore session một lần ở app boundary, rồi expose signed-in hoặc signed-out state tối giản cho UI.",
+    differences: [
+      "React Native thường dùng Context hoặc store riêng ở app root.",
+      "Compose thường collect ViewModel StateFlow tại root route.",
+    ],
+    commonMistakes: [
+      "Navigate từ từng API failure riêng lẻ hoặc cho rằng local token luôn hợp lệ mà không xử lý expiry và recovery.",
+    ],
+    productionNotes: [
+      "Tách authentication khỏi authorization, centralize refresh, clear state atomically khi sign-out và luôn verify access ở server.",
+    ],
+  },
+  pagination: {
+    title: "Phân trang",
+    description:
+      "Tải collection lớn từng phần trong khi giữ stable item identity và append state rõ ràng.",
+    implementations: {
+      "react-native": {
+        name: "FlatList onEndReached",
+        summary:
+          "List yêu cầu page tiếp theo gần cuối, append state ngăn work trùng lặp.",
+      },
+      kotlin: {
+        name: "LazyColumn append state",
+        summary:
+          "Lazy list quan sát append availability và render footer từ explicit state.",
+      },
+    },
+    relationship:
+      "Cả hai quan sát gần cuối lazy list và yêu cầu page tiếp theo qua state owner.",
+    mentalModel:
+      "Pagination có initial, refresh, append, exhausted và append-error state riêng. Nó không chỉ là callback ở row cuối.",
+    differences: [
+      "FlatList có onEndReached trực tiếp.",
+      "Compose cho app quan sát LazyListState hoặc dùng paging library khi abstraction đó thực sự cần.",
+    ],
+    commonMistakes: [
+      "Gửi concurrent page request, mất cursor ordering hoặc thay item hiện có khi append đang chạy.",
+    ],
+    productionNotes: [
+      "Ưu tiên server cursor, deduplicate bằng stable ID, giữ visible content khi append failure và retry đúng failed page.",
+    ],
+  },
+  theme: {
+    title: "Giao diện",
+    description:
+      "Cung cấp color, typography và dark-mode choice bằng design system dùng chung thay vì literal value rải rác.",
+    implementations: {
+      "react-native": {
+        name: "Theme context",
+        summary:
+          "Provider expose semantic token theo appearance preference đã lưu.",
+      },
+      kotlin: {
+        name: "MaterialTheme",
+        summary:
+          "Root composable áp dụng ColorScheme và typography cho toàn subtree.",
+      },
+    },
+    relationship:
+      "Cả hai cung cấp semantic design token từ app root để screen render nhất quán ở mỗi appearance mode.",
+    mentalModel:
+      "Theme là data đi xuống UI tree. Component cần semantic role như surface hoặc onSurface, không tự chọn raw color.",
+    differences: [
+      "React Native team định nghĩa/import token system và phân phối qua Context.",
+      "Compose MaterialTheme làm color, typography và shape thành ambient value trong composition.",
+    ],
+    commonMistakes: [
+      "Lưu theme preference nhưng không tôn trọng system appearance, hoặc hard-code color không dùng được dark mode.",
+    ],
+    productionNotes: [
+      "Dùng semantic token, hỗ trợ system/default preference, test contrast và cập nhật appearance không flash khi khởi động.",
+    ],
+  },
   "error-handling": {
     title: "Xử lý lỗi",
     description:
@@ -758,6 +1033,7 @@ export const viRoadmapTranslations = {
     navigation: "Điều hướng",
     "async-networking": "Bất đồng bộ và networking",
     storage: "Lưu trữ",
+    "app-architecture": "Kiến trúc ứng dụng",
   },
   lessons: {
     component: {
@@ -824,6 +1100,60 @@ export const viRoadmapTranslations = {
         "Đặt hai phần tử trong Row hoặc Column với alignment và spacing có chủ đích.",
         "Chuyển các flexbox layout phổ biến và đưa constraint riêng vào Modifier của từng child.",
         "Tách spacing và alignment lặp lại thành composable tập trung hoặc design token.",
+      ],
+    },
+    "vertical-layout": {
+      title: "Bố cục dọc",
+      exercise: "Chuyển profile summary xếp dọc của React Native thành Column.",
+      checklist: [
+        "Ánh xạ đúng trục chính và trục chéo",
+        "Tránh fill constraint không cần thiết",
+      ],
+      stages: [
+        "Sắp xếp child theo chiều dọc bằng Column.",
+        "Kiểm soát spacing, alignment và kích thước child có chủ đích.",
+        "Chọn Column, scrolling hoặc LazyColumn theo giới hạn content.",
+      ],
+    },
+    "horizontal-layout": {
+      title: "Bố cục ngang",
+      exercise:
+        "Chuyển toolbar linh hoạt của React Native thành Row với một weighted child.",
+      checklist: [
+        "Chỉ dùng weight trong đúng scope",
+        "Kiểm thử width hẹp và text dài",
+      ],
+      stages: [
+        "Sắp xếp child theo chiều ngang bằng Row.",
+        "Chuyển flex growth thành weight và alignment có scope.",
+        "Xử lý RTL, font scale và width giới hạn.",
+      ],
+    },
+    stack: {
+      title: "Stack và overlay",
+      exercise:
+        "Đặt online badge trên avatar mà không dùng tọa độ màn hình cố định.",
+      checklist: [
+        "Dùng Box cho trường hợp overlap thực sự",
+        "Giữ semantics của overlay accessible",
+      ],
+      stages: [
+        "Layer hai child trong Box.",
+        "Neo overlay bằng Modifier.align.",
+        "Hỗ trợ kích thước thay đổi, clipping và accessibility.",
+      ],
+    },
+    grid: {
+      title: "Lưới",
+      exercise: "Chuyển FlatList hai cột thành LazyVerticalGrid thích nghi.",
+      checklist: [
+        "Dùng stable item key",
+        "Chọn fixed hoặc adaptive column có chủ đích",
+      ],
+      stages: [
+        "Render lazy grid với số cột cố định.",
+        "Điều chỉnh số cell theo width hiện có.",
+        "Xử lý image size, empty state và collection lớn.",
       ],
     },
     list: {
@@ -933,6 +1263,20 @@ export const viRoadmapTranslations = {
         "Mô hình hóa submitting, error, correction và success mà không gắn field tái sử dụng với ViewModel.",
       ],
     },
+    button: {
+      title: "Button và sự kiện nhấn",
+      exercise:
+        "Chuyển Pressable đang lưu thành Button có enabled state rõ ràng.",
+      checklist: [
+        "Phát intent qua callback",
+        "Ngăn action không idempotent chạy trùng",
+      ],
+      stages: [
+        "Xử lý một button action.",
+        "Render enabled, disabled và loading state.",
+        "Đáp ứng semantics, touch target và idempotency.",
+      ],
+    },
     navigation: {
       title: "Điều hướng",
       exercise:
@@ -1036,6 +1380,59 @@ export const viRoadmapTranslations = {
         "Render loading và success.",
         "Thêm retry và error UI.",
         "Cung cấp UI state bất biến từ ViewModel có repository hỗ trợ.",
+      ],
+    },
+    pagination: {
+      title: "Phân trang",
+      exercise:
+        "Nối thêm page dựa trên cursor, giữ row hiện có và hỗ trợ retry khi append lỗi.",
+      checklist: ["Chặn request trùng", "Tách initial state khỏi append state"],
+      stages: [
+        "Tải page thứ hai từ ranh giới list.",
+        "Mô hình hóa cursor, exhausted và append-error state.",
+        "Loại item trùng bằng stable ID và giữ content khi retry.",
+      ],
+    },
+    "secure-storage": {
+      title: "Lưu trữ bảo mật",
+      exercise:
+        "Chuyển refresh token khỏi preference thông thường sang secure credential-store interface.",
+      checklist: [
+        "Không bao giờ log credential",
+        "Xử lý key invalidation và dọn dữ liệu khi sign-out",
+      ],
+      stages: [
+        "Đọc, ghi và xóa một credential qua abstraction.",
+        "Dùng platform-backed key protection và phục hồi khi data không khả dụng.",
+        "Định nghĩa policy cho rotation, invalidation, backup và sign-out.",
+      ],
+    },
+    authentication: {
+      title: "Xác thực",
+      exercise:
+        "Tạo một root session gate cho restoring, signed-out và signed-in state.",
+      checklist: [
+        "Tách authentication khỏi authorization",
+        "Tập trung session transition tại một nơi",
+      ],
+      stages: [
+        "Chọn public hoặc authenticated graph từ state.",
+        "Restore và refresh session qua một state owner.",
+        "Xử lý expiry, concurrent refresh, revocation và atomic sign-out.",
+      ],
+    },
+    theme: {
+      title: "Giao diện",
+      exercise:
+        "Ánh xạ semantic token của React Native sang Material color scheme sáng và tối.",
+      checklist: [
+        "Dùng semantic color role",
+        "Hỗ trợ system, light và dark preference",
+      ],
+      stages: [
+        "Áp dụng color và typography qua MaterialTheme.",
+        "Lưu lựa chọn người dùng trong khi vẫn hỗ trợ system default.",
+        "Kiểm tra contrast, dynamic change và hành vi lúc khởi động.",
       ],
     },
   },

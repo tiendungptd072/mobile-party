@@ -5,6 +5,7 @@ import { CodeComparison } from "@/components/compare/code-comparison";
 import { MentalModel } from "@/components/compare/mental-model";
 import { CompleteLessonButton } from "@/components/learning/complete-lesson-button.client";
 import { LearningSidebar } from "@/components/learning/learning-sidebar.client";
+import { LessonStages } from "@/components/learning/lesson-stages";
 import { Badge } from "@/components/ui/badge";
 import { Callout } from "@/components/ui/callout";
 import { Container } from "@/components/ui/container";
@@ -18,7 +19,7 @@ import {
 } from "@/lib/content/roadmaps";
 import { getTechnologyById, isTechnology } from "@/lib/content/technologies";
 import { isLocale, LOCALES } from "@/lib/i18n/locale";
-import { formatMessage, getMessages } from "@/lib/i18n/messages";
+import { getMessages } from "@/lib/i18n/messages";
 import { createLocalizedPageMetadata } from "@/lib/site";
 
 type LocaleLessonPageProps = {
@@ -177,22 +178,12 @@ export default async function LocaleLessonPage({
                 {messages.learn.staged}
               </h2>
             </div>
-            <ol className="mt-5 grid gap-4 md:grid-cols-3">
-              {lessonLocation.lesson.stages.map((stage, index) => (
-                <li
-                  key={stage.id}
-                  className="rounded-xl border border-subtle bg-surface p-5"
-                >
-                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-accent">
-                    {formatMessage(messages.learn.stage, { count: index + 1 })}
-                  </p>
-                  <h3 className="mt-3 text-lg font-semibold">{stage.title}</h3>
-                  <p className="mt-2 text-sm leading-6 text-muted">
-                    {stage.description}
-                  </p>
-                </li>
-              ))}
-            </ol>
+            <LessonStages
+              sourceTechnology={sourceTechnology}
+              stageLabel={messages.learn.stage}
+              stages={lessonLocation.lesson.stages}
+              targetTechnology={targetTechnology}
+            />
           </section>
           <section className="mt-10 max-w-4xl space-y-6">
             <Callout title={messages.learn.practice} tone="info">

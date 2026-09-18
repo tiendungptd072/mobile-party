@@ -375,6 +375,29 @@ function validateRoadmapLesson(
             record.description,
             `${path}.stages[${index}].description`,
           ),
+          ...(record.examples === undefined
+            ? {}
+            : {
+                examples: (() => {
+                  const examples = validateImplementations(
+                    record.examples,
+                    `${path}.stages[${index}].examples`,
+                  );
+
+                  for (const [technology, example] of Object.entries(
+                    examples,
+                  )) {
+                    if (!example.code) {
+                      throw new ContentValidationError(
+                        `${path}.stages[${index}].examples.${technology}.code`,
+                        "expected stage examples to include code",
+                      );
+                    }
+                  }
+
+                  return examples;
+                })(),
+              }),
         };
       });
     })(),
