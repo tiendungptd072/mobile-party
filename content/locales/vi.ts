@@ -10,11 +10,41 @@ import {
   viLayoutMechanicsConceptTranslations,
   viLayoutMechanicsRoadmapTranslations,
 } from "@content/locales/vi-layout-mechanics";
+import {
+  viAndroidPlatformConceptTranslations,
+  viAndroidPlatformRoadmapTranslations,
+} from "@content/locales/vi-android-platform";
+import {
+  viCoroutinesConceptTranslations,
+  viCoroutinesRoadmapTranslations,
+} from "@content/locales/vi-coroutines";
+import {
+  viArchitectureConceptTranslations,
+  viArchitectureRoadmapTranslations,
+} from "@content/locales/vi-architecture";
+import {
+  viBackgroundConceptTranslations,
+  viBackgroundRoadmapTranslations,
+} from "@content/locales/vi-background";
+import {
+  viFlowTestingConceptTranslations,
+  viFlowTestingRoadmapTranslations,
+} from "@content/locales/vi-flow-testing";
+import {
+  viIntegrationTestingConceptTranslations,
+  viIntegrationTestingRoadmapTranslations,
+} from "@content/locales/vi-integration-testing";
 
 export const viConceptTranslations = {
   ...viKotlinBridgeConceptTranslations,
   ...viComposeRuntimeConceptTranslations,
   ...viLayoutMechanicsConceptTranslations,
+  ...viAndroidPlatformConceptTranslations,
+  ...viCoroutinesConceptTranslations,
+  ...viArchitectureConceptTranslations,
+  ...viBackgroundConceptTranslations,
+  ...viFlowTestingConceptTranslations,
+  ...viIntegrationTestingConceptTranslations,
   component: {
     title: "Component",
     description:
@@ -794,7 +824,7 @@ export const viConceptTranslations = {
       "Assert private component state, ViewModel call hoặc snapshot lớn thay vì visible outcome của một interaction.",
     ],
     productionNotes: [
-      "Dùng UI test nhanh cho screen contract và một số ít device-level end-to-end test cho cross-platform flow quan trọng như authentication hoặc payment.",
+      "Chủ động điều khiển thời điểm hoàn tất tác vụ bất đồng bộ trong screen test để kiểm tra trạng thái chờ và hoàn tất mà không dùng sleep. Giữ một số ít end-to-end test trên thiết bị cho luồng quan trọng như authentication hoặc payment.",
     ],
   },
   "vertical-layout": {
@@ -1124,7 +1154,7 @@ export const viRecipeTranslations = {
     },
     architectureNotes: [
       "Ẩn chi tiết transport sau ranh giới repository.",
-      "Mô hình hóa rõ loading, success và failure.",
+      "Mô hình hóa rõ loading, success và failure; giữ nguyên coroutine cancellation và hiển thị thông báo lỗi an toàn cho người dùng.",
     ],
   },
   "refresh-token": {
@@ -1154,12 +1184,13 @@ export const viRecipeTranslations = {
       "Nối thêm trang",
     ],
     implementationSummaries: {
-      "react-native": "Bảo vệ request cuối danh sách của FlatList bằng cursor.",
+      "react-native":
+        "Chặn request cursor trùng và phục hồi khi tải trang tiếp theo lỗi.",
       kotlin: "Để Paging quản lý list state và UI loading khi nối trang.",
     },
     architectureNotes: [
       "Dùng cursor ổn định thay vì offset thay đổi.",
-      "Ngăn các request nối trang bị lặp.",
+      "Ngăn request nối trang bị lặp và giữ các item đang hiển thị khi tải lỗi để người dùng thử lại.",
     ],
   },
   "secure-storage": {
@@ -1219,6 +1250,7 @@ export const viRecipeTranslations = {
     architectureNotes: [
       "Xác thực path parameter trước khi tải dữ liệu.",
       "Giữ định nghĩa route bên ngoài và trong ứng dụng đồng bộ.",
+      "Đăng ký scheme và host trong Android manifest; khai báo và xác minh HTTPS App Links riêng.",
     ],
   },
 } as const;
@@ -1240,6 +1272,12 @@ export const viRoadmapTranslations = {
     ...viKotlinBridgeRoadmapTranslations.lessons,
     ...viComposeRuntimeRoadmapTranslations.lessons,
     ...viLayoutMechanicsRoadmapTranslations,
+    ...viAndroidPlatformRoadmapTranslations,
+    ...viCoroutinesRoadmapTranslations,
+    ...viArchitectureRoadmapTranslations,
+    ...viBackgroundRoadmapTranslations,
+    ...viFlowTestingRoadmapTranslations,
+    ...viIntegrationTestingRoadmapTranslations,
     component: {
       title: "Component",
       exercise: "Viết lại profile card của React Native thành một composable.",
@@ -1712,15 +1750,15 @@ export const viRoadmapTranslations = {
     "ui-behavior-testing": {
       title: "Kiểm thử hành vi UI",
       exercise:
-        "Test một user action hiển thị, reusable screen contract và một control mơ hồ mà không assert component internal.",
+        "Kiểm thử một thao tác hiển thị, contract của màn hình tái sử dụng được và thao tác lưu bất đồng bộ từ lúc chờ đến khi hoàn tất, không kiểm tra state nội bộ của component.",
       checklist: [
         "Assert kết quả người dùng quan sát được sau interaction",
-        "Dùng text, role hoặc semantics trước test-only identifier",
+        "Chủ động điều khiển thời điểm hoàn tất tác vụ bất đồng bộ, không dùng sleep hoặc kiểm tra state nội bộ",
       ],
       stages: [
         "Nhấn một action hiển thị và assert kết quả được render.",
         "Test stateless screen bằng plain state và callback contract.",
-        "Chỉ dùng test identifier khi visible hoặc semantic selector không xác định được node cần test.",
+        "Với callback lưu bất đồng bộ, chủ động điều khiển lúc hoàn tất và kiểm tra cả trạng thái chờ lẫn trạng thái hoàn tất mà người dùng nhìn thấy.",
       ],
     },
   },

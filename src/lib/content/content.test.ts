@@ -1,6 +1,10 @@
 import { describe, expect, test } from "bun:test";
 import { rawConcepts } from "@content/concepts";
 import {
+  viConceptTranslations,
+  viRecipeTranslations,
+} from "@content/locales/vi";
+import {
   findConceptByTerm,
   getConceptBySlug,
   getConcepts,
@@ -80,6 +84,32 @@ describe("concept content", () => {
     }
   });
 
+  test("covers every concept in Vietnamese with equivalent structure and code", () => {
+    const englishConcepts = getConcepts("en");
+    expect(Object.keys(viConceptTranslations)).toHaveLength(
+      englishConcepts.length,
+    );
+    for (const english of englishConcepts) {
+      const vietnamese = getConceptBySlug(english.slug, "vi")!;
+      expect(vietnamese.slug).toBe(english.slug);
+      expect(vietnamese.relationships.map(({ type }) => type)).toEqual(
+        english.relationships.map(({ type }) => type),
+      );
+      expect(vietnamese.differences).toHaveLength(english.differences.length);
+      expect(vietnamese.commonMistakes).toHaveLength(
+        english.commonMistakes.length,
+      );
+      expect(vietnamese.productionNotes).toHaveLength(
+        english.productionNotes.length,
+      );
+      for (const technology of ["react-native", "kotlin"] as const) {
+        expect(vietnamese.implementations[technology]?.code).toBe(
+          english.implementations[technology]?.code,
+        );
+      }
+    }
+  });
+
   test("provides verified references for both roadmap technologies", () => {
     for (const concept of getConcepts()) {
       expect(concept.references.length).toBeGreaterThanOrEqual(2);
@@ -99,7 +129,7 @@ describe("concept content", () => {
   test("loads concepts in stable order", () => {
     const concepts = getConcepts();
 
-    expect(concepts).toHaveLength(53);
+    expect(concepts).toHaveLength(70);
     expect(concepts.map((concept) => concept.slug)).toEqual([
       "null-safety",
       "data-classes",
@@ -115,6 +145,11 @@ describe("concept content", () => {
       "stability-and-skipping",
       "modifier-order",
       "composition-local",
+      "android-build-variants",
+      "android-app-entry",
+      "android-resources",
+      "android-intents",
+      "android-activity-lifecycle",
       "component",
       "props",
       "children",
@@ -141,11 +176,23 @@ describe("concept content", () => {
       "side-effects",
       "lifecycle",
       "async",
+      "coroutine-scopes",
+      "flow-and-stateflow",
+      "flow-composition",
       "loading-state",
       "error-handling",
       "navigation",
       "runtime-permissions",
       "back-navigation",
+      "repository-boundary",
+      "dependency-injection",
+      "offline-first-data",
+      "offline-pagination",
+      "durable-background-work",
+      "android-notifications",
+      "state-owner-testing",
+      "navigation-testing",
+      "background-work-testing",
       "route-parameters",
       "deep-link",
       "api-request",
@@ -249,6 +296,199 @@ describe("roadmap content", () => {
         ),
       ).toBe(true);
     }
+  });
+
+  test("teaches Android entry and localized resources before UI components", () => {
+    const english = getRoadmap("react-native", "kotlin", "en")!;
+    const vietnamese = getRoadmap("react-native", "kotlin", "vi")!;
+    const entry = getRoadmapLessonLocation(
+      english,
+      "android-app-entry",
+    )?.lesson;
+    const resources = getRoadmapLessonLocation(
+      english,
+      "android-resources",
+    )?.lesson;
+    const basics = english.sections.find(
+      (section) => section.id === "ui-basics",
+    )!;
+
+    expect(
+      basics.lessons.slice(0, 6).map((lesson) => lesson.conceptSlug),
+    ).toEqual([
+      "android-build-variants",
+      "android-app-entry",
+      "android-resources",
+      "android-intents",
+      "android-activity-lifecycle",
+      "component",
+    ]);
+
+    const build = getRoadmapLessonLocation(
+      english,
+      "android-build-variants",
+    )?.lesson;
+    const intents = getRoadmapLessonLocation(
+      english,
+      "android-intents",
+    )?.lesson;
+    expect(build?.stages[1].examples?.["react-native"]?.code).toContain(
+      ":app:sourceSets",
+    );
+    expect(build?.stages[2].examples?.kotlin?.code).toContain(
+      "apksigner verify --print-certs",
+    );
+    expect(intents?.stages[1].examples?.kotlin?.code).toContain(
+      "Intent.createChooser",
+    );
+    expect(intents?.stages[2].examples?.kotlin?.code).toContain("onNewIntent");
+    const activityLifecycle = getRoadmapLessonLocation(
+      english,
+      "android-activity-lifecycle",
+    )?.lesson;
+    expect(activityLifecycle?.stages[1].examples?.kotlin?.code).toContain(
+      "onPauseOrDispose",
+    );
+    expect(activityLifecycle?.stages[2].examples?.kotlin?.code).toContain(
+      "collectAsStateWithLifecycle",
+    );
+
+    expect(entry?.stages[0].examples?.["react-native"]?.code).toContain(
+      "AppRegistry.registerComponent",
+    );
+    expect(entry?.stages[0].examples?.kotlin?.code).toContain("setContent");
+    expect(resources?.stages[2].examples?.kotlin?.code).toContain(
+      "pluralStringResource",
+    );
+    expect(getConceptBySlug("android-app-entry", "vi")?.title).toBe(
+      "Điểm vào ứng dụng Android và Activity",
+    );
+    expect(
+      getRoadmapLessonLocation(vietnamese, "android-resources")?.lesson
+        .stages[2].examples?.kotlin?.code,
+    ).toBe(resources?.stages[2].examples?.kotlin?.code);
+  });
+
+  test("keeps coroutine cancellation and Flow sharing explicit", () => {
+    const roadmap = getRoadmap("react-native", "kotlin", "en")!;
+    const scopes = getRoadmapLessonLocation(
+      roadmap,
+      "coroutine-scopes",
+    )?.lesson;
+    const flow = getRoadmapLessonLocation(
+      roadmap,
+      "flow-and-stateflow",
+    )?.lesson;
+
+    expect(scopes?.stages[2].examples?.["react-native"]?.code).toContain(
+      "controller.signal.aborted",
+    );
+    expect(scopes?.stages[2].examples?.kotlin?.code).toContain(
+      "catch (cancelled: CancellationException)",
+    );
+    expect(flow?.stages[0].examples?.kotlin?.code).toContain("flow {");
+    expect(flow?.stages[2].examples?.kotlin?.code).toContain(
+      "SharingStarted.WhileSubscribed",
+    );
+    expect(getConceptBySlug("flow-and-stateflow", "vi")?.title).toBe(
+      "Flow và StateFlow",
+    );
+  });
+
+  test("keeps data sources behind repositories and dependencies explicit", () => {
+    const roadmap = getRoadmap("react-native", "kotlin", "en")!;
+    const repository = getRoadmapLessonLocation(
+      roadmap,
+      "repository-boundary",
+    )?.lesson;
+    const injection = getRoadmapLessonLocation(
+      roadmap,
+      "dependency-injection",
+    )?.lesson;
+
+    expect(repository?.stages[1].examples?.kotlin?.code).toContain(
+      "toDomain()",
+    );
+    expect(repository?.stages[2].examples?.kotlin?.code).toContain(
+      "FakeProfileRepository",
+    );
+    expect(injection?.stages[1].examples?.kotlin?.code).toContain("@Binds");
+    expect(injection?.stages[2].examples?.kotlin?.code).toContain(
+      "@HiltViewModel",
+    );
+    expect(getConceptBySlug("dependency-injection", "vi")?.title).toBe(
+      "Dependency injection và lifetime",
+    );
+  });
+
+  test("keeps background sync durable and notification delivery permission-aware", () => {
+    const roadmap = getRoadmap("react-native", "kotlin", "en")!;
+    const work = getRoadmapLessonLocation(
+      roadmap,
+      "durable-background-work",
+    )?.lesson;
+    const notifications = getRoadmapLessonLocation(
+      roadmap,
+      "android-notifications",
+    )?.lesson;
+
+    expect(work?.stages[1].examples?.kotlin?.code).toContain(
+      "enqueueUniqueWork",
+    );
+    expect(work?.stages[2].examples?.kotlin?.code).toContain("Result.retry()");
+    expect(notifications?.stages[0].examples?.kotlin?.code).toContain(
+      "NotificationChannel",
+    );
+    expect(notifications?.stages[1].examples?.kotlin?.code).toContain(
+      "POST_NOTIFICATIONS",
+    );
+    expect(notifications?.stages[2].examples?.kotlin?.code).toContain(
+      "PendingIntent.FLAG_IMMUTABLE",
+    );
+  });
+
+  test("combines controlled sources and tests state owners with an active collector", () => {
+    const roadmap = getRoadmap("react-native", "kotlin", "en")!;
+    const flow = getRoadmapLessonLocation(roadmap, "flow-composition")?.lesson;
+    const stateOwner = getRoadmapLessonLocation(
+      roadmap,
+      "state-owner-testing",
+    )?.lesson;
+
+    expect(flow?.stages[0].examples?.kotlin?.code).toContain("combine(");
+    expect(flow?.stages[1].examples?.kotlin?.code).toContain("retryWhen");
+    expect(flow?.stages[2].examples?.kotlin?.code).toContain("runTest");
+    expect(stateOwner?.stages[1].examples?.kotlin?.code).toContain(
+      "backgroundScope.launch",
+    );
+    expect(stateOwner?.stages[2].examples?.kotlin?.code).toContain(
+      "inMemoryDatabaseBuilder",
+    );
+  });
+
+  test("tests visible navigation and WorkManager policy without real waiting", () => {
+    const roadmap = getRoadmap("react-native", "kotlin", "en")!;
+    const navigation = getRoadmapLessonLocation(
+      roadmap,
+      "navigation-testing",
+    )?.lesson;
+    const backgroundWork = getRoadmapLessonLocation(
+      roadmap,
+      "background-work-testing",
+    )?.lesson;
+
+    expect(navigation?.stages[0].examples?.kotlin?.code).toContain(
+      "AppNavHost",
+    );
+    expect(navigation?.stages[1].examples?.["react-native"]?.code).toContain(
+      "runAllTimers",
+    );
+    expect(backgroundWork?.stages[0].examples?.kotlin?.code).toContain(
+      "TestListenableWorkerBuilder",
+    );
+    expect(backgroundWork?.stages[2].examples?.kotlin?.code).toContain(
+      "WorkManagerTestInitHelper",
+    );
   });
 
   test("teaches bounded Compose sizing before width filling", () => {
@@ -393,7 +633,7 @@ describe("roadmap content", () => {
     );
   });
 
-  test("tests user-visible UI behavior before test tags", () => {
+  test("tests asynchronous UI transitions with user-visible assertions", () => {
     const roadmap = getRoadmap("react-native", "kotlin", "en")!;
     const lesson = getRoadmapLessonLocation(
       roadmap,
@@ -407,8 +647,21 @@ describe("roadmap content", () => {
       "ProfileScreen(state = ProfileUiState.Error",
     );
     expect(lesson?.stages[2].examples?.kotlin?.code).toContain(
-      'onNodeWithTag("profile-save")',
+      'onNodeWithText("Saving…").assertExists()',
     );
+    expect(lesson?.stages[2].examples?.kotlin?.code).toContain(
+      "saveResult.complete(Unit)",
+    );
+  });
+
+  test("cleans up authorized route loading when the route changes", () => {
+    const lesson = getRoadmapLessonLocation(
+      getRoadmap("react-native", "kotlin", "en")!,
+      "route-parameters",
+    )?.lesson;
+    const code = lesson?.stages[2].examples?.["react-native"]?.code;
+    expect(code).toContain("controller.signal.aborted");
+    expect(code).toContain("return () => controller.abort()");
   });
 
   test("keeps lifecycle and concurrency-sensitive examples production-safe", () => {
@@ -522,6 +775,11 @@ describe("roadmap content", () => {
       "stability-and-skipping",
       "modifier-order",
       "composition-local",
+      "android-build-variants",
+      "android-app-entry",
+      "android-resources",
+      "android-intents",
+      "android-activity-lifecycle",
       "component",
       "props",
       "children",
@@ -551,12 +809,24 @@ describe("roadmap content", () => {
       "route-parameters",
       "deep-link",
       "async",
+      "coroutine-scopes",
+      "flow-and-stateflow",
+      "flow-composition",
       "loading-state",
       "error-handling",
       "api-request",
       "pagination",
       "local-storage",
       "secure-storage",
+      "repository-boundary",
+      "dependency-injection",
+      "offline-first-data",
+      "offline-pagination",
+      "durable-background-work",
+      "android-notifications",
+      "state-owner-testing",
+      "navigation-testing",
+      "background-work-testing",
       "authentication",
       "runtime-permissions",
       "theme",
@@ -620,13 +890,37 @@ describe("roadmap content", () => {
 
 describe("recipe content", () => {
   test("localizes recipe prose while preserving code", () => {
-    const english = getRecipeBySlug("api-request", "en");
-    const vietnamese = getRecipeBySlug("api-request", "vi");
+    expect(Object.keys(viRecipeTranslations)).toHaveLength(getRecipes().length);
+    for (const english of getRecipes("en")) {
+      const vietnamese = getRecipeBySlug(english.slug, "vi");
+      expect(vietnamese?.architectureNotes).toHaveLength(
+        english.architectureNotes.length,
+      );
+      for (const technology of ["react-native", "kotlin"] as const) {
+        expect(vietnamese?.implementations[technology]?.code).toBe(
+          english.implementations[technology]?.code,
+        );
+      }
+    }
+    expect(getRecipeBySlug("api-request", "vi")?.title).toBe("Gọi API");
+  });
 
-    expect(vietnamese?.title).toBe("Gọi API");
-    expect(vietnamese?.implementations["react-native"]?.code).toBe(
-      english?.implementations["react-native"]?.code,
+  test("preserves cancellation, append retry, and safe deep-link parsing", () => {
+    expect(
+      getRecipeBySlug("api-request")?.implementations.kotlin?.code,
+    ).toContain("catch (cancelled: CancellationException)");
+    const pagination = getRecipeBySlug("pagination");
+    expect(pagination?.implementations["react-native"]?.code).toContain(
+      "finally {",
     );
+    expect(pagination?.implementations.kotlin?.code).toContain("posts::retry");
+    const deepLinks =
+      getRecipeBySlug("deep-links")?.implementations.kotlin?.code;
+    expect(deepLinks).not.toContain("!!");
+    expect(deepLinks).toContain("InvalidLinkScreen()");
+    expect(
+      getRecipeBySlug("biometric-login")?.implementations.kotlin?.code,
+    ).toContain("object : BiometricPrompt.AuthenticationCallback()");
   });
 
   test("loads the MVP implementation recipes", () => {

@@ -18,8 +18,8 @@ export const rawRecipes = [
     if (!response.ok) throw new Error("HTTP " + response.status);
     const profile = await response.json();
     setState({ status: "success", profile });
-  } catch (error) {
-    setState({ status: "error", error });
+  } catch {
+    setState({ status: "error", message: "Could not load profile" });
   }
 }`,
       },
@@ -29,14 +29,19 @@ export const rawRecipes = [
         filename: "ProfileViewModel.kt",
         code: `fun loadProfile() = viewModelScope.launch {
     uiState.value = ProfileState.Loading
-    uiState.value = runCatching { repository.profile() }
-        .fold({ ProfileState.Success(it) }, { ProfileState.Error(it) })
+    try {
+        uiState.value = ProfileState.Success(repository.profile())
+    } catch (cancelled: CancellationException) {
+        throw cancelled
+    } catch (error: Exception) {
+        uiState.value = ProfileState.Error("Could not load profile")
+    }
 }`,
       },
     },
     architectureNotes: [
       "Keep transport details behind a repository boundary.",
-      "Model loading, success, and failure explicitly.",
+      "Model loading, success, and failure explicitly; preserve coroutine cancellation and show safe user-facing error text.",
     ],
   },
   {
@@ -88,16 +93,26 @@ export const rawRecipes = [
     flow: ["Render items", "Reach end", "Load next cursor", "Append page"],
     implementations: {
       "react-native": {
-        summary: "Guard FlatList end-reach requests with a cursor.",
+        summary: "Guard cursor requests and recover from an append failure.",
         language: "tsx",
         filename: "Feed.tsx",
-        code: `async function loadNextPage() {
-  if (isLoading || !nextCursor) return;
+        code: `const loadingRef = useRef(false);
+
+async function loadNextPage() {
+  if (loadingRef.current || !nextCursor) return;
+  loadingRef.current = true;
   setIsLoading(true);
-  const page = await fetchPage(nextCursor);
-  setItems((current) => [...current, ...page.items]);
-  setNextCursor(page.nextCursor);
-  setIsLoading(false);
+  setAppendError(null);
+  try {
+    const page = await fetchPage(nextCursor);
+    setItems((current) => [...current, ...page.items]);
+    setNextCursor(page.nextCursor);
+  } catch {
+    setAppendError("Could not load more posts");
+  } finally {
+    loadingRef.current = false;
+    setIsLoading(false);
+  }
 }`,
       },
       kotlin: {
@@ -109,15 +124,17 @@ LazyColumn {
     items(posts.itemCount) { index ->
         posts[index]?.let { PostRow(it) }
     }
-    if (posts.loadState.append is LoadState.Loading) {
-        item { CircularProgressIndicator() }
+    when (posts.loadState.append) {
+        is LoadState.Loading -> item { CircularProgressIndicator() }
+        is LoadState.Error -> item { RetryButton(onClick = posts::retry) }
+        else -> Unit
     }
 }`,
       },
     },
     architectureNotes: [
       "Use stable cursors rather than changing offsets.",
-      "Guard duplicate append requests.",
+      "Guard duplicate append requests and keep existing rows visible when append fails so users can retry.",
     ],
   },
   {
@@ -192,13 +209,21 @@ export async function clearToken() {
         summary: "Continue only from BiometricPrompt's success callback.",
         language: "kotlin",
         filename: "SessionGate.kt",
-        code: `prompt.authenticate(promptInfo)
-override fun onAuthenticationSucceeded(result: AuthenticationResult) {
-    viewModel.resumeSession()
-}
-override fun onAuthenticationError(code: Int, message: CharSequence) {
-    viewModel.showLockedState()
-}`,
+        code: `val prompt = BiometricPrompt(
+    activity,
+    object : BiometricPrompt.AuthenticationCallback() {
+        override fun onAuthenticationSucceeded(
+            result: BiometricPrompt.AuthenticationResult,
+        ) {
+            viewModel.resumeSession()
+        }
+
+        override fun onAuthenticationError(code: Int, message: CharSequence) {
+            viewModel.showLockedState()
+        }
+    },
+)
+prompt.authenticate(promptInfo)`,
       },
     },
     architectureNotes: [
@@ -230,15 +255,22 @@ override fun onAuthenticationError(code: Int, message: CharSequence) {
         filename: "ProfileDestination.kt",
         code: `composable(
     route = "profile/{profileId}",
-    deepLinks = listOf(navDeepLink {
-        uriPattern = "mobileparty://profiles/{profileId}"
-    }),
-) { entry -> ProfileScreen(entry.arguments?.getString("profileId")!!) }`,
+    deepLinks = listOf(
+        navDeepLink { uriPattern = "mobileparty://profiles/{profileId}" },
+        navDeepLink { uriPattern = "https://mobile.party/profiles/{profileId}" },
+    ),
+) { entry ->
+    val profileId = entry.arguments?.getString("profileId")
+        ?.takeIf(String::isNotBlank)
+    if (profileId == null) InvalidLinkScreen()
+    else ProfileScreen(profileId)
+}`,
       },
     },
     architectureNotes: [
       "Validate path parameters before loading data.",
       "Keep external and in-app route definitions aligned.",
+      "Register supported schemes and hosts in the Android manifest; declare and verify HTTPS App Links separately.",
     ],
   },
 ] as const;

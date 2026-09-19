@@ -51,6 +51,23 @@ import { gestureAbstractionsConcept } from "@content/concepts/gesture-abstractio
 import { runtimePermissionsConcept } from "@content/concepts/runtime-permissions";
 import { backNavigationConcept } from "@content/concepts/back-navigation";
 import { uiBehaviorTestingConcept } from "@content/concepts/ui-behavior-testing";
+import { androidAppEntryConcept } from "@content/concepts/android-app-entry";
+import { androidResourcesConcept } from "@content/concepts/android-resources";
+import { androidBuildVariantsConcept } from "@content/concepts/android-build-variants";
+import { androidIntentsConcept } from "@content/concepts/android-intents";
+import { androidActivityLifecycleConcept } from "@content/concepts/android-activity-lifecycle";
+import { coroutineScopesConcept } from "@content/concepts/coroutine-scopes";
+import { flowAndStateFlowConcept } from "@content/concepts/flow-and-stateflow";
+import { repositoryBoundaryConcept } from "@content/concepts/repository-boundary";
+import { dependencyInjectionConcept } from "@content/concepts/dependency-injection";
+import { offlineFirstDataConcept } from "@content/concepts/offline-first-data";
+import { offlinePaginationConcept } from "@content/concepts/offline-pagination";
+import { durableBackgroundWorkConcept } from "@content/concepts/durable-background-work";
+import { androidNotificationsConcept } from "@content/concepts/android-notifications";
+import { flowCompositionConcept } from "@content/concepts/flow-composition";
+import { stateOwnerTestingConcept } from "@content/concepts/state-owner-testing";
+import { navigationTestingConcept } from "@content/concepts/navigation-testing";
+import { backgroundWorkTestingConcept } from "@content/concepts/background-work-testing";
 import { getConceptReferences } from "@content/concepts/references";
 
 const conceptDefinitions = [
@@ -68,6 +85,11 @@ const conceptDefinitions = [
   stabilityAndSkippingConcept,
   modifierOrderConcept,
   compositionLocalConcept,
+  androidBuildVariantsConcept,
+  androidAppEntryConcept,
+  androidResourcesConcept,
+  androidIntentsConcept,
+  androidActivityLifecycleConcept,
   componentConcept,
   propsConcept,
   childrenConcept,
@@ -94,6 +116,9 @@ const conceptDefinitions = [
   sideEffectsConcept,
   lifecycleConcept,
   asyncConcept,
+  coroutineScopesConcept,
+  flowAndStateFlowConcept,
+  flowCompositionConcept,
   loadingStateConcept,
   errorHandlingConcept,
   navigationConcept,
@@ -105,6 +130,15 @@ const conceptDefinitions = [
   localStorageConcept,
   secureStorageConcept,
   authenticationConcept,
+  repositoryBoundaryConcept,
+  dependencyInjectionConcept,
+  offlineFirstDataConcept,
+  offlinePaginationConcept,
+  durableBackgroundWorkConcept,
+  androidNotificationsConcept,
+  stateOwnerTestingConcept,
+  navigationTestingConcept,
+  backgroundWorkTestingConcept,
   themeConcept,
   uiBehaviorTestingConcept,
 ] as const;

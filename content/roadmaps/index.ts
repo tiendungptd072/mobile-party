@@ -11,6 +11,13 @@ import { gestureStageExamples } from "@content/roadmaps/react-native-to-kotlin-g
 import { permissionStageExamples } from "@content/roadmaps/react-native-to-kotlin-permissions-stage-examples";
 import { backNavigationStageExamples } from "@content/roadmaps/react-native-to-kotlin-back-stage-examples";
 import { uiTestingStageExamples } from "@content/roadmaps/react-native-to-kotlin-ui-testing-stage-examples";
+import { androidPlatformStageExamples } from "@content/roadmaps/react-native-to-kotlin-platform-stage-examples";
+import { coroutinesStageExamples } from "@content/roadmaps/react-native-to-kotlin-coroutines-stage-examples";
+import { architectureStageExamples } from "@content/roadmaps/react-native-to-kotlin-architecture-stage-examples";
+import { offlineStageExamples } from "@content/roadmaps/react-native-to-kotlin-offline-stage-examples";
+import { backgroundStageExamples } from "@content/roadmaps/react-native-to-kotlin-background-stage-examples";
+import { flowTestingStageExamples } from "@content/roadmaps/react-native-to-kotlin-flow-testing-stage-examples";
+import { integrationTestingStageExamples } from "@content/roadmaps/react-native-to-kotlin-integration-testing-stage-examples";
 
 const stageExamples = {
   ...kotlinBridgeStageExamples,
@@ -24,6 +31,13 @@ const stageExamples = {
   ...permissionStageExamples,
   ...backNavigationStageExamples,
   ...uiTestingStageExamples,
+  ...androidPlatformStageExamples,
+  ...coroutinesStageExamples,
+  ...architectureStageExamples,
+  ...offlineStageExamples,
+  ...backgroundStageExamples,
+  ...flowTestingStageExamples,
+  ...integrationTestingStageExamples,
   ...progressiveStageExamples,
 };
 

@@ -54,6 +54,6 @@ composeTestRule.onNodeWithText("Count: 1").assertExists()`,
     "Asserting private component state, ViewModel calls, or a large snapshot instead of the visible outcome of one interaction.",
   ],
   productionNotes: [
-    "Use fast UI tests for screen contracts and a small number of device-level end-to-end tests for critical cross-platform flows such as authentication or payment.",
+    "Control asynchronous completion in screen tests so pending and completed states can be asserted without sleeps. Keep a small number of device-level end-to-end tests for critical flows such as authentication or payment.",
   ],
 } as const;

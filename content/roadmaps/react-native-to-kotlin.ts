@@ -452,6 +452,166 @@ export const reactNativeToKotlinRoadmap = {
       order: 10,
       lessons: [
         {
+          conceptSlug: "android-build-variants",
+          title: "Android Build Variants and Merged Manifest",
+          order: 0,
+          exercise:
+            "Build debug and release, add a demo flavor if needed, identify the source sets and manifests used by each variant, and inspect the release artifact.",
+          checklist: [
+            "Distinguishes build type, product flavor, and build variant",
+            "Finds the merged manifest for the selected variant",
+            "Verifies signing and the JavaScript bundle before shipping React Native",
+          ],
+          stages: [
+            {
+              id: "basic",
+              title: "Basic",
+              description:
+                "Build a debug APK from the Gradle wrapper in both kinds of Android project.",
+            },
+            {
+              id: "applied",
+              title: "Applied",
+              description:
+                "List source sets and assemble demoDebug after configuring a demo flavor.",
+            },
+            {
+              id: "production",
+              title: "Production",
+              description:
+                "Build the actual release APK, inspect its signing certificate, and review the merged manifest plus JavaScript bundle when using React Native.",
+            },
+          ],
+        },
+        {
+          conceptSlug: "android-app-entry",
+          title: "Android App Entry and Activity",
+          order: 1,
+          exercise:
+            "Trace a Welcome screen from the Android launcher to Compose; explain where AppRegistry fits in a React Native app and reject an invalid launch URL.",
+          checklist: [
+            "Distinguishes the JavaScript root from the Android launcher Activity",
+            "Declares the Activity in the manifest and validates external intent data",
+            "Keeps the Activity a thin host instead of storing screen state in onCreate",
+          ],
+          stages: [
+            {
+              id: "basic",
+              title: "Basic",
+              description:
+                "Register a JavaScript root and create an Activity that calls setContent to display the same Welcome screen.",
+            },
+            {
+              id: "applied",
+              title: "Applied",
+              description:
+                "Separate AppRoot from registration or Activity code so screens do not depend on launch setup.",
+            },
+            {
+              id: "production",
+              title: "Production",
+              description:
+                "Validate a launch URL or Intent and map malformed input to invalid-link state instead of an arbitrary route.",
+            },
+          ],
+        },
+        {
+          conceptSlug: "android-resources",
+          title: "Android Resources and Localization",
+          order: 2,
+          exercise:
+            "Display a greeting and message count in English and Vietnamese; switch locale and check name substitution, plural rules, and default resources.",
+          checklist: [
+            "Uses res/values and res/values-vi with stringResource",
+            "Keeps word order flexible with format arguments",
+            "Uses quantity resources and checks at least two counts in each locale",
+          ],
+          stages: [
+            {
+              id: "basic",
+              title: "Basic",
+              description:
+                "Read one translated label from an app translator in React Native and from stringResource in Compose.",
+            },
+            {
+              id: "applied",
+              title: "Applied",
+              description:
+                "Insert a name into a translated sentence with formatting instead of concatenating fragments.",
+            },
+            {
+              id: "production",
+              title: "Production",
+              description:
+                "Display message counts with locale-specific plural rules and verify them on a device.",
+            },
+          ],
+        },
+        {
+          conceptSlug: "android-intents",
+          title: "Android Intents and External Actions",
+          order: 3,
+          exercise:
+            "Open a help page, share a link, and handle external links at cold launch and while the app is open, including invalid URIs.",
+          checklist: [
+            "Distinguishes implicit Intent, explicit Intent, and an in-app route",
+            "Provides a fallback when an external action cannot open",
+            "Validates incoming URIs on both cold and warm entry paths",
+          ],
+          stages: [
+            {
+              id: "basic",
+              title: "Basic",
+              description:
+                "Open the same help page through Linking or ACTION_VIEW and handle a missing external app.",
+            },
+            {
+              id: "applied",
+              title: "Applied",
+              description:
+                "Share the same message through Share or ACTION_SEND with a chooser.",
+            },
+            {
+              id: "production",
+              title: "Production",
+              description:
+                "Send cold and warm links through one validated route parser and check the real manifest and launch mode.",
+            },
+          ],
+        },
+        {
+          conceptSlug: "android-activity-lifecycle",
+          title: "Android Activity and Screen Lifecycle",
+          order: 4,
+          exercise:
+            "Track a screen becoming visible, pause camera preview when interaction stops, and observe list updates only while active; test route changes, backgrounding, and rotation.",
+          checklist: [
+            "Distinguishes AppState, Activity, LifecycleOwner, and composition",
+            "Cleans up a resource on pause or when leaving the screen",
+            "Collects StateFlow with lifecycle without losing business state",
+          ],
+          stages: [
+            {
+              id: "basic",
+              title: "Basic",
+              description:
+                "Record when the app or current LifecycleOwner returns to the foreground.",
+            },
+            {
+              id: "applied",
+              title: "Applied",
+              description:
+                "Start and stop a camera preview for its relevant lifetime, including when the screen leaves.",
+            },
+            {
+              id: "production",
+              title: "Production",
+              description:
+                "Observe live data only while active, using subscription cleanup or collectAsStateWithLifecycle.",
+            },
+          ],
+        },
+        {
           conceptSlug: "component",
           title: "Component",
           order: 10,
@@ -2170,15 +2330,24 @@ navController.navigate(ProfileRoute(user.id))`,
                 "react-native": {
                   name: "ID-backed screen state",
                   summary:
-                    "The state owner resolves current authorized data from the repository.",
+                    "The state owner resolves authorized data through a repository that accepts an abort signal.",
                   language: "tsx",
                   filename: "use-profile.ts",
                   code: `function useProfile(userId: string) {
   const [state, setState] = useState<ProfileState>({ status: "loading" });
-  useEffect(() => profileRepository.loadAuthorized(userId).then(
-    (profile) => setState({ status: "ready", profile }),
-    () => setState({ status: "unavailable" }),
-  ), [userId]);
+  useEffect(() => {
+    const controller = new AbortController();
+    setState({ status: "loading" });
+    void profileRepository.loadAuthorized(userId, controller.signal).then(
+      (profile) => {
+        if (!controller.signal.aborted) setState({ status: "ready", profile });
+      },
+      () => {
+        if (!controller.signal.aborted) setState({ status: "unavailable" });
+      },
+    );
+    return () => controller.abort();
+  }, [userId]);
   return state;
 }`,
                 },
@@ -2347,6 +2516,100 @@ navController.navigate(ProfileRoute(user.id))`,
               id: "production",
               title: "Production",
               description: "Keep long-lived work in a ViewModel.",
+            },
+          ],
+        },
+        {
+          conceptSlug: "coroutine-scopes",
+          title: "Coroutine Scope and Cancellation",
+          order: 11,
+          exercise:
+            "Build a search screen where a new query cancels old work, stale results cannot overwrite UI, and leaving the screen cleans up work under the right owner.",
+          checklist: [
+            "Chooses a screen or ViewModel owner for work",
+            "Does not turn cancellation into a UI error",
+            "Guards stale results even when a data source ignores cancellation",
+          ],
+          stages: [
+            {
+              id: "basic",
+              title: "Basic",
+              description:
+                "Attach one request to a React effect or LaunchedEffect and clean up when its owner ends.",
+            },
+            {
+              id: "applied",
+              title: "Applied",
+              description:
+                "Cancel old work when the query changes and only use the current query's result.",
+            },
+            {
+              id: "production",
+              title: "Production",
+              description:
+                "Move screen-owned requests into a ViewModel or owned hook, cancel obsolete work, and preserve cancellation semantics.",
+            },
+          ],
+        },
+        {
+          conceptSlug: "flow-and-stateflow",
+          title: "Flow and StateFlow",
+          order: 12,
+          exercise:
+            "Create a cold page source, expose hot feed state to a screen, and show that multiple subscribers do not unintentionally duplicate upstream requests.",
+          checklist: [
+            "Distinguishes cold Flow from hot StateFlow with a current value",
+            "Collects state with lifecycle and cleans up subscriptions",
+            "Tests sharing policy, first emission, and upstream errors",
+          ],
+          stages: [
+            {
+              id: "basic",
+              title: "Basic",
+              description:
+                "Create a lazy page sequence that runs only when consumed or collected.",
+            },
+            {
+              id: "applied",
+              title: "Applied",
+              description:
+                "Read the current snapshot from an external store or StateFlow in the screen.",
+            },
+            {
+              id: "production",
+              title: "Production",
+              description:
+                "Share one upstream among subscribers with an initial state and suitable stopping policy.",
+            },
+          ],
+        },
+        {
+          conceptSlug: "flow-composition",
+          title: "Combining and Testing Flows",
+          order: 13,
+          exercise:
+            "Combine posts with favorite IDs, classify source errors, and test updates from either source with controlled Flows.",
+          checklist: [
+            "Updates when either source changes",
+            "Has a bounded retry or explicit error state for I/O failures",
+            "Tests initial and later values with controlled sources",
+          ],
+          stages: [
+            {
+              id: "basic",
+              title: "Basic",
+              description: "Derive saved posts from two data sources.",
+            },
+            {
+              id: "applied",
+              title: "Applied",
+              description: "Choose an upstream error and bounded retry policy.",
+            },
+            {
+              id: "production",
+              title: "Production",
+              description:
+                "Test the initial result and updates from both sources.",
             },
           ],
         },
@@ -2542,6 +2805,290 @@ navController.navigate(ProfileRoute(user.id))`,
       order: 50,
       lessons: [
         {
+          conceptSlug: "repository-boundary",
+          title: "Repository Boundary",
+          order: 1,
+          exercise:
+            "Separate a profile screen from its HTTP client, map a DTO once, and test the state owner with a fake repository without network access.",
+          checklist: [
+            "Keeps ViewModel and UI away from direct data sources",
+            "Maps transport and persistence models at a boundary",
+            "Tests the state owner with a fake repository",
+          ],
+          stages: [
+            {
+              id: "basic",
+              title: "Basic",
+              description:
+                "Define a narrow repository contract for screen data.",
+            },
+            {
+              id: "applied",
+              title: "Applied",
+              description:
+                "Map a DTO to a domain model in the repository implementation.",
+            },
+            {
+              id: "production",
+              title: "Production",
+              description:
+                "Use a controlled fake repository to test a state owner.",
+            },
+          ],
+        },
+        {
+          conceptSlug: "dependency-injection",
+          title: "Dependency Injection and Lifetime",
+          order: 2,
+          exercise:
+            "Compose a repository at the app root, replace it with a fake in a test, then decide which dependencies need shared lifetime or Hilt.",
+          checklist: [
+            "Passes dependencies through constructors or root props",
+            "Avoids service location in UI",
+            "Chooses manual DI or Hilt from graph complexity",
+          ],
+          stages: [
+            {
+              id: "basic",
+              title: "Basic",
+              description:
+                "Wire a repository at a route or ViewModel constructor.",
+            },
+            {
+              id: "applied",
+              title: "Applied",
+              description:
+                "Replace a dependency with a fake in a test or bind an implementation in Hilt.",
+            },
+            {
+              id: "production",
+              title: "Production",
+              description:
+                "Scope shared objects deliberately and inject a Hilt ViewModel at the route boundary.",
+            },
+          ],
+        },
+        {
+          conceptSlug: "offline-first-data",
+          title: "Offline-First Data",
+          order: 3,
+          exercise:
+            "Make a feed render local data first, refresh its Room cache through a repository, and state which writes are safe to queue.",
+          checklist: [
+            "Higher layers read one local source of truth",
+            "Repository maps network and database models",
+            "Queued writes are explicitly safe to replay",
+          ],
+          stages: [
+            {
+              id: "basic",
+              title: "Basic",
+              description: "Expose feed data from an observable local store.",
+            },
+            {
+              id: "applied",
+              title: "Applied",
+              description:
+                "Refresh Room through the repository instead of returning a network DTO to the screen.",
+            },
+            {
+              id: "production",
+              title: "Production",
+              description:
+                "Update cached data transactionally and queue only mutations that are safe to replay.",
+            },
+          ],
+        },
+        {
+          conceptSlug: "offline-pagination",
+          title: "Offline Pagination",
+          order: 4,
+          exercise:
+            "Keep feed rows and a cursor in local storage, then explain how Room Paging and RemoteMediator make that boundary explicit.",
+          checklist: [
+            "UI pages only from the local source",
+            "Rows and remote keys update in one transaction",
+            "Refresh and append errors remain distinct",
+          ],
+          stages: [
+            {
+              id: "basic",
+              title: "Basic",
+              description:
+                "Page a database-backed list instead of a direct network response.",
+            },
+            {
+              id: "applied",
+              title: "Applied",
+              description:
+                "Use RemoteMediator to store the next remote page before Room serves it.",
+            },
+            {
+              id: "production",
+              title: "Production",
+              description:
+                "Persist remote keys with rows and keep refresh and append recovery separate.",
+            },
+          ],
+        },
+        {
+          conceptSlug: "durable-background-work",
+          title: "Durable Background Work",
+          order: 5,
+          exercise:
+            "Move pending bookmark sync into network-constrained unique work and show that retry cannot submit an action twice.",
+          checklist: [
+            "Worker outlives the screen",
+            "Unique work prevents duplicate scheduling",
+            "Retries only transient failures of idempotent operations",
+          ],
+          stages: [
+            {
+              id: "basic",
+              title: "Basic",
+              description:
+                "Register background execution and identify who starts it.",
+            },
+            {
+              id: "applied",
+              title: "Applied",
+              description:
+                "Schedule unique work that waits for network access.",
+            },
+            {
+              id: "production",
+              title: "Production",
+              description: "Classify retryable failures and make replay safe.",
+            },
+          ],
+        },
+        {
+          conceptSlug: "android-notifications",
+          title: "Android Notifications",
+          order: 6,
+          exercise:
+            "Let a user enable reminders, post through a channel, and open the correct post when a notification is tapped.",
+          checklist: [
+            "Creates a channel before posting",
+            "Requests POST_NOTIFICATIONS in context on Android 13+",
+            "Tap intent opens the correct content from a cold start",
+          ],
+          stages: [
+            {
+              id: "basic",
+              title: "Basic",
+              description:
+                "Create a notification channel and a UI-facing contract.",
+            },
+            {
+              id: "applied",
+              title: "Applied",
+              description:
+                "Request permission after user intent and handle denial.",
+            },
+            {
+              id: "production",
+              title: "Production",
+              description: "Attach a PendingIntent and test tap navigation.",
+            },
+          ],
+        },
+        {
+          conceptSlug: "state-owner-testing",
+          title: "State Owner and Data Tests",
+          order: 7,
+          exercise:
+            "Test feed state transitions with a fake repository, then verify the real query separately using an in-memory Room database.",
+          checklist: [
+            "ViewModel tests use fake repositories and test dispatchers",
+            "WhileSubscribed has an active test collector",
+            "A real database verifies Room queries",
+          ],
+          stages: [
+            {
+              id: "basic",
+              title: "Basic",
+              description:
+                "Assert visible state transitions with a fake repository.",
+            },
+            {
+              id: "applied",
+              title: "Applied",
+              description:
+                "Control emissions after the first value with the required subscriber.",
+            },
+            {
+              id: "production",
+              title: "Production",
+              description:
+                "Separate Room integration tests from state-owner unit tests.",
+            },
+          ],
+        },
+        {
+          conceptSlug: "navigation-testing",
+          title: "Navigation Tests",
+          order: 8,
+          exercise:
+            "Test opening a profile, passing its stable ID to the destination, and showing a recoverable state when the profile is unavailable.",
+          checklist: [
+            "Starts from a user action and asserts destination UI",
+            "Passes a stable ID rather than an object through the route",
+            "Covers one missing or invalid destination state",
+          ],
+          stages: [
+            {
+              id: "basic",
+              title: "Basic",
+              description: "Open a destination from a semantic user action.",
+            },
+            {
+              id: "applied",
+              title: "Applied",
+              description:
+                "Prove the route ID reaches the destination without depending on animation timing.",
+            },
+            {
+              id: "production",
+              title: "Production",
+              description:
+                "Exercise an invalid deep-link or restored-route state.",
+            },
+          ],
+        },
+        {
+          conceptSlug: "background-work-testing",
+          title: "Testing Background Work",
+          order: 9,
+          exercise:
+            "Test a sync worker's retry and permanent-failure policy, then use a TestDriver to release a network constraint without real waiting.",
+          checklist: [
+            "Unit-tests worker logic without a real WorkManager",
+            "Maps transient and permanent failures to different Results",
+            "Uses an integration test only for the required constraint or delay",
+          ],
+          stages: [
+            {
+              id: "basic",
+              title: "Basic",
+              description:
+                "Test unique work and a worker result with controlled input.",
+            },
+            {
+              id: "applied",
+              title: "Applied",
+              description:
+                "Classify retryable transport failures and permanent validation failures.",
+            },
+            {
+              id: "production",
+              title: "Production",
+              description:
+                "Drive a WorkManager constraint with TestDriver instead of waiting.",
+            },
+          ],
+        },
+        {
           conceptSlug: "authentication",
           title: "Authentication",
           order: 10,
@@ -2638,10 +3185,10 @@ navController.navigate(ProfileRoute(user.id))`,
           title: "UI Behavior Testing",
           order: 30,
           exercise:
-            "Test a visible user action, a reusable screen contract, and one ambiguous control without asserting component internals.",
+            "Test a visible action, a reusable screen contract, and an asynchronous save from pending to completed without asserting component internals.",
           checklist: [
             "Asserts a user-observable result after an interaction",
-            "Uses text, role, or semantics before test-only identifiers",
+            "Controls asynchronous completion without sleeps or private-state assertions",
           ],
           stages: [
             {
@@ -2660,7 +3207,7 @@ navController.navigate(ProfileRoute(user.id))`,
               id: "production",
               title: "Production",
               description:
-                "Use a test identifier only when visible or semantic selectors cannot identify the intended node.",
+                "Given an asynchronous save callback, control completion and assert both pending and completed user-visible states.",
             },
           ],
         },

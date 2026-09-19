@@ -48,23 +48,37 @@ assertThat(retries).isEqualTo(1)`,
     },
     production: {
       "react-native": {
-        name: "Reserve identifiers for the hard cases",
+        name: "Control an asynchronous save",
         summary:
-          "A testID is used only when user-visible queries cannot identify the control.",
+          "A controlled promise verifies pending and completed UI states without depending on timers.",
         language: "tsx",
-        filename: "SaveButton.test.tsx",
-        code: `render(<SaveButton testID="profile-save" onSave={onSave} />);
-fireEvent.press(screen.getByTestId("profile-save"));
-expect(onSave).toHaveBeenCalledTimes(1);`,
+        filename: "ProfileScreen.test.tsx",
+        code: `let finishSave!: () => void;
+const onSave = jest.fn(() => new Promise<void>((resolve) => {
+  finishSave = resolve;
+}));
+render(<ProfileScreen onSave={onSave} />);
+fireEvent.press(screen.getByRole("button", { name: "Save" }));
+expect(screen.getByText("Saving…")).toBeTruthy();
+await act(async () => { finishSave(); });
+expect(await screen.findByText("Saved")).toBeTruthy();`,
       },
       kotlin: {
-        name: "Reserve tags for the hard cases",
-        summary: "A test tag selects an otherwise ambiguous semantic node.",
+        name: "Control an asynchronous save",
+        summary:
+          "A deferred result verifies pending and completed semantics without sleeping.",
         language: "kotlin",
-        filename: "SaveButtonTest.kt",
-        code: `composeTestRule.setContent { SaveButton(onSave, Modifier.testTag("profile-save")) }
-composeTestRule.onNodeWithTag("profile-save").performClick()
-assertThat(saveCalls).isEqualTo(1)`,
+        filename: "ProfileScreenTest.kt",
+        code: `val saveResult = CompletableDeferred<Unit>()
+composeTestRule.setContent {
+    ProfileScreen(onSave = { saveResult.await() })
+}
+composeTestRule.onNodeWithText("Save").performClick()
+composeTestRule.onNodeWithText("Saving…").assertExists()
+saveResult.complete(Unit)
+composeTestRule.waitUntil(5_000) {
+    composeTestRule.onAllNodesWithText("Saved").fetchSemanticsNodes().isNotEmpty()
+}`,
       },
     },
   },

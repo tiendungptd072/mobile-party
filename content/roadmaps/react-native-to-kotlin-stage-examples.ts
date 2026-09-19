@@ -436,7 +436,9 @@ fun PhotoTile(photo: Photo) {
       `useEffect(() => {
   const controller = new AbortController();
   void loadUser(userId, controller.signal)
-    .then(setUser)
+    .then((user) => {
+      if (!controller.signal.aborted) setUser(user);
+    })
     .catch((error) => {
       if (error.name !== "AbortError") reportError(error);
     });
@@ -456,7 +458,9 @@ fun PhotoTile(photo: Photo) {
     const controller = new AbortController();
     setState({ status: "loading" });
     void repository.load(id, controller.signal).then(
-      (profile) => setState({ status: "ready", profile }),
+      (profile) => {
+        if (!controller.signal.aborted) setState({ status: "ready", profile });
+      },
       (error) => {
         if (error.name !== "AbortError") setState({ status: "error" });
       },

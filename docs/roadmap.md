@@ -96,3 +96,6 @@ Status: complete.
 AI conversion, chatbot features, backend services, accounts, cloud progress,
 comments, community features, CMS, online compilation, emulators, user content,
 payments, and subscriptions are explicitly out of scope.
+
+The post-MVP React Native → Android learning program is tracked separately in
+[the Android transition plan](android-transition-plan.md).

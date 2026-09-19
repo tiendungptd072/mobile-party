@@ -32,6 +32,320 @@ function bridgeDocs(
 }
 
 export const conceptReferences = {
+  "navigation-testing": [
+    bridgeDocs(
+      "Testing with React Navigation",
+      "https://reactnavigation.org/docs/testing/",
+      "react-native",
+    ),
+    bridgeDocs(
+      "Navigation testing",
+      "https://developer.android.com/guide/navigation/testing",
+      "kotlin",
+    ),
+    bridgeDocs(
+      "Test your app's UI",
+      "https://developer.android.com/develop/ui/compose/testing",
+      "kotlin",
+    ),
+  ],
+  "background-work-testing": [
+    bridgeDocs(
+      "Headless JS",
+      "https://reactnative.dev/docs/headless-js-android",
+      "react-native",
+    ),
+    bridgeDocs(
+      "Test persistent work",
+      "https://developer.android.com/develop/background-work/background-tasks/testing/persistent/integration-testing",
+      "kotlin",
+    ),
+    bridgeDocs(
+      "WorkManager testing APIs",
+      "https://developer.android.com/reference/androidx/work/testing/package-summary",
+      "kotlin",
+    ),
+  ],
+  "flow-composition": [
+    bridgeDocs(
+      "useSyncExternalStore",
+      "https://react.dev/reference/react/useSyncExternalStore",
+      "react-native",
+    ),
+    bridgeDocs(
+      "Kotlin flows on Android",
+      "https://developer.android.com/kotlin/flow",
+      "kotlin",
+    ),
+    bridgeDocs(
+      "Testing Kotlin flows",
+      "https://developer.android.com/kotlin/flow/test",
+      "kotlin",
+    ),
+  ],
+  "state-owner-testing": [
+    bridgeDocs(
+      "React Native testing overview",
+      "https://reactnative.dev/docs/testing-overview",
+      "react-native",
+    ),
+    bridgeDocs(
+      "React Native Testing Library renderHook",
+      "https://oss.callstack.com/react-native-testing-library/docs/api/misc/render-hook",
+      "react-native",
+    ),
+    bridgeDocs(
+      "Testing Kotlin coroutines",
+      "https://developer.android.com/kotlin/coroutines/test",
+      "kotlin",
+    ),
+    bridgeDocs(
+      "Test and debug Room",
+      "https://developer.android.com/training/data-storage/room/testing-db",
+      "kotlin",
+    ),
+  ],
+  "durable-background-work": [
+    bridgeDocs(
+      "Headless JS",
+      "https://reactnative.dev/docs/headless-js-android",
+      "react-native",
+    ),
+    bridgeDocs(
+      "Getting started with WorkManager",
+      "https://developer.android.com/develop/background-work/background-tasks/persistent/getting-started",
+      "kotlin",
+    ),
+    bridgeDocs(
+      "Managing work",
+      "https://developer.android.com/develop/background-work/background-tasks/persistent/how-to/manage-work",
+      "kotlin",
+    ),
+  ],
+  "android-notifications": [
+    bridgeDocs(
+      "Turbo Native Modules",
+      "https://reactnative.dev/docs/turbo-native-modules-introduction",
+      "react-native",
+    ),
+    bridgeDocs(
+      "Create a notification",
+      "https://developer.android.com/develop/ui/compose/notifications/create-notification",
+      "kotlin",
+    ),
+    bridgeDocs(
+      "Notification runtime permission",
+      "https://developer.android.com/develop/ui/compose/notifications/notification-permission",
+      "kotlin",
+    ),
+  ],
+  "offline-pagination": [
+    bridgeDocs(
+      "React Context",
+      "https://react.dev/learn/passing-data-deeply-with-context",
+      "react-native",
+    ),
+    bridgeDocs(
+      "Page from network and database",
+      "https://developer.android.com/topic/libraries/architecture/paging/v3-network-db",
+      "kotlin",
+    ),
+    bridgeDocs(
+      "Paging library overview",
+      "https://developer.android.com/topic/libraries/architecture/paging/v3-overview",
+      "kotlin",
+    ),
+  ],
+  "offline-first-data": [
+    bridgeDocs(
+      "React Context",
+      "https://react.dev/learn/passing-data-deeply-with-context",
+      "react-native",
+    ),
+    bridgeDocs(
+      "Build an offline-first app",
+      "https://developer.android.com/topic/architecture/data-layer/offline-first",
+      "kotlin",
+    ),
+    bridgeDocs(
+      "Save data with Room",
+      "https://developer.android.com/training/data-storage/room",
+      "kotlin",
+    ),
+  ],
+  "repository-boundary": [
+    bridgeDocs(
+      "React Context",
+      "https://react.dev/learn/passing-data-deeply-with-context",
+      "react-native",
+    ),
+    bridgeDocs(
+      "Recommendations for Android architecture",
+      "https://developer.android.com/topic/architecture/recommendations",
+      "kotlin",
+    ),
+    bridgeDocs(
+      "Guide to app architecture",
+      "https://developer.android.com/topic/architecture",
+      "kotlin",
+    ),
+  ],
+  "dependency-injection": [
+    bridgeDocs(
+      "React Context",
+      "https://react.dev/learn/passing-data-deeply-with-context",
+      "react-native",
+    ),
+    bridgeDocs(
+      "Dependency injection with Hilt",
+      "https://developer.android.com/training/dependency-injection/hilt-android",
+      "kotlin",
+    ),
+    bridgeDocs(
+      "Recommendations for Android architecture",
+      "https://developer.android.com/topic/architecture/recommendations",
+      "kotlin",
+    ),
+  ],
+  "coroutine-scopes": [
+    bridgeDocs(
+      "React Native Networking",
+      "https://reactnative.dev/docs/network",
+      "react-native",
+    ),
+    bridgeDocs(
+      "Best practices for coroutines in Android",
+      "https://developer.android.com/kotlin/coroutines/coroutines-best-practices",
+      "kotlin",
+    ),
+    bridgeDocs(
+      "Coroutines basics and structured concurrency",
+      "https://kotlinlang.org/docs/coroutines-basics.html",
+      "kotlin",
+    ),
+  ],
+  "flow-and-stateflow": [
+    bridgeDocs(
+      "React useSyncExternalStore",
+      "https://react.dev/reference/react/useSyncExternalStore",
+      "react-native",
+    ),
+    bridgeDocs(
+      "Kotlin Flows",
+      "https://kotlinlang.org/docs/coroutines-flow.html",
+      "kotlin",
+    ),
+    bridgeDocs(
+      "StateFlow and SharedFlow",
+      "https://developer.android.com/kotlin/flow/stateflow-and-sharedflow",
+      "kotlin",
+    ),
+  ],
+  "android-build-variants": [
+    bridgeDocs(
+      "React Native Gradle Plugin",
+      "https://reactnative.dev/docs/react-native-gradle-plugin",
+      "react-native",
+    ),
+    bridgeDocs(
+      "Configure build variants",
+      "https://developer.android.com/build/build-variants",
+      "kotlin",
+    ),
+    bridgeDocs(
+      "Manage manifest files",
+      "https://developer.android.com/build/manage-manifests",
+      "kotlin",
+    ),
+    bridgeDocs(
+      "Verify APK signing with apksigner",
+      "https://developer.android.com/tools/apksigner",
+      "kotlin",
+    ),
+  ],
+  "android-intents": [
+    bridgeDocs(
+      "React Native Linking",
+      "https://reactnative.dev/docs/linking",
+      "react-native",
+    ),
+    bridgeDocs(
+      "React Native Share",
+      "https://reactnative.dev/docs/share",
+      "react-native",
+    ),
+    bridgeDocs(
+      "Intents and intent filters",
+      "https://developer.android.com/guide/components/intents-filters",
+      "kotlin",
+    ),
+  ],
+  "android-activity-lifecycle": [
+    bridgeDocs(
+      "React Native AppState",
+      "https://reactnative.dev/docs/appstate",
+      "react-native",
+    ),
+    bridgeDocs(
+      "The Activity lifecycle",
+      "https://developer.android.com/guide/components/activities/activity-lifecycle",
+      "kotlin",
+    ),
+    bridgeDocs(
+      "Lifecycle in Jetpack Compose",
+      "https://developer.android.com/topic/libraries/architecture/lifecycle",
+      "kotlin",
+    ),
+    bridgeDocs(
+      "collectAsStateWithLifecycle",
+      "https://developer.android.com/reference/kotlin/androidx/lifecycle/compose/collectAsStateWithLifecycle.composable",
+      "kotlin",
+    ),
+  ],
+  "android-app-entry": [
+    bridgeDocs(
+      "AppRegistry",
+      "https://reactnative.dev/docs/appregistry",
+      "react-native",
+    ),
+    bridgeDocs(
+      "Android app manifest overview",
+      "https://developer.android.com/guide/topics/manifest/manifest-intro",
+      "kotlin",
+    ),
+    bridgeDocs(
+      "Build your first Android app with Compose",
+      "https://developer.android.com/develop/ui/compose/tutorial",
+      "kotlin",
+    ),
+    bridgeDocs(
+      "Linking",
+      "https://reactnative.dev/docs/linking",
+      "react-native",
+    ),
+    bridgeDocs(
+      "Manage manifest files and merging",
+      "https://developer.android.com/build/manage-manifests",
+      "kotlin",
+    ),
+  ],
+  "android-resources": [
+    bridgeDocs(
+      "React Native I18nManager (RTL, not string translation)",
+      "https://reactnative.dev/docs/i18nmanager",
+      "react-native",
+    ),
+    bridgeDocs(
+      "Resources in Compose",
+      "https://developer.android.com/develop/ui/compose/resources",
+      "kotlin",
+    ),
+    bridgeDocs(
+      "Localize your app",
+      "https://developer.android.com/guide/topics/resources/localization",
+      "kotlin",
+    ),
+  ],
   "null-safety": [
     bridgeDocs(
       "TypeScript: strictNullChecks",

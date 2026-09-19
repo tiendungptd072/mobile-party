@@ -2,11 +2,13 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { LearningSidebar } from "@/components/learning/learning-sidebar.client";
+import { LearningEntryGuide } from "@/components/learning/learning-entry-guide";
 import { Badge } from "@/components/ui/badge";
 import { Callout } from "@/components/ui/callout";
 import { CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Container } from "@/components/ui/container";
 import { getRoadmap, getRoadmaps } from "@/lib/content/roadmaps";
+import { getReactNativeToKotlinEntryGuide } from "@/lib/content/learning-entry";
 import { getTechnologyById, isTechnology } from "@/lib/content/technologies";
 import { isLocale, LOCALES } from "@/lib/i18n/locale";
 import { formatMessage, getMessages } from "@/lib/i18n/messages";
@@ -117,6 +119,13 @@ export default async function LocaleLearnPage({
           {messages.learn.intro}
         </p>
       </header>
+      {source === "react-native" && target === "kotlin" ? (
+        <LearningEntryGuide
+          guide={getReactNativeToKotlinEntryGuide(locale)}
+          locale={locale}
+          roadmap={roadmap}
+        />
+      ) : null}
       <div className="mt-10 grid gap-8 lg:grid-cols-[minmax(0,1fr)_18rem]">
         <div className="space-y-8">
           {roadmap.sections.map((section) => (
