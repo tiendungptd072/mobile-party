@@ -1,4 +1,20 @@
+import {
+  viKotlinBridgeConceptTranslations,
+  viKotlinBridgeRoadmapTranslations,
+} from "@content/locales/vi-kotlin-bridge";
+import {
+  viComposeRuntimeConceptTranslations,
+  viComposeRuntimeRoadmapTranslations,
+} from "@content/locales/vi-compose-runtime";
+import {
+  viLayoutMechanicsConceptTranslations,
+  viLayoutMechanicsRoadmapTranslations,
+} from "@content/locales/vi-layout-mechanics";
+
 export const viConceptTranslations = {
+  ...viKotlinBridgeConceptTranslations,
+  ...viComposeRuntimeConceptTranslations,
+  ...viLayoutMechanicsConceptTranslations,
   component: {
     title: "Component",
     description:
@@ -598,6 +614,189 @@ export const viConceptTranslations = {
       "Cung cấp label rõ, touch target đủ lớn và action contract idempotent.",
     ],
   },
+  "accessibility-semantics": {
+    title: "Accessibility semantics và test tag",
+    description:
+      "Giữ lại ý nghĩa, trạng thái và khả năng được tìm thấy của custom control, đồng thời tách accessibility semantics khỏi identifier chỉ dành cho test.",
+    implementations: {
+      "react-native": {
+        name: "Custom control có accessibility",
+        summary: "Gắn label, role và selected state cho touch target tùy biến.",
+      },
+      kotlin: {
+        name: "Custom control có semantics",
+        summary: "Cung cấp role và state tương ứng qua Compose semantics.",
+      },
+    },
+    relationship:
+      "Cả hai đều cung cấp mục đích và trạng thái hiện tại của control cho assistive technology, nhưng standard Compose component thường tự có semantics và custom composable có thể bổ sung semantics tree.",
+    mentalModel:
+      "Ưu tiên standard control vì semantics của chúng đã đúng. Khi cần custom visual, hãy mô tả role, label, state và action người dùng nhìn thấy; chỉ thêm test identifier riêng cho kiểm thử.",
+    differences: [
+      "React Native dùng accessibility property trên view; Compose cung cấp semantics qua standard composable, Modifier.semantics hoặc Modifier chuyên biệt như toggleable.",
+      "testID và Modifier.testTag dùng để chọn phần tử trong test, không thay thế screen-reader label hoặc role.",
+    ],
+    commonMistakes: [
+      "Thêm test tag cho icon-only control không có label rồi cho rằng nó đã accessible.",
+    ],
+    productionNotes: [
+      "Kiểm tra screen-reader focus, state announcement, touch target và semantics tree; chỉ dùng stable tag khi behavioral test cần selector.",
+    ],
+  },
+  "state-driven-animation": {
+    title: "Animation dẫn xuất từ state",
+    description:
+      "Chuyển animated value được điều khiển theo imperative sang Compose animation có target được dẫn xuất từ UI state hiện tại.",
+    implementations: {
+      "react-native": {
+        name: "Animate một giá trị tường minh",
+        summary:
+          "Animated.Value được giữ lại và chạy đến target khi state thay đổi.",
+      },
+      kotlin: {
+        name: "Animate target từ state",
+        summary: "Animation đi theo target được dẫn xuất từ state hiện tại.",
+      },
+    },
+    relationship:
+      "Cả hai đều animate giá trị về target, nhưng Compose animation API thường được khai báo từ target state hiện tại thay vì khởi chạy effect cho từng thay đổi visual state thông thường.",
+    mentalModel:
+      "Giữ business/UI state là source of truth và animate biểu diễn trực quan về phía nó. Dùng animation một giá trị cho một property, AnimatedVisibility cho sự hiện diện và transition khi nhiều property cần cùng một state change.",
+    differences: [
+      "React Native Animated giữ animated value tường minh và thường bắt đầu timing hoặc spring; Compose animate*AsState dẫn xuất animated value trong composition.",
+      "Compose animation label hỗ trợ tooling; nó không phải nội dung hiển thị cho người dùng hay test selector ổn định.",
+    ],
+    commonMistakes: [
+      "Lưu animation progress như source of truth thứ hai cho việc content có expanded hoặc selected hay không.",
+    ],
+    productionNotes: [
+      "Tôn trọng reduced-motion requirement, giữ animation độc lập với business correctness và profile list hoặc gesture motion phức tạp trên thiết bị mục tiêu.",
+    ],
+  },
+  "gesture-abstractions": {
+    title: "Gesture abstraction và pointer input",
+    description:
+      "Chọn gesture API ở mức cao nhất diễn đạt được interaction khi chuyển từ React Native responder sang Compose Modifier và pointer input.",
+    implementations: {
+      "react-native": {
+        name: "Tương tác Pressable",
+        summary:
+          "Control mức cao sở hữu tap feedback và responder negotiation.",
+      },
+      kotlin: {
+        name: "Tương tác Button",
+        summary:
+          "Standard Compose control có sẵn gesture, focus và accessibility behavior.",
+      },
+    },
+    relationship:
+      "Cả hai có high-level control và low-level input API, nhưng React Native thương lượng responder lifecycle, còn Compose phân tầng component, gesture Modifier và pointerInput handler với quy tắc event consumption riêng.",
+    mentalModel:
+      "Bắt đầu bằng standard control, sau đó là gesture Modifier và chỉ dùng pointerInput cho gesture thực sự tùy biến. Đừng xây lại tap từ raw pointer event khi control còn cần focus, keyboard support, visual feedback và semantics.",
+    differences: [
+      "Compose Button và clickable bao gồm nhiều interaction behavior hơn raw pointerInput; custom pointer code phải chủ động khôi phục semantics cần thiết.",
+      "pointerInput block có key: đổi key sẽ khởi động lại handler, và top-level gesture detector nên dùng block riêng nếu cần chạy độc lập.",
+    ],
+    commonMistakes: [
+      "Đặt tap và drag detector nối tiếp trong một pointerInput block khiến detector suspend đầu tiên chặn detector sau chạy.",
+    ],
+    productionNotes: [
+      "Kiểm tra cancellation, nested scrolling, multi-touch, accessibility và touch target; chỉ dùng gesture library được duy trì khi sản phẩm cần khả năng vượt ngoài platform gesture API.",
+    ],
+  },
+  "runtime-permissions": {
+    title: "Runtime permission",
+    description:
+      "Yêu cầu Android capability nhạy cảm đúng ngữ cảnh, đồng thời tách OS prompt, rationale UI và feature state.",
+    implementations: {
+      "react-native": {
+        name: "Yêu cầu Android permission",
+        summary:
+          "Một interaction yêu cầu dangerous permission và nhận kết quả.",
+      },
+      kotlin: {
+        name: "Khởi chạy Activity Result contract",
+        summary:
+          "Compose đăng ký permission launcher và phản ứng với kết quả bất đồng bộ.",
+      },
+    },
+    relationship:
+      "Cả hai yêu cầu dangerous Android permission theo user intent, nhưng PermissionsAndroid resolve JavaScript promise, còn Compose tích hợp Android Activity Result launcher vào composition.",
+    mentalModel:
+      "Permission không phải feature state. Giải thích lợi ích bằng UI của ứng dụng, chỉ yêu cầu sau khi người dùng bắt đầu feature, rồi render feature outcome granted, denied hoặc degraded từ state.",
+    differences: [
+      "rememberLauncherForActivityResult của Compose đăng ký platform contract; nó không thay thế khai báo manifest hoặc Android permission policy.",
+      "System dialog không thể tùy biến. Đặt rationale và recovery action trong app UI thay vì cố gắng nhét chúng vào request.",
+    ],
+    commonMistakes: [
+      "Hiện prompt lúc app khởi động hoặc liên tục yêu cầu lại permission đã bị từ chối mà không có giải thích đúng ngữ cảnh và fallback dùng được.",
+    ],
+    productionNotes: [
+      "Kiểm tra permission tại operation boundary, xử lý revoked permission, yêu cầu capability tối thiểu và chỉ dẫn đến settings sau khi giải thích vì sao feature không thể tiếp tục.",
+    ],
+  },
+  "back-navigation": {
+    title: "System back và thay đổi chưa lưu",
+    description:
+      "Xử lý Android back navigation có chủ đích, đồng thời để navigation stack vẫn là owner mặc định của back behavior thông thường.",
+    implementations: {
+      "react-native": {
+        name: "Chặn hardware back press",
+        summary:
+          "Focused listener chỉ consume back khi màn hình có custom behavior.",
+      },
+      kotlin: {
+        name: "Bật Compose back handler",
+        summary:
+          "BackHandler chỉ consume system back khi thay đổi chưa lưu cần được xác nhận.",
+      },
+    },
+    relationship:
+      "Cả hai đều có thể chặn Android system back cho custom flow tập trung, nhưng Compose BackHandler nhận biết composition/lifecycle còn Navigation Compose thông thường nên dùng navigation stack làm mặc định.",
+    mentalModel:
+      "Để navigation pop back stack trừ khi màn hình hiện tại có temporary state cụ thể cần xử lý như discard confirmation hoặc WebView history. Luôn gọi BackHandler và điều khiển nó bằng enabled state.",
+    differences: [
+      "React Native BackHandler listener chạy theo thứ tự đăng ký ngược; Compose BackHandler enabled ở trong cùng xử lý event.",
+      "BackHandler dùng cho custom interception, không thay thế NavController.popBackStack() trong destination navigation thông thường.",
+    ],
+    commonMistakes: [
+      "Cài back handler luôn enabled khiến navigation bị chặn, hoặc conditionally compose BackHandler làm handler precedence thay đổi sau recomposition.",
+    ],
+    productionNotes: [
+      "Kiểm tra system button và gesture back, dialog, nested handler và predictive-back behavior trên Android version được hỗ trợ; giữ draft cho đến khi người dùng xác nhận discard.",
+    ],
+  },
+  "ui-behavior-testing": {
+    title: "Kiểm thử hành vi UI",
+    description:
+      "Kiểm thử hành vi và kết quả UI người dùng nhìn thấy trong React Native và Compose mà không gắn test với component internal.",
+    implementations: {
+      "react-native": {
+        name: "Test user-visible interaction",
+        summary:
+          "Render màn hình, trigger press rồi assert điều người dùng quan sát được.",
+      },
+      kotlin: {
+        name: "Test semantic interaction",
+        summary:
+          "Compose test tìm semantic node, thực hiện action rồi assert output hiển thị.",
+      },
+    },
+    relationship:
+      "Cả hai đều test rendered UI từ góc nhìn người dùng, nhưng React Native component test tool query React Native output còn Compose UI test query semantics tree.",
+    mentalModel:
+      "Chuẩn bị state tập trung, thực hiện action như người dùng rồi assert kết quả quan sát được. Tách screen content khỏi state owner để test rendering và intent contract mà không cần network hoặc navigation infrastructure.",
+    differences: [
+      "React Native component test chạy trong JavaScript và không xác thực native platform code; Compose UI test chạy theo Android UI semantics.",
+      "Compose test selector thường dựa vào semantics; testTag là selector dự phòng chứ không phải assertion chính khi text hoặc accessible role đã diễn đạt hành vi.",
+    ],
+    commonMistakes: [
+      "Assert private component state, ViewModel call hoặc snapshot lớn thay vì visible outcome của một interaction.",
+    ],
+    productionNotes: [
+      "Dùng UI test nhanh cho screen contract và một số ít device-level end-to-end test cho cross-platform flow quan trọng như authentication hoặc payment.",
+    ],
+  },
   "vertical-layout": {
     title: "Bố cục dọc",
     description:
@@ -1026,6 +1225,8 @@ export const viRecipeTranslations = {
 
 export const viRoadmapTranslations = {
   sections: {
+    "kotlin-bridge": viKotlinBridgeRoadmapTranslations.section,
+    "compose-runtime": viComposeRuntimeRoadmapTranslations.section,
     "ui-basics": "UI cơ bản",
     state: "State",
     forms: "Form",
@@ -1036,6 +1237,9 @@ export const viRoadmapTranslations = {
     "app-architecture": "Kiến trúc ứng dụng",
   },
   lessons: {
+    ...viKotlinBridgeRoadmapTranslations.lessons,
+    ...viComposeRuntimeRoadmapTranslations.lessons,
+    ...viLayoutMechanicsRoadmapTranslations,
     component: {
       title: "Component",
       exercise: "Viết lại profile card của React Native thành một composable.",
@@ -1235,6 +1439,20 @@ export const viRoadmapTranslations = {
         "Giữ effect API tập trung vào UI và làm rõ cancellation, restart behavior cùng quyền sở hữu.",
       ],
     },
+    "state-driven-animation": {
+      title: "Animation dẫn xuất từ state",
+      exercise:
+        "Animate favorite action, filter panel và card mở rộng, đồng thời giữ semantic state độc lập với visual progress.",
+      checklist: [
+        "Dùng UI state làm animation target thay vì lưu progress state trùng lặp",
+        "Chọn animation một giá trị, AnimatedVisibility hoặc transition theo visual behavior",
+      ],
+      stages: [
+        "Animate một visual property từ favorite state hiện tại.",
+        "Animate panel đi vào và rời khỏi UI tree.",
+        "Điều phối các visual property liên quan qua một transition state mà không ảnh hưởng business correctness.",
+      ],
+    },
     lifecycle: {
       title: "Vòng đời và cleanup",
       exercise:
@@ -1277,6 +1495,34 @@ export const viRoadmapTranslations = {
         "Đáp ứng semantics, touch target và idempotency.",
       ],
     },
+    "accessibility-semantics": {
+      title: "Accessibility semantics và test tag",
+      exercise:
+        "Chuyển favorite action chỉ có icon thành toggle có label, rồi thêm test selector mà không dùng nó làm accessibility text.",
+      checklist: [
+        "Dùng standard control khi built-in semantics phù hợp với interaction",
+        "Tách test identifier khỏi label, role và state announcement",
+      ],
+      stages: [
+        "Gắn screen-reader label có ý nghĩa và button role cho icon-only action.",
+        "Cung cấp checked state của custom favorite toggle.",
+        "Thêm stable test selector mà không thay thế semantics dành cho người dùng.",
+      ],
+    },
+    "gesture-abstractions": {
+      title: "Gesture abstraction và pointer input",
+      exercise:
+        "Tạo tap, swipe offset và long-press reorder handle, đồng thời chọn gesture abstraction nhỏ nhất vẫn giữ accessibility và cancellation.",
+      checklist: [
+        "Dùng standard control hoặc gesture Modifier trước raw pointer input",
+        "Giải thích pointerInput key và event consumption của custom gesture",
+      ],
+      stages: [
+        "Dùng standard action control thay vì tự xử lý tap responder.",
+        "Chuyển horizontal drag thành UI-owned offset state.",
+        "Chỉ dùng long-press drag detector cho custom gesture và consume event có chủ đích.",
+      ],
+    },
     navigation: {
       title: "Điều hướng",
       exercise:
@@ -1289,6 +1535,20 @@ export const viRoadmapTranslations = {
         "Điều hướng giữa hai destination qua graph.",
         "Truyền navigation callback vào screen content thay vì controller.",
         "Tổ chức graph theo scope và kiểm thử navigation behavior độc lập với destination UI.",
+      ],
+    },
+    "back-navigation": {
+      title: "System back và thay đổi chưa lưu",
+      exercise:
+        "Giữ normal back-stack navigation, sau đó chỉ yêu cầu xác nhận khi edit draft có thay đổi chưa lưu.",
+      checklist: [
+        "Để navigation stack xử lý back navigation thông thường",
+        "Dùng enabled state thay vì conditionally compose BackHandler",
+      ],
+      stages: [
+        "Chỉ chặn system back khi draft chưa lưu cần được quyết định.",
+        "Hiện discard dialog và chỉ pop back stack sau khi người dùng xác nhận.",
+        "Giữ handler composition ổn định và kiểm tra system, gesture, dialog cùng nested back behavior.",
       ],
     },
     "route-parameters": {
@@ -1421,6 +1681,20 @@ export const viRoadmapTranslations = {
         "Xử lý expiry, concurrent refresh, revocation và atomic sign-out.",
       ],
     },
+    "runtime-permissions": {
+      title: "Runtime permission",
+      exercise:
+        "Chỉ yêu cầu camera sau scan action, hiển thị fallback khi bị từ chối và giải thích lợi ích của feature trước OS dialog.",
+      checklist: [
+        "Yêu cầu capability tối thiểu trong ngữ cảnh user intent",
+        "Render denied state có thể sử dụng thay vì giả định request thành công",
+      ],
+      stages: [
+        "Khởi chạy camera permission request từ user action rõ ràng.",
+        "Render feature fallback vẫn hoạt động khi capability bị từ chối.",
+        "Giải thích lợi ích của feature bằng app UI trước system-owned permission dialog.",
+      ],
+    },
     theme: {
       title: "Giao diện",
       exercise:
@@ -1433,6 +1707,20 @@ export const viRoadmapTranslations = {
         "Áp dụng color và typography qua MaterialTheme.",
         "Lưu lựa chọn người dùng trong khi vẫn hỗ trợ system default.",
         "Kiểm tra contrast, dynamic change và hành vi lúc khởi động.",
+      ],
+    },
+    "ui-behavior-testing": {
+      title: "Kiểm thử hành vi UI",
+      exercise:
+        "Test một user action hiển thị, reusable screen contract và một control mơ hồ mà không assert component internal.",
+      checklist: [
+        "Assert kết quả người dùng quan sát được sau interaction",
+        "Dùng text, role hoặc semantics trước test-only identifier",
+      ],
+      stages: [
+        "Nhấn một action hiển thị và assert kết quả được render.",
+        "Test stateless screen bằng plain state và callback contract.",
+        "Chỉ dùng test identifier khi visible hoặc semantic selector không xác định được node cần test.",
       ],
     },
   },

@@ -14,7 +14,7 @@ describe("concept search index", () => {
       "local-state",
     );
     expect(searchConceptIndex(index, "recomposition")[0]?.slug).toBe(
-      "local-state",
+      "recomposition",
     );
   });
 

@@ -2,6 +2,7 @@ import type { ContentReference } from "@/types/concept";
 import type { Technology } from "@/types/technology";
 
 const VERIFIED_AT = "2026-09-18";
+const BRIDGE_VERIFIED_AT = "2026-09-19";
 
 function officialDocs(
   title: string,
@@ -19,7 +20,314 @@ function officialDocs(
   };
 }
 
+function bridgeDocs(
+  title: string,
+  url: string,
+  technology: Technology,
+): ContentReference {
+  return {
+    ...officialDocs(title, url, technology),
+    verifiedAt: BRIDGE_VERIFIED_AT,
+  };
+}
+
 export const conceptReferences = {
+  "null-safety": [
+    bridgeDocs(
+      "TypeScript: strictNullChecks",
+      "https://www.typescriptlang.org/tsconfig/strictNullChecks.html",
+      "react-native",
+    ),
+    bridgeDocs(
+      "Kotlin null safety",
+      "https://kotlinlang.org/docs/null-safety.html",
+      "kotlin",
+    ),
+  ],
+  "data-classes": [
+    bridgeDocs(
+      "TypeScript object types",
+      "https://www.typescriptlang.org/docs/handbook/2/objects.html",
+      "react-native",
+    ),
+    bridgeDocs(
+      "Kotlin data classes",
+      "https://kotlinlang.org/docs/data-classes.html",
+      "kotlin",
+    ),
+  ],
+  "sealed-types": [
+    bridgeDocs(
+      "TypeScript discriminated unions",
+      "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions",
+      "react-native",
+    ),
+    bridgeDocs(
+      "Kotlin sealed classes and interfaces",
+      "https://kotlinlang.org/docs/sealed-classes.html",
+      "kotlin",
+    ),
+  ],
+  "collection-transforms": [
+    bridgeDocs(
+      "TypeScript everyday types: arrays",
+      "https://www.typescriptlang.org/docs/handbook/2/everyday-types.html#arrays",
+      "react-native",
+    ),
+    bridgeDocs(
+      "Kotlin collection transformations",
+      "https://kotlinlang.org/docs/collection-transformations.html",
+      "kotlin",
+    ),
+  ],
+  "lambdas-and-receivers": [
+    bridgeDocs(
+      "TypeScript functions",
+      "https://www.typescriptlang.org/docs/handbook/2/functions.html",
+      "react-native",
+    ),
+    bridgeDocs(
+      "Kotlin lambdas",
+      "https://kotlinlang.org/docs/lambdas.html",
+      "kotlin",
+    ),
+    bridgeDocs(
+      "Kotlin type-safe builders",
+      "https://kotlinlang.org/docs/type-safe-builders.html",
+      "kotlin",
+    ),
+  ],
+  "extension-functions": [
+    bridgeDocs(
+      "TypeScript functions",
+      "https://www.typescriptlang.org/docs/handbook/2/functions.html",
+      "react-native",
+    ),
+    bridgeDocs(
+      "Kotlin extensions",
+      "https://kotlinlang.org/docs/extensions.html",
+      "kotlin",
+    ),
+  ],
+  generics: [
+    bridgeDocs(
+      "TypeScript generics",
+      "https://www.typescriptlang.org/docs/handbook/2/generics.html",
+      "react-native",
+    ),
+    bridgeDocs(
+      "Kotlin generics",
+      "https://kotlinlang.org/docs/generics.html",
+      "kotlin",
+    ),
+  ],
+  recomposition: [
+    bridgeDocs(
+      "Render and Commit",
+      "https://react.dev/learn/render-and-commit",
+      "react-native",
+    ),
+    bridgeDocs(
+      "Lifecycle of composables",
+      "https://developer.android.com/develop/ui/compose/lifecycle",
+      "kotlin",
+    ),
+  ],
+  "snapshot-state": [
+    bridgeDocs(
+      "Updating Arrays in State",
+      "https://react.dev/learn/updating-arrays-in-state",
+      "react-native",
+    ),
+    bridgeDocs(
+      "State and Jetpack Compose",
+      "https://developer.android.com/develop/ui/compose/state",
+      "kotlin",
+    ),
+  ],
+  "ui-identity": [
+    bridgeDocs(
+      "Preserving and resetting state",
+      "https://react.dev/learn/preserving-and-resetting-state",
+      "react-native",
+    ),
+    bridgeDocs(
+      "Lifecycle of composables",
+      "https://developer.android.com/develop/ui/compose/lifecycle",
+      "kotlin",
+    ),
+  ],
+  "state-restoration": [
+    bridgeDocs(
+      "Preserving and resetting state",
+      "https://react.dev/learn/preserving-and-resetting-state",
+      "react-native",
+    ),
+    bridgeDocs(
+      "Save UI state in Compose",
+      "https://developer.android.com/develop/ui/compose/state-saving",
+      "kotlin",
+    ),
+    bridgeDocs(
+      "Save UI states",
+      "https://developer.android.com/topic/libraries/architecture/saving-states",
+      "kotlin",
+    ),
+  ],
+  "stability-and-skipping": [
+    bridgeDocs(
+      "React memo",
+      "https://react.dev/reference/react/memo",
+      "react-native",
+    ),
+    bridgeDocs(
+      "Stability in Compose",
+      "https://developer.android.com/develop/ui/compose/performance/stability",
+      "kotlin",
+    ),
+    bridgeDocs(
+      "Strong skipping mode",
+      "https://developer.android.com/develop/ui/compose/performance/stability/strongskipping",
+      "kotlin",
+    ),
+  ],
+  "modifier-order": [
+    bridgeDocs(
+      "React Native Style",
+      "https://reactnative.dev/docs/style",
+      "react-native",
+    ),
+    bridgeDocs(
+      "Compose modifiers",
+      "https://developer.android.com/develop/ui/compose/modifiers",
+      "kotlin",
+    ),
+  ],
+  "layout-constraints": [
+    bridgeDocs(
+      "React Native Height and Width",
+      "https://reactnative.dev/docs/height-and-width",
+      "react-native",
+    ),
+    bridgeDocs(
+      "Compose constraints and modifier order",
+      "https://developer.android.com/develop/ui/compose/layouts/constraints-modifiers",
+      "kotlin",
+    ),
+  ],
+  "window-insets": [
+    bridgeDocs(
+      "React Native SafeAreaView",
+      "https://reactnative.dev/docs/safeareaview",
+      "react-native",
+    ),
+    bridgeDocs(
+      "Set up window insets in Compose",
+      "https://developer.android.com/develop/ui/compose/system/insets-ui",
+      "kotlin",
+    ),
+  ],
+  "adaptive-layouts": [
+    bridgeDocs(
+      "React Native useWindowDimensions",
+      "https://reactnative.dev/docs/usewindowdimensions",
+      "react-native",
+    ),
+    bridgeDocs(
+      "Use Compose window size classes",
+      "https://developer.android.com/develop/ui/compose/layouts/adaptive/use-window-size-classes",
+      "kotlin",
+    ),
+  ],
+  "accessibility-semantics": [
+    bridgeDocs(
+      "React Native Accessibility",
+      "https://reactnative.dev/docs/accessibility",
+      "react-native",
+    ),
+    bridgeDocs(
+      "Compose semantics",
+      "https://developer.android.com/develop/ui/compose/accessibility/semantics",
+      "kotlin",
+    ),
+    bridgeDocs(
+      "Test your Compose layout",
+      "https://developer.android.com/develop/ui/compose/testing",
+      "kotlin",
+    ),
+  ],
+  "state-driven-animation": [
+    bridgeDocs(
+      "React Native Animations",
+      "https://reactnative.dev/docs/animations",
+      "react-native",
+    ),
+    bridgeDocs(
+      "Quick guide to Compose animations",
+      "https://developer.android.com/develop/ui/compose/animation/quick-guide",
+      "kotlin",
+    ),
+  ],
+  "gesture-abstractions": [
+    bridgeDocs(
+      "React Native Gesture Responder System",
+      "https://reactnative.dev/docs/gesture-responder-system",
+      "react-native",
+    ),
+    bridgeDocs(
+      "Understand gestures in Compose",
+      "https://developer.android.com/develop/ui/compose/touch-input/pointer-input/understand-gestures",
+      "kotlin",
+    ),
+  ],
+  "runtime-permissions": [
+    bridgeDocs(
+      "React Native PermissionsAndroid",
+      "https://reactnative.dev/docs/permissionsandroid",
+      "react-native",
+    ),
+    bridgeDocs(
+      "Request Android runtime permissions",
+      "https://developer.android.com/training/permissions/requesting",
+      "kotlin",
+    ),
+  ],
+  "back-navigation": [
+    bridgeDocs(
+      "React Native BackHandler",
+      "https://reactnative.dev/docs/backhandler",
+      "react-native",
+    ),
+    bridgeDocs(
+      "Custom back navigation in Compose",
+      "https://developer.android.com/guide/navigation/custom-back",
+      "kotlin",
+    ),
+  ],
+  "ui-behavior-testing": [
+    bridgeDocs(
+      "React Native Testing overview",
+      "https://reactnative.dev/docs/testing-overview",
+      "react-native",
+    ),
+    bridgeDocs(
+      "Test your Compose layout",
+      "https://developer.android.com/develop/ui/compose/testing",
+      "kotlin",
+    ),
+  ],
+  "composition-local": [
+    bridgeDocs(
+      "React createContext",
+      "https://react.dev/reference/react/createContext",
+      "react-native",
+    ),
+    bridgeDocs(
+      "CompositionLocal",
+      "https://developer.android.com/develop/ui/compose/compositionlocal",
+      "kotlin",
+    ),
+  ],
   component: [
     officialDocs(
       "Your First Component",

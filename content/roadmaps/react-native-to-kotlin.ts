@@ -3,6 +3,450 @@ export const reactNativeToKotlinRoadmap = {
   target: "kotlin",
   sections: [
     {
+      id: "kotlin-bridge",
+      title: "Kotlin Bridge",
+      order: 5,
+      lessons: [
+        {
+          conceptSlug: "null-safety",
+          title: "Null Safety",
+          order: 10,
+          exercise:
+            "Convert a nullable API response and route parameter from TypeScript into a Kotlin boundary that exposes validated domain values.",
+          checklist: [
+            "Distinguishes missing data from an invalid value",
+            "Avoids non-null assertions and Kotlin !!",
+          ],
+          stages: [
+            {
+              id: "basic",
+              title: "Basic",
+              description:
+                "Map nullable unions and optional chaining to nullable types, safe calls, and the Elvis operator.",
+            },
+            {
+              id: "applied",
+              title: "Applied",
+              description:
+                "Validate nullable route or platform input once and continue with a non-null local value.",
+            },
+            {
+              id: "production",
+              title: "Production",
+              description:
+                "Normalize nullable transport data at the repository boundary instead of spreading defensive checks through UI code.",
+            },
+          ],
+        },
+        {
+          conceptSlug: "data-classes",
+          title: "Immutable Models and Data Classes",
+          order: 20,
+          exercise:
+            "Convert a readonly TypeScript profile model and nested state update into Kotlin data classes with copy-based updates.",
+          checklist: [
+            "Explains reference equality versus value equality",
+            "Does not confuse val with deep immutability",
+          ],
+          stages: [
+            {
+              id: "basic",
+              title: "Basic",
+              description:
+                "Replace an immutable object-spread update with a data-class copy call.",
+            },
+            {
+              id: "applied",
+              title: "Applied",
+              description:
+                "Update nested list state without mutating the previous model or its elements.",
+            },
+            {
+              id: "production",
+              title: "Production",
+              description:
+                "Expose read-only UI models and keep mutable collections behind their owner.",
+            },
+          ],
+        },
+        {
+          conceptSlug: "sealed-types",
+          title: "Discriminated Unions and Sealed Types",
+          order: 30,
+          exercise:
+            "Translate a discriminated sign-in state into a sealed hierarchy and render every variant exhaustively.",
+          checklist: [
+            "Stores only valid payload in each state variant",
+            "Handles every variant without a catch-all branch",
+          ],
+          stages: [
+            {
+              id: "basic",
+              title: "Basic",
+              description:
+                "Represent a closed loading-or-ready state with a union or sealed interface.",
+            },
+            {
+              id: "applied",
+              title: "Applied",
+              description:
+                "Attach variant-specific data to a small state machine instead of combining unrelated flags.",
+            },
+            {
+              id: "production",
+              title: "Production",
+              description:
+                "Use exhaustive rendering so adding a new state produces a compile-time review point.",
+            },
+          ],
+        },
+        {
+          conceptSlug: "collection-transforms",
+          title: "Collection Transformations",
+          order: 40,
+          exercise:
+            "Convert an array pipeline that parses, filters, and indexes users into idiomatic Kotlin collection operations.",
+          checklist: [
+            "Chooses mapNotNull and associateBy deliberately",
+            "Uses Sequence only when laziness provides a real benefit",
+          ],
+          stages: [
+            {
+              id: "basic",
+              title: "Basic",
+              description:
+                "Translate familiar filter and map pipelines while preserving order and types.",
+            },
+            {
+              id: "applied",
+              title: "Applied",
+              description:
+                "Drop invalid nullable results and build keyed lookup collections with explicit operators.",
+            },
+            {
+              id: "production",
+              title: "Production",
+              description:
+                "Control intermediate allocations for large pipelines without obscuring simple transformations.",
+            },
+          ],
+        },
+        {
+          conceptSlug: "lambdas-and-receivers",
+          title: "Lambdas and Receiver Scopes",
+          order: 50,
+          exercise:
+            "Translate a typed callback and builder API into Kotlin function types, trailing lambdas, and a constrained receiver scope.",
+          checklist: [
+            "Reads Kotlin function types in both directions",
+            "Knows which receiver provides a scoped API",
+          ],
+          stages: [
+            {
+              id: "basic",
+              title: "Basic",
+              description:
+                "Map a TypeScript callback signature to a Kotlin function type returning Unit.",
+            },
+            {
+              id: "applied",
+              title: "Applied",
+              description:
+                "Read trailing-lambda builder syntax as a callback with an implicit typed receiver.",
+            },
+            {
+              id: "production",
+              title: "Production",
+              description:
+                "Expose receiver-scoped UI slots only when callers need capabilities from a layout scope.",
+            },
+          ],
+        },
+        {
+          conceptSlug: "extension-functions",
+          title: "Extension Functions",
+          order: 60,
+          exercise:
+            "Move a profile display helper and DTO mapper into focused Kotlin extensions while keeping effectful dependencies explicit.",
+          checklist: [
+            "Understands that extensions are resolved statically",
+            "Does not hide I/O or ownership in a convenience property",
+          ],
+          stages: [
+            {
+              id: "basic",
+              title: "Basic",
+              description:
+                "Translate a focused utility into receiver-style syntax without changing the receiver class.",
+            },
+            {
+              id: "applied",
+              title: "Applied",
+              description:
+                "Keep transport-to-domain mapping close to its boundary with a pure extension.",
+            },
+            {
+              id: "production",
+              title: "Production",
+              description:
+                "Pass dependencies explicitly when an extension performs suspend or effectful work.",
+            },
+          ],
+        },
+        {
+          conceptSlug: "generics",
+          title: "Generics and Variance",
+          order: 70,
+          exercise:
+            "Translate a generic paged response and result type while preserving constraints and producer variance.",
+          checklist: [
+            "Explains the relationship preserved by each type parameter",
+            "Uses in, out, or invariance from actual API behavior",
+          ],
+          stages: [
+            {
+              id: "basic",
+              title: "Basic",
+              description:
+                "Represent a reusable container with one type parameter.",
+            },
+            {
+              id: "applied",
+              title: "Applied",
+              description:
+                "Add a constraint only when the implementation requires a capability such as a stable ID.",
+            },
+            {
+              id: "production",
+              title: "Production",
+              description:
+                "Model producer variance and failure without unsafe casts or deeply nested wrappers.",
+            },
+          ],
+        },
+      ],
+    },
+    {
+      id: "compose-runtime",
+      title: "Compose Runtime",
+      order: 7,
+      lessons: [
+        {
+          conceptSlug: "recomposition",
+          title: "Render and Recomposition",
+          order: 10,
+          exercise:
+            "Build a counter and cart summary, then identify which state reads affect each UI description without performing work during rendering.",
+          checklist: [
+            "Explains why recomposition is not an imperative redraw",
+            "Keeps external work out of composable execution",
+          ],
+          stages: [
+            {
+              id: "basic",
+              title: "Basic",
+              description: "Derive UI from an observable counter state.",
+            },
+            {
+              id: "applied",
+              title: "Applied",
+              description:
+                "Calculate a display value from the current input without duplicate mutable state.",
+            },
+            {
+              id: "production",
+              title: "Production",
+              description:
+                "Collect owned state at a route boundary and keep screen rendering pure.",
+            },
+          ],
+        },
+        {
+          conceptSlug: "snapshot-state",
+          title: "Observable Snapshot State",
+          order: 15,
+          exercise:
+            "Add and remove tags in both UIs, then replace a plain Kotlin MutableList with a state holder that actually notifies Compose.",
+          checklist: [
+            "Explains why remember alone does not observe collection mutation",
+            "Chooses immutable replacement or SnapshotStateList deliberately",
+          ],
+          stages: [
+            {
+              id: "basic",
+              title: "Basic",
+              description:
+                "Update a visible tag count through an observable state holder.",
+            },
+            {
+              id: "applied",
+              title: "Applied",
+              description:
+                "Add and remove list items without mutating an unobserved collection.",
+            },
+            {
+              id: "production",
+              title: "Production",
+              description:
+                "Keep mutations inside a state owner and expose read-only UI data.",
+            },
+          ],
+        },
+        {
+          conceptSlug: "ui-identity",
+          title: "UI Identity and Keys",
+          order: 20,
+          exercise:
+            "Add a local row draft, reorder the feed, and confirm the draft follows its domain item rather than its former position.",
+          checklist: [
+            "Uses stable domain IDs for reorderable rows",
+            "Can deliberately reset state when the selected item changes",
+          ],
+          stages: [
+            {
+              id: "basic",
+              title: "Basic",
+              description:
+                "Give list rows a stable key derived from their domain ID.",
+            },
+            {
+              id: "applied",
+              title: "Applied",
+              description:
+                "Preserve row identity when sorting or inserting items.",
+            },
+            {
+              id: "production",
+              title: "Production",
+              description:
+                "Reset a draft deliberately when its owning item changes.",
+            },
+          ],
+        },
+        {
+          conceptSlug: "state-restoration",
+          title: "State Lifetime and Restoration",
+          order: 30,
+          exercise:
+            "Choose ownership for a search draft and a profile ID, then test recomposition, configuration change, and system-initiated process recreation separately.",
+          checklist: [
+            "Distinguishes remember, rememberSaveable, ViewModel, and durable storage",
+            "Restores small inputs and reloads large domain data",
+          ],
+          stages: [
+            {
+              id: "basic",
+              title: "Basic",
+              description:
+                "Keep a draft only for the current UI instance or composition.",
+            },
+            {
+              id: "applied",
+              title: "Applied",
+              description:
+                "Make restoration an explicit owner decision rather than assuming local state survives.",
+            },
+            {
+              id: "production",
+              title: "Production",
+              description:
+                "Restore a compact ID and fetch current data from its repository.",
+            },
+          ],
+        },
+        {
+          conceptSlug: "stability-and-skipping",
+          title: "Stability and Skipping",
+          order: 40,
+          exercise:
+            "Compare a memoized React row with a Compose row receiving narrow values; profile before adding stability annotations.",
+          checklist: [
+            "Does not claim React.memo and Compose skipping are identical",
+            "Checks compiler settings and measurements before optimizing",
+          ],
+          stages: [
+            {
+              id: "basic",
+              title: "Basic",
+              description:
+                "Recognize when an unchanged UI call may be skipped.",
+            },
+            {
+              id: "applied",
+              title: "Applied",
+              description:
+                "Pass narrow values to list rows without promising a particular skip count.",
+            },
+            {
+              id: "production",
+              title: "Production",
+              description:
+                "Keep correctness independent of memoization and diagnose measured bottlenecks.",
+            },
+          ],
+        },
+        {
+          conceptSlug: "modifier-order",
+          title: "Modifier Order and Bounds",
+          order: 50,
+          exercise:
+            "Build a padded card and button, then change Modifier order and inspect both painted and tappable bounds.",
+          checklist: [
+            "Predicts background bounds before running the UI",
+            "Includes intended padding in the touch target",
+          ],
+          stages: [
+            {
+              id: "basic",
+              title: "Basic",
+              description: "Paint a surface before applying its inner padding.",
+            },
+            {
+              id: "applied",
+              title: "Applied",
+              description:
+                "Move padding outside a painted inner surface intentionally.",
+            },
+            {
+              id: "production",
+              title: "Production",
+              description:
+                "Keep a padded control's full intended bounds clickable.",
+            },
+          ],
+        },
+        {
+          conceptSlug: "composition-local",
+          title: "Context and CompositionLocal",
+          order: 60,
+          exercise:
+            "Provide a spacing token to a subtree, override it for one branch, and keep screen state explicit.",
+          checklist: [
+            "Explains the provider and consumer scope",
+            "Does not hide screen state or events in an ambient local",
+          ],
+          stages: [
+            {
+              id: "basic",
+              title: "Basic",
+              description: "Provide and read one subtree-scoped design token.",
+            },
+            {
+              id: "applied",
+              title: "Applied",
+              description: "Override a token for one nested branch only.",
+            },
+            {
+              id: "production",
+              title: "Production",
+              description:
+                "Use locals for design context while passing screen values explicitly.",
+            },
+          ],
+        },
+      ],
+    },
+    {
       id: "ui-basics",
       title: "UI Basics",
       order: 10,
@@ -152,6 +596,99 @@ export const reactNativeToKotlinRoadmap = {
               title: "Production",
               description:
                 "Extract repeated spacing and alignment into focused composables or design tokens rather than copying modifier chains.",
+            },
+          ],
+        },
+        {
+          conceptSlug: "layout-constraints",
+          title: "Layout Constraints and Sizing",
+          order: 20.5,
+          exercise:
+            "Build a fixed preview, a padded full-width card, and tablet-width content; explain which bounds each parent passes to its child.",
+          checklist: [
+            "Explains parent constraints and child measurement",
+            "Puts widthIn before fillMaxWidth when capping content width",
+          ],
+          stages: [
+            {
+              id: "basic",
+              title: "Basic",
+              description:
+                "Request a fixed size while respecting incoming parent constraints.",
+            },
+            {
+              id: "applied",
+              title: "Applied",
+              description:
+                "Fill only the width available inside parent padding.",
+            },
+            {
+              id: "production",
+              title: "Production",
+              description:
+                "Fill narrow screens while limiting and centering content on wide screens.",
+            },
+          ],
+        },
+        {
+          conceptSlug: "window-insets",
+          title: "Safe Areas, System Bars, and IME Insets",
+          order: 20.6,
+          exercise:
+            "Keep a header, message composer, and scrolling feed reachable with cutouts, gesture navigation, and the keyboard visible.",
+          checklist: [
+            "Separates decorative edge-to-edge content from reachable controls",
+            "Avoids applying the same inset through both Scaffold and child padding",
+          ],
+          stages: [
+            {
+              id: "basic",
+              title: "Basic",
+              description:
+                "Pad a top-level control for the current safe drawing area.",
+            },
+            {
+              id: "applied",
+              title: "Applied",
+              description:
+                "Keep a message composer visible as the IME opens and closes.",
+            },
+            {
+              id: "production",
+              title: "Production",
+              description:
+                "Apply screen-boundary inset ownership once and forward Scaffold content padding to scrolling content.",
+            },
+          ],
+        },
+        {
+          conceptSlug: "adaptive-layouts",
+          title: "Adaptive Layouts and Window Size",
+          order: 20.7,
+          exercise:
+            "Change a mail screen from one pane to two panes as the available window grows, without losing the selected message.",
+          checklist: [
+            "Chooses layout from available window space rather than device identity",
+            "Keeps selection and navigation state outside the pane arrangement",
+          ],
+          stages: [
+            {
+              id: "basic",
+              title: "Basic",
+              description:
+                "Choose a list or grid layout from the current available window width.",
+            },
+            {
+              id: "applied",
+              title: "Applied",
+              description:
+                "Show a one-pane or two-pane mail layout while passing the same selection state to either.",
+            },
+            {
+              id: "production",
+              title: "Production",
+              description:
+                "Keep selection in the route-level owner so it survives window resize, folding, and pane changes.",
             },
           ],
         },
@@ -847,7 +1384,7 @@ fun ProfileScreen(state: ProfileUiState, onRename: (String) -> Unit) {
                     "Changing the key cancels the previous coroutine before starting a new search.",
                   language: "kotlin",
                   filename: "SearchScreen.kt",
-                  code: `LaunchedEffect(query) {
+                  code: `LaunchedEffect(query, onSearch) {
     if (query.isBlank()) return@LaunchedEffect
     delay(300)
     onSearch(query)
@@ -879,9 +1416,10 @@ fun ProfileScreen(state: ProfileUiState, onRename: (String) -> Unit) {
                   language: "kotlin",
                   filename: "AppStateObserver.kt",
                   code: `val owner = LocalLifecycleOwner.current
+val currentOnEvent by rememberUpdatedState(onEvent)
 
 DisposableEffect(owner) {
-    val observer = LifecycleEventObserver { _, event -> onEvent(event) }
+    val observer = LifecycleEventObserver { _, event -> currentOnEvent(event) }
     owner.lifecycle.addObserver(observer)
     onDispose { owner.lifecycle.removeObserver(observer) }
 }`,
@@ -924,6 +1462,36 @@ LaunchedEffect(Unit) {
 }`,
                 },
               },
+            },
+          ],
+        },
+        {
+          conceptSlug: "state-driven-animation",
+          title: "State-Driven Animation",
+          order: 15,
+          exercise:
+            "Animate a favorite action, a filter panel, and an expanding card while keeping the semantic state independent from visual progress.",
+          checklist: [
+            "Uses the UI state as the animation target instead of storing duplicate progress state",
+            "Selects one-value animation, AnimatedVisibility, or transition from the visual behavior",
+          ],
+          stages: [
+            {
+              id: "basic",
+              title: "Basic",
+              description:
+                "Animate a single visual property from the current favorite state.",
+            },
+            {
+              id: "applied",
+              title: "Applied",
+              description: "Animate a panel entering and leaving the UI tree.",
+            },
+            {
+              id: "production",
+              title: "Production",
+              description:
+                "Coordinate related visual properties through one transition state without affecting business correctness.",
             },
           ],
         },
@@ -1127,14 +1695,21 @@ fun SaveButton(isSaving: Boolean, canSave: Boolean, onSave: () -> Unit) {
                     "The screen owner prevents duplicate saves; the button remains presentation-only.",
                   language: "tsx",
                   filename: "ProfileScreen.tsx",
-                  code: `async function handleSave() {
-  if (isSaving) return;
+                  code: `const saveInFlight = useRef(false);
+
+async function handleSave() {
+  if (saveInFlight.current) return;
+  saveInFlight.current = true;
   setIsSaving(true);
-  try { await saveProfile(); }
-  finally { setIsSaving(false); }
+  try {
+    await saveProfile();
+  } finally {
+    saveInFlight.current = false;
+    setIsSaving(false);
+  }
 }
 
-<SaveButton isSaving={isSaving} onSave={handleSave} />`,
+<SaveButton canSave={canSave} isSaving={isSaving} onSave={handleSave} />`,
                 },
                 kotlin: {
                   name: "Guarded intent",
@@ -1142,16 +1717,87 @@ fun SaveButton(isSaving: Boolean, canSave: Boolean, onSave: () -> Unit) {
                     "The state owner rejects duplicate intent while the Material button supplies semantics.",
                   language: "kotlin",
                   filename: "ProfileViewModel.kt",
-                  code: `fun save() {
-    if (state.value.isSaving) return
-    viewModelScope.launch {
+                  code: `private var saveJob: Job? = null
+
+fun save() {
+    if (saveJob?.isActive == true) return
+    saveJob = viewModelScope.launch {
         _state.update { it.copy(isSaving = true) }
-        try { repository.save() }
-        finally { _state.update { it.copy(isSaving = false) } }
+        try {
+            repository.save()
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (error: Throwable) {
+            _state.update { it.copy(saveError = error.toUiMessage()) }
+        } finally {
+            _state.update { it.copy(isSaving = false) }
+        }
     }
 }`,
                 },
               },
+            },
+          ],
+        },
+        {
+          conceptSlug: "accessibility-semantics",
+          title: "Accessibility Semantics and Test Tags",
+          order: 7,
+          exercise:
+            "Convert an icon-only favorite action into a labeled toggle, then add a test selector without exposing it as user-facing accessibility text.",
+          checklist: [
+            "Uses standard controls when their built-in semantics match the interaction",
+            "Keeps test identifiers separate from labels, roles, and state announcements",
+          ],
+          stages: [
+            {
+              id: "basic",
+              title: "Basic",
+              description:
+                "Give an icon-only action a meaningful screen-reader label and button role.",
+            },
+            {
+              id: "applied",
+              title: "Applied",
+              description:
+                "Expose the checked state of a custom favorite toggle.",
+            },
+            {
+              id: "production",
+              title: "Production",
+              description:
+                "Add a stable test selector without replacing user-facing semantics.",
+            },
+          ],
+        },
+        {
+          conceptSlug: "gesture-abstractions",
+          title: "Gesture Abstractions and Pointer Input",
+          order: 8,
+          exercise:
+            "Implement a tap, swipe offset, and long-press reorder handle while choosing the smallest gesture abstraction that preserves accessibility and cancellation.",
+          checklist: [
+            "Uses standard controls or gesture modifiers before raw pointer input",
+            "Explains pointerInput keys and event consumption for the custom gesture",
+          ],
+          stages: [
+            {
+              id: "basic",
+              title: "Basic",
+              description:
+                "Use a standard action control instead of manually handling a tap responder.",
+            },
+            {
+              id: "applied",
+              title: "Applied",
+              description:
+                "Translate a horizontal drag into UI-owned offset state.",
+            },
+            {
+              id: "production",
+              title: "Production",
+              description:
+                "Use a long-press drag detector only for a custom gesture and consume events deliberately.",
             },
           ],
         },
@@ -1276,9 +1922,16 @@ fun SignInForm(state: SignInUiState, onEvent: (SignInEvent) -> Unit) {
     if (!current.canSubmit || current.isSubmitting) return
     viewModelScope.launch {
         _state.update { it.copy(isSubmitting = true, serverError = null) }
-        runCatching { auth.signIn(current.email, current.password) }
-            .onFailure { _state.update { state -> state.copy(serverError = "Unable to sign in") } }
-        _state.update { it.copy(isSubmitting = false) }
+        try {
+            auth.signIn(current.email, current.password)
+            _state.update { it.copy(isSignedIn = true) }
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (error: Throwable) {
+            _state.update { it.copy(serverError = error.toUiMessage()) }
+        } finally {
+            _state.update { it.copy(isSubmitting = false) }
+        }
     }
 }`,
                 },
@@ -1403,6 +2056,37 @@ fun ProfileScreen(onEdit: () -> Unit) {
 }`,
                 },
               },
+            },
+          ],
+        },
+        {
+          conceptSlug: "back-navigation",
+          title: "System Back and Unsaved Changes",
+          order: 15,
+          exercise:
+            "Keep normal back-stack navigation intact, then require confirmation only when an edit draft has unsaved changes.",
+          checklist: [
+            "Lets the navigation stack handle ordinary back navigation",
+            "Uses enabled state instead of conditionally composing BackHandler",
+          ],
+          stages: [
+            {
+              id: "basic",
+              title: "Basic",
+              description:
+                "Intercept system back only while an unsaved draft needs a decision.",
+            },
+            {
+              id: "applied",
+              title: "Applied",
+              description:
+                "Show a discard dialog and pop the back stack only after user confirmation.",
+            },
+            {
+              id: "production",
+              title: "Production",
+              description:
+                "Keep handler composition stable and test system, gesture, dialog, and nested back behavior.",
             },
           ],
         },
@@ -1889,6 +2573,37 @@ navController.navigate(ProfileRoute(user.id))`,
           ],
         },
         {
+          conceptSlug: "runtime-permissions",
+          title: "Runtime Permissions",
+          order: 15,
+          exercise:
+            "Request camera access only after a scan action, present a fallback when denied, and explain the feature benefit before the OS dialog.",
+          checklist: [
+            "Requests the minimum capability in the context of user intent",
+            "Renders a usable denied state instead of assuming the request succeeds",
+          ],
+          stages: [
+            {
+              id: "basic",
+              title: "Basic",
+              description:
+                "Launch a camera permission request from an explicit user action.",
+            },
+            {
+              id: "applied",
+              title: "Applied",
+              description:
+                "Render a feature fallback that works without the denied capability.",
+            },
+            {
+              id: "production",
+              title: "Production",
+              description:
+                "Explain the feature benefit in app UI before the system-owned permission dialog.",
+            },
+          ],
+        },
+        {
           conceptSlug: "theme",
           title: "Theme",
           order: 20,
@@ -1915,6 +2630,37 @@ navController.navigate(ProfileRoute(user.id))`,
               title: "Production",
               description:
                 "Validate contrast, dynamic changes, and launch behavior.",
+            },
+          ],
+        },
+        {
+          conceptSlug: "ui-behavior-testing",
+          title: "UI Behavior Testing",
+          order: 30,
+          exercise:
+            "Test a visible user action, a reusable screen contract, and one ambiguous control without asserting component internals.",
+          checklist: [
+            "Asserts a user-observable result after an interaction",
+            "Uses text, role, or semantics before test-only identifiers",
+          ],
+          stages: [
+            {
+              id: "basic",
+              title: "Basic",
+              description:
+                "Press one visible action and assert the rendered result.",
+            },
+            {
+              id: "applied",
+              title: "Applied",
+              description:
+                "Test a stateless screen with plain state and a callback contract.",
+            },
+            {
+              id: "production",
+              title: "Production",
+              description:
+                "Use a test identifier only when visible or semantic selectors cannot identify the intended node.",
             },
           ],
         },

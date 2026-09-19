@@ -42,6 +42,42 @@ describe("concept content", () => {
       english?.implementations.kotlin?.code,
     );
     expect(vietnamese?.references).toEqual(english?.references);
+    expect(getConceptBySlug("null-safety", "vi")?.title).toBe("Null safety");
+    for (const slug of [
+      "null-safety",
+      "data-classes",
+      "sealed-types",
+      "collection-transforms",
+      "lambdas-and-receivers",
+      "extension-functions",
+      "generics",
+      "recomposition",
+      "snapshot-state",
+      "ui-identity",
+      "state-restoration",
+      "stability-and-skipping",
+      "modifier-order",
+      "composition-local",
+      "layout-constraints",
+      "window-insets",
+      "adaptive-layouts",
+      "accessibility-semantics",
+      "state-driven-animation",
+      "gesture-abstractions",
+      "runtime-permissions",
+      "back-navigation",
+      "ui-behavior-testing",
+    ]) {
+      const englishBridge = getConceptBySlug(slug, "en")!;
+      const vietnameseBridge = getConceptBySlug(slug, "vi")!;
+
+      expect(vietnameseBridge.description).not.toBe(englishBridge.description);
+      expect(vietnameseBridge.mentalModel).not.toBe(englishBridge.mentalModel);
+      expect(vietnameseBridge.differences).toHaveLength(
+        englishBridge.differences.length,
+      );
+      expect(vietnameseBridge.references).toEqual(englishBridge.references);
+    }
   });
 
   test("provides verified references for both roadmap technologies", () => {
@@ -63,8 +99,22 @@ describe("concept content", () => {
   test("loads concepts in stable order", () => {
     const concepts = getConcepts();
 
-    expect(concepts).toHaveLength(30);
+    expect(concepts).toHaveLength(53);
     expect(concepts.map((concept) => concept.slug)).toEqual([
+      "null-safety",
+      "data-classes",
+      "sealed-types",
+      "collection-transforms",
+      "lambdas-and-receivers",
+      "extension-functions",
+      "generics",
+      "recomposition",
+      "snapshot-state",
+      "ui-identity",
+      "state-restoration",
+      "stability-and-skipping",
+      "modifier-order",
+      "composition-local",
       "component",
       "props",
       "children",
@@ -73,6 +123,9 @@ describe("concept content", () => {
       "derived-state",
       "global-state",
       "layout",
+      "layout-constraints",
+      "window-insets",
+      "adaptive-layouts",
       "vertical-layout",
       "horizontal-layout",
       "stack",
@@ -80,6 +133,9 @@ describe("concept content", () => {
       "grid",
       "pagination",
       "button",
+      "accessibility-semantics",
+      "state-driven-animation",
+      "gesture-abstractions",
       "text-input",
       "form",
       "side-effects",
@@ -88,9 +144,12 @@ describe("concept content", () => {
       "loading-state",
       "error-handling",
       "navigation",
+      "runtime-permissions",
+      "back-navigation",
       "route-parameters",
       "deep-link",
       "api-request",
+      "ui-behavior-testing",
       "local-storage",
       "secure-storage",
       "authentication",
@@ -104,7 +163,13 @@ describe("concept content", () => {
   });
 
   test("sorts raw concepts by order", () => {
-    const concepts = validateConcepts([rawConcepts[4], rawConcepts[0]]);
+    const component = rawConcepts.find(
+      (concept) => concept.slug === "component",
+    )!;
+    const localState = rawConcepts.find(
+      (concept) => concept.slug === "local-state",
+    )!;
+    const concepts = validateConcepts([localState, component]);
 
     expect(concepts.map((concept) => concept.slug)).toEqual([
       "component",
@@ -186,11 +251,219 @@ describe("roadmap content", () => {
     }
   });
 
+  test("teaches bounded Compose sizing before width filling", () => {
+    const english = getRoadmap("react-native", "kotlin", "en")!;
+    const vietnamese = getRoadmap("react-native", "kotlin", "vi")!;
+    const lesson = getRoadmapLessonLocation(
+      english,
+      "layout-constraints",
+    )?.lesson;
+    const vietnameseLesson = getRoadmapLessonLocation(
+      vietnamese,
+      "layout-constraints",
+    )?.lesson;
+
+    expect(lesson?.stages[2].examples?.kotlin?.code).toContain(
+      "widthIn(max = 480.dp).fillMaxWidth()",
+    );
+    expect(vietnameseLesson?.title).toBe("Constraints và kích thước layout");
+    expect(vietnameseLesson?.stages[2].examples?.kotlin?.code).toBe(
+      lesson?.stages[2].examples?.kotlin?.code,
+    );
+  });
+
+  test("keeps inset ownership at the screen boundary", () => {
+    const roadmap = getRoadmap("react-native", "kotlin", "en")!;
+    const lesson = getRoadmapLessonLocation(roadmap, "window-insets")?.lesson;
+
+    expect(lesson?.stages[1].examples?.kotlin?.code).toContain("imePadding()");
+    expect(lesson?.stages[2].examples?.kotlin?.code).toContain(
+      "LazyColumn(contentPadding = contentPadding)",
+    );
+    expect(getConceptBySlug("window-insets", "vi")?.title).toBe(
+      "Safe area, system bar và IME inset",
+    );
+  });
+
+  test("keeps adaptive selection outside the pane arrangement", () => {
+    const roadmap = getRoadmap("react-native", "kotlin", "en")!;
+    const lesson = getRoadmapLessonLocation(
+      roadmap,
+      "adaptive-layouts",
+    )?.lesson;
+
+    expect(lesson?.stages[1].examples?.kotlin?.code).toContain(
+      "currentWindowAdaptiveInfo().windowSizeClass",
+    );
+    expect(lesson?.stages[2].examples?.kotlin?.code).toContain(
+      "viewModel.selectedId.collectAsStateWithLifecycle()",
+    );
+    expect(getConceptBySlug("adaptive-layouts", "vi")?.title).toBe(
+      "Adaptive layout và kích thước cửa sổ",
+    );
+  });
+
+  test("keeps accessibility semantics separate from test tags", () => {
+    const roadmap = getRoadmap("react-native", "kotlin", "en")!;
+    const lesson = getRoadmapLessonLocation(
+      roadmap,
+      "accessibility-semantics",
+    )?.lesson;
+
+    expect(lesson?.stages[1].examples?.kotlin?.code).toContain(
+      "IconToggleButton",
+    );
+    expect(lesson?.stages[2].examples?.kotlin?.code).toContain(
+      'Modifier.testTag("profile-save")',
+    );
+    expect(lesson?.stages[2].examples?.kotlin?.code).toContain(
+      'contentDescription = "Save profile"',
+    );
+    expect(getConceptBySlug("accessibility-semantics", "vi")?.title).toBe(
+      "Accessibility semantics và test tag",
+    );
+  });
+
+  test("derives animation targets from current state", () => {
+    const roadmap = getRoadmap("react-native", "kotlin", "en")!;
+    const lesson = getRoadmapLessonLocation(
+      roadmap,
+      "state-driven-animation",
+    )?.lesson;
+
+    expect(lesson?.stages[0].examples?.kotlin?.code).toContain(
+      "animateFloatAsState",
+    );
+    expect(lesson?.stages[1].examples?.kotlin?.code).toContain(
+      "AnimatedVisibility(visible = showFilters)",
+    );
+    expect(lesson?.stages[2].examples?.kotlin?.code).toContain(
+      "updateTransition(targetState = expanded",
+    );
+  });
+
+  test("uses raw pointer input only for custom gestures", () => {
+    const roadmap = getRoadmap("react-native", "kotlin", "en")!;
+    const lesson = getRoadmapLessonLocation(
+      roadmap,
+      "gesture-abstractions",
+    )?.lesson;
+
+    expect(lesson?.stages[1].examples?.kotlin?.code).toContain(
+      ".draggable(orientation = Orientation.Horizontal)",
+    );
+    expect(lesson?.stages[2].examples?.kotlin?.code).toContain(
+      "detectDragGesturesAfterLongPress",
+    );
+    expect(lesson?.stages[2].examples?.kotlin?.code).toContain(
+      "change.consume()",
+    );
+  });
+
+  test("requests permissions from user intent with a usable fallback", () => {
+    const roadmap = getRoadmap("react-native", "kotlin", "en")!;
+    const lesson = getRoadmapLessonLocation(
+      roadmap,
+      "runtime-permissions",
+    )?.lesson;
+
+    expect(lesson?.stages[0].examples?.kotlin?.code).toContain(
+      "rememberLauncherForActivityResult",
+    );
+    expect(lesson?.stages[1].examples?.kotlin?.code).toContain(
+      "Button(onClick = openLibrary)",
+    );
+    expect(lesson?.stages[2].examples?.kotlin?.code).toContain(
+      "Allow camera to scan a receipt",
+    );
+  });
+
+  test("intercepts back only for unsaved changes", () => {
+    const roadmap = getRoadmap("react-native", "kotlin", "en")!;
+    const lesson = getRoadmapLessonLocation(roadmap, "back-navigation")?.lesson;
+
+    expect(lesson?.stages[0].examples?.kotlin?.code).toContain(
+      "BackHandler(enabled = hasUnsavedChanges)",
+    );
+    expect(lesson?.stages[1].examples?.kotlin?.code).toContain(
+      "navController::popBackStack",
+    );
+    expect(lesson?.stages[2].examples?.kotlin?.code).toContain(
+      "EditProfileContent",
+    );
+  });
+
+  test("tests user-visible UI behavior before test tags", () => {
+    const roadmap = getRoadmap("react-native", "kotlin", "en")!;
+    const lesson = getRoadmapLessonLocation(
+      roadmap,
+      "ui-behavior-testing",
+    )?.lesson;
+
+    expect(lesson?.stages[0].examples?.kotlin?.code).toContain(
+      'onNodeWithText("Add").performClick()',
+    );
+    expect(lesson?.stages[1].examples?.kotlin?.code).toContain(
+      "ProfileScreen(state = ProfileUiState.Error",
+    );
+    expect(lesson?.stages[2].examples?.kotlin?.code).toContain(
+      'onNodeWithTag("profile-save")',
+    );
+  });
+
+  test("keeps lifecycle and concurrency-sensitive examples production-safe", () => {
+    const roadmap = getRoadmap("react-native", "kotlin")!;
+    const example = (
+      slug: string,
+      stageId: "basic" | "applied" | "production",
+      technology: "react-native" | "kotlin",
+    ) =>
+      getRoadmapLessonLocation(roadmap, slug)?.lesson.stages.find(
+        (stage) => stage.id === stageId,
+      )?.examples?.[technology]?.code ?? "";
+
+    expect(example("side-effects", "basic", "kotlin")).toContain(
+      "LaunchedEffect(query, onSearch)",
+    );
+    expect(example("side-effects", "applied", "kotlin")).toContain(
+      "rememberUpdatedState(onEvent)",
+    );
+    expect(example("button", "production", "react-native")).toContain(
+      "saveInFlight.current",
+    );
+    expect(example("button", "production", "kotlin")).toContain(
+      "saveJob?.isActive",
+    );
+    expect(example("form", "production", "kotlin")).toContain(
+      "CancellationException",
+    );
+    expect(example("form", "production", "kotlin")).not.toContain(
+      "runCatching",
+    );
+    expect(example("async", "production", "react-native")).toContain(
+      "controller.abort()",
+    );
+    expect(example("async", "production", "kotlin")).toContain(
+      "observeProfile(id)",
+    );
+    expect(example("pagination", "production", "react-native")).toContain(
+      "initialPageParam",
+    );
+    expect(example("pagination", "production", "kotlin")).toContain(
+      "loadState.append",
+    );
+    expect(example("secure-storage", "applied", "kotlin")).toContain(
+      'Cipher.getInstance("AES/GCM/NoPadding")',
+    );
+  });
+
   test("localizes roadmap lessons with equivalent structure", () => {
     const english = getRoadmap("react-native", "kotlin", "en");
     const vietnamese = getRoadmap("react-native", "kotlin", "vi");
 
-    expect(vietnamese?.sections[0].title).toBe("UI cơ bản");
+    expect(vietnamese?.sections[0].title).toBe("Cầu nối Kotlin");
+    expect(vietnamese?.sections[1].title).toBe("Compose Runtime");
+    expect(vietnamese?.sections[2].title).toBe("UI cơ bản");
     expect(getRoadmapLessonLocations(vietnamese!)).toHaveLength(
       getRoadmapLessonLocations(english!).length,
     );
@@ -204,6 +477,12 @@ describe("roadmap content", () => {
 
       englishLesson.stages.forEach((stage, index) => {
         expect(
+          vietnameseLesson?.stages[index].examples?.["react-native"]?.name,
+        ).toBe(`Ví dụ ${vietnameseLesson?.stages[index].title}`);
+        expect(vietnameseLesson?.stages[index].examples?.kotlin?.summary).toBe(
+          vietnameseLesson?.stages[index].description,
+        );
+        expect(
           vietnameseLesson?.stages[index].examples?.["react-native"]?.code,
         ).toBe(stage.examples?.["react-native"]?.code);
         expect(vietnameseLesson?.stages[index].examples?.kotlin?.code).toBe(
@@ -216,8 +495,8 @@ describe("roadmap content", () => {
   test("loads a roadmap using canonical concept references", () => {
     const roadmap = getRoadmap("react-native", "kotlin");
 
-    expect(roadmap?.sections).toHaveLength(8);
-    expect(roadmap?.sections[0].lessons[0].conceptSlug).toBe("component");
+    expect(roadmap?.sections).toHaveLength(10);
+    expect(roadmap?.sections[0].lessons[0].conceptSlug).toBe("null-safety");
   });
 
   test("provides ordered lesson locations for navigation", () => {
@@ -229,11 +508,28 @@ describe("roadmap content", () => {
         ({ lesson }) => lesson.conceptSlug,
       ),
     ).toEqual([
+      "null-safety",
+      "data-classes",
+      "sealed-types",
+      "collection-transforms",
+      "lambdas-and-receivers",
+      "extension-functions",
+      "generics",
+      "recomposition",
+      "snapshot-state",
+      "ui-identity",
+      "state-restoration",
+      "stability-and-skipping",
+      "modifier-order",
+      "composition-local",
       "component",
       "props",
       "children",
       "conditional-ui",
       "layout",
+      "layout-constraints",
+      "window-insets",
+      "adaptive-layouts",
       "vertical-layout",
       "horizontal-layout",
       "stack",
@@ -244,10 +540,14 @@ describe("roadmap content", () => {
       "derived-state",
       "global-state",
       "button",
+      "accessibility-semantics",
+      "gesture-abstractions",
       "form",
       "side-effects",
+      "state-driven-animation",
       "lifecycle",
       "navigation",
+      "back-navigation",
       "route-parameters",
       "deep-link",
       "async",
@@ -258,11 +558,19 @@ describe("roadmap content", () => {
       "local-storage",
       "secure-storage",
       "authentication",
+      "runtime-permissions",
       "theme",
+      "ui-behavior-testing",
     ]);
     expect(getRoadmapLessonLocation(roadmap!, "local-state")?.section.id).toBe(
       "state",
     );
+    expect(getRoadmapLessonLocation(roadmap!, "generics")?.section.id).toBe(
+      "kotlin-bridge",
+    );
+    expect(
+      getRoadmapLessonLocation(roadmap!, "state-restoration")?.section.id,
+    ).toBe("compose-runtime");
   });
 
   test("rejects unknown concept references", () => {

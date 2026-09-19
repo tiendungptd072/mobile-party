@@ -89,13 +89,27 @@ fun UserRow(user: User, onSelect: (String) -> Unit) {
   displayName: string;
   avatarUrl?: string;
   onEdit: () => void;
-};`,
+};
+
+function ProfileHeader({ displayName, avatarUrl, onEdit }: ProfileHeaderProps) {
+  return <View>
+    {avatarUrl && <Image source={{ uri: avatarUrl }} />}
+    <Text>{displayName}</Text>
+    <Button title="Edit" onPress={onEdit} />
+  </View>;
+}`,
       `@Composable
 fun ProfileHeader(
     displayName: String,
     avatarUrl: String?,
     onEdit: () -> Unit,
-)`,
+) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        avatarUrl?.let { AsyncImage(model = it, contentDescription = null) }
+        Text(displayName, modifier = Modifier.weight(1f))
+        TextButton(onClick = onEdit) { Text("Edit") }
+    }
+}`,
       ["ProfileHeader.tsx", "ProfileHeader.kt"],
     ),
   },
@@ -121,19 +135,36 @@ fun Panel(
     header: @Composable () -> Unit,
     content: @Composable () -> Unit,
     actions: @Composable () -> Unit,
-)`,
+) {
+    Column {
+        header()
+        content()
+        Row { actions() }
+    }
+}`,
       ["Panel.tsx", "Panel.kt"],
     ),
     production: pair(
       "Scoped slot API",
-      `function List({ data, renderItem }: Props) {
-  return <FlatList data={data} renderItem={renderItem} />;
+      `function FeedList({ posts, renderPost }: Props) {
+  return <FlatList
+    data={posts}
+    keyExtractor={(post) => post.id}
+    renderItem={({ item, index }) => renderPost(item, index)}
+  />;
 }`,
       `@Composable
-fun AppScaffold(content: @Composable PaddingValues.() -> Unit) {
-    Scaffold { padding -> padding.content() }
+fun FeedList(
+    posts: List<Post>,
+    renderPost: @Composable LazyItemScope.(Post, Int) -> Unit,
+) {
+    LazyColumn {
+        itemsIndexed(posts, key = { _, post -> post.id }) { index, post ->
+            renderPost(post, index)
+        }
+    }
 }`,
-      ["List.tsx", "AppScaffold.kt"],
+      ["FeedList.tsx", "FeedList.kt"],
     ),
   },
   "conditional-ui": {
@@ -404,7 +435,11 @@ fun PhotoTile(photo: Photo) {
       "Cancel superseded work",
       `useEffect(() => {
   const controller = new AbortController();
-  loadUser(userId, controller.signal).then(setUser);
+  void loadUser(userId, controller.signal)
+    .then(setUser)
+    .catch((error) => {
+      if (error.name !== "AbortError") reportError(error);
+    });
   return () => controller.abort();
 }, [userId]);`,
       `LaunchedEffect(userId) {
@@ -417,16 +452,30 @@ fun PhotoTile(photo: Photo) {
       "Owned asynchronous state",
       `function useProfile(id: string) {
   const [state, setState] = useState<ProfileState>({ status: "loading" });
-  useEffect(() => repository.load(id).then(
-    (profile) => setState({ status: "ready", profile }),
-    () => setState({ status: "error" }),
-  ), [id]);
+  useEffect(() => {
+    const controller = new AbortController();
+    setState({ status: "loading" });
+    void repository.load(id, controller.signal).then(
+      (profile) => setState({ status: "ready", profile }),
+      (error) => {
+        if (error.name !== "AbortError") setState({ status: "error" });
+      },
+    );
+    return () => controller.abort();
+  }, [id]);
   return state;
 }`,
-      `class ProfileViewModel(private val repository: ProfileRepository) : ViewModel() {
-    val state = repository.observeProfile()
-        .map<Profile, ProfileUiState> { Ready(it) }
-        .catch { emit(Error) }
+      `class ProfileViewModel(
+    savedStateHandle: SavedStateHandle,
+    repository: ProfileRepository,
+) : ViewModel() {
+    private val profileId = savedStateHandle.getStateFlow("profileId", "")
+
+    val state = profileId.filter(String::isNotBlank).flatMapLatest { id ->
+        repository.observeProfile(id)
+            .map<Profile, ProfileUiState> { Ready(it) }
+            .catch { emit(Error) }
+    }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), Loading)
 }`,
       ["use-profile.ts", "ProfileViewModel.kt"],
@@ -568,16 +617,39 @@ PullToRefreshBox(isRefreshing = state.isRefreshing, onRefresh = onRefresh) {
   pagination: {
     basic: pair(
       "Load the next page",
-      `async function loadMore() {
-  if (isLoading || !nextCursor) return;
-  const page = await repository.getPage(nextCursor);
-  setItems((current) => [...current, ...page.items]);
-  setNextCursor(page.nextCursor);
+      `const loadingRef = useRef(false);
+
+async function loadMore() {
+  if (loadingRef.current || !nextCursor) return;
+  loadingRef.current = true;
+  setAppend("loading");
+  try {
+    const page = await repository.getPage(nextCursor);
+    setItems((current) => [...current, ...page.items]);
+    setNextCursor(page.nextCursor);
+    setAppend("idle");
+  } catch {
+    setAppend("error");
+  } finally {
+    loadingRef.current = false;
+  }
 }`,
-      `suspend fun loadMore() {
-    if (state.value.isAppending || state.value.nextCursor == null) return
-    val page = repository.getPage(state.value.nextCursor)
-    _state.update { it.append(page) }
+      `private var appendJob: Job? = null
+
+fun loadMore() {
+    if (appendJob?.isActive == true) return
+    val cursor = state.value.nextCursor ?: return
+    appendJob = viewModelScope.launch {
+        _state.update { it.copy(append = Loading) }
+        try {
+            val page = repository.getPage(cursor)
+            _state.update { it.append(page) }
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (error: Throwable) {
+            _state.update { it.copy(append = Error(error)) }
+        }
+    }
 }`,
       ["use-feed.ts", "FeedViewModel.kt"],
     ),
@@ -589,21 +661,30 @@ PullToRefreshBox(isRefreshing = state.isRefreshing, onRefresh = onRefresh) {
   append: "idle" | "loading" | "error";
 };
 
-<FlatList data={state.items} ListFooterComponent={<AppendState value={state.append} />} />`,
+<FlatList
+  data={state.items}
+  keyExtractor={(post) => post.id}
+  renderItem={({ item }) => <PostRow post={item} />}
+  ListFooterComponent={<AppendState value={state.append} />}
+/>`,
       `data class FeedUiState(
     val items: List<Post> = emptyList(),
     val nextCursor: String? = null,
     val append: AppendState = AppendState.Idle,
 )
 
-LazyColumn { items(state.items, key = { it.id }) { PostRow(it) } }`,
+LazyColumn {
+    items(state.items, key = { it.id }) { PostRow(it) }
+    item { AppendState(state.append) }
+}`,
       ["FeedScreen.tsx", "FeedScreen.kt"],
     ),
     production: pair(
       "Paging library integration",
       `const query = useInfiniteQuery({
   queryKey: ["feed"],
-  queryFn: ({ pageParam }) => api.getFeed(pageParam),
+  initialPageParam: null as string | null,
+  queryFn: ({ pageParam, signal }) => api.getFeed(pageParam, signal),
   getNextPageParam: (page) => page.nextCursor,
 });
 
@@ -612,8 +693,18 @@ const posts = query.data?.pages.flatMap((page) => page.items) ?? [];`,
     FeedPagingSource(api)
 }.flow.cachedIn(viewModelScope)
 
-val items = viewModel.posts.collectAsLazyPagingItems()
-LazyColumn { items(items.itemCount) { index -> items[index]?.let { PostRow(it) } } }`,
+val posts = viewModel.posts.collectAsLazyPagingItems()
+LazyColumn {
+    items(
+        count = posts.itemCount,
+        key = posts.itemKey { it.id },
+    ) { index -> posts[index]?.let { PostRow(it) } }
+    when (val append = posts.loadState.append) {
+        is LoadState.Loading -> item { CircularProgressIndicator() }
+        is LoadState.Error -> item { RetryRow(append.error, posts::retry) }
+        else -> Unit
+    }
+}`,
       ["use-feed.ts", "FeedScreen.kt"],
     ),
   },
@@ -647,11 +738,17 @@ async function readSettings(): Promise<StoredSettings> {
   const raw = await AsyncStorage.getItem("settings");
   return migrateSettings(raw ? JSON.parse(raw) : undefined);
 }`,
-      `@Serializable data class StoredSettings(val version: Int = 2, val theme: Theme = Theme.System)
+      `data class StoredSettings(val version: Int, val theme: Theme)
 
 val settings = dataStore.data
     .catch { error -> if (error is IOException) emit(emptyPreferences()) else throw error }
-    .map(::migrateSettings)`,
+    .map { preferences ->
+        val stored = StoredSettings(
+            version = preferences[settingsVersionKey] ?: 1,
+            theme = Theme.fromStoredValue(preferences[themeKey]) ?: Theme.System,
+        )
+        migrateSettings(stored)
+    }`,
       ["settings-storage.ts", "SettingsRepository.kt"],
     ),
   },
@@ -675,8 +772,28 @@ val settings = dataStore.data
       `await Keychain.setGenericPassword("session", token, {
   service: "com.example.session",
 });`,
-      `val encrypted = cipher.encrypt(token, keyStore.getOrCreateKey())
-storage.write("refresh-token", encrypted)`,
+      `private fun getOrCreateKey(): SecretKey {
+    val store = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
+    (store.getKey(KEY_ALIAS, null) as? SecretKey)?.let { return it }
+    return KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, "AndroidKeyStore")
+        .apply {
+            init(KeyGenParameterSpec.Builder(
+                KEY_ALIAS,
+                KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT,
+            ).setBlockModes(KeyProperties.BLOCK_MODE_GCM)
+             .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
+             .build())
+        }.generateKey()
+}
+
+fun encryptToken(token: String): EncryptedToken {
+    val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+    cipher.init(Cipher.ENCRYPT_MODE, getOrCreateKey())
+    return EncryptedToken(
+        iv = cipher.iv,
+        ciphertext = cipher.doFinal(token.encodeToByteArray()),
+    )
+}`,
       ["keychain-store.ts", "KeystoreCredentialStore.kt"],
     ),
     production: pair(

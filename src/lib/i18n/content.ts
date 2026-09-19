@@ -114,6 +114,23 @@ export function localizeRoadmap(roadmap: Roadmap, locale: Locale): Roadmap {
             ...stage,
             title: viRoadmapTranslations.stageTitles[index] ?? stage.title,
             description: translation.stages[index] ?? stage.description,
+            ...(stage.examples
+              ? {
+                  examples: Object.fromEntries(
+                    Object.entries(stage.examples).map(
+                      ([technology, example]) => [
+                        technology,
+                        example && {
+                          ...example,
+                          name: `Ví dụ ${viRoadmapTranslations.stageTitles[index] ?? stage.title}`,
+                          summary:
+                            translation.stages[index] ?? stage.description,
+                        },
+                      ],
+                    ),
+                  ),
+                }
+              : {}),
           })),
         };
       }),
