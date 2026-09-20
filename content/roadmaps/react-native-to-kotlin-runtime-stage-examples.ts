@@ -188,8 +188,11 @@ fun SearchDraft() {
     ),
     production: pair(
       "Restore an ID then reload data",
-      `function ProfileRoute({ userId }: { userId: string }) {
-  const profile = useProfile(userId);
+      `type ProfileRouteProps = { route: { params: { userId: string } } };
+
+function ProfileRoute({ route }: ProfileRouteProps) {
+  const profile = useProfile(route.params.userId);
+  if (!profile) return <ActivityIndicator />;
   return <ProfileScreen profile={profile} />;
 }`,
       `class ProfileViewModel(

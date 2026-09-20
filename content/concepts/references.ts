@@ -3,6 +3,7 @@ import type { Technology } from "@/types/technology";
 
 const VERIFIED_AT = "2026-09-18";
 const BRIDGE_VERIFIED_AT = "2026-09-19";
+const SENIOR_VERIFIED_AT = "2026-09-20";
 
 function officialDocs(
   title: string,
@@ -31,7 +32,57 @@ function bridgeDocs(
   };
 }
 
+function seniorDocs(
+  title: string,
+  url: string,
+  technology: Technology,
+): ContentReference {
+  return {
+    ...officialDocs(title, url, technology),
+    verifiedAt: SENIOR_VERIFIED_AT,
+  };
+}
+
 export const conceptReferences = {
+  "refresh-bookmark-races": [
+    seniorDocs(
+      "Queueing a series of state updates",
+      "https://react.dev/learn/queueing-a-series-of-state-updates",
+      "react-native",
+    ),
+    seniorDocs(
+      "Build an offline-first app: conflict resolution",
+      "https://developer.android.com/topic/architecture/data-layer/offline-first",
+      "kotlin",
+    ),
+    seniorDocs(
+      "Testing Kotlin coroutines on Android",
+      "https://developer.android.com/kotlin/coroutines/test",
+      "kotlin",
+    ),
+    seniorDocs(
+      "MutableStateFlow.update",
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/update.html",
+      "kotlin",
+    ),
+  ],
+  "feature-module-boundaries": [
+    seniorDocs(
+      "React Native Gradle Plugin and monorepos",
+      "https://reactnative.dev/docs/react-native-gradle-plugin",
+      "react-native",
+    ),
+    seniorDocs(
+      "Common Android modularization patterns",
+      "https://developer.android.com/topic/modularization/patterns",
+      "kotlin",
+    ),
+    seniorDocs(
+      "Add build dependencies",
+      "https://developer.android.com/build/dependencies",
+      "kotlin",
+    ),
+  ],
   "navigation-testing": [
     bridgeDocs(
       "Testing with React Navigation",
@@ -472,6 +523,11 @@ export const conceptReferences = {
     ),
   ],
   "state-restoration": [
+    seniorDocs(
+      "React Navigation state persistence",
+      "https://reactnavigation.org/docs/state-persistence/",
+      "react-native",
+    ),
     bridgeDocs(
       "Preserving and resetting state",
       "https://react.dev/learn/preserving-and-resetting-state",
@@ -485,6 +541,11 @@ export const conceptReferences = {
     bridgeDocs(
       "Save UI states",
       "https://developer.android.com/topic/libraries/architecture/saving-states",
+      "kotlin",
+    ),
+    seniorDocs(
+      "Android Debug Bridge: am kill and force-stop",
+      "https://developer.android.com/tools/adb",
       "kotlin",
     ),
   ],

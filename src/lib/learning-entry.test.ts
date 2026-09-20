@@ -59,6 +59,12 @@ describe("React Native to Android entry guide", () => {
       ...LEARNING_LEVELS,
     ]);
     expect(vietnamese.introduction).not.toBe(english.introduction);
+    expect(
+      english.paths.find(({ level }) => level === "senior")?.lessonSlugs,
+    ).toContain("feature-module-boundaries");
+    expect(
+      english.paths.find(({ level }) => level === "senior")?.lessonSlugs,
+    ).toContain("refresh-bookmark-races");
 
     english.paths.forEach((path, index) => {
       const translated = vietnamese.paths[index];

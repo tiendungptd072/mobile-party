@@ -16,7 +16,7 @@ export const reactNativeToKotlinEntry = {
   rubricLabel: "Evidence of completion",
   availabilityTitle: "What is available now",
   futureContentNote:
-    "The linked lessons are available now. The runnable Android project and advanced platform modules are scheduled for later phases; the milestones below are targets, not certificates awarded by this site.",
+    "The linked lessons are available now. A separate Android practice sample exists, but it is optional for using this website. More advanced lessons are still in progress; the milestones below are targets, not certificates awarded by this site.",
   modulesTitle: "Module prerequisites and skip checks",
   moduleCheckLabel: "Check before skipping",
   skipGuidance:
@@ -126,6 +126,8 @@ export const reactNativeToKotlinEntry = {
         "Demonstrate all four self-check tasks and review the Middle milestone if its data layer is unfamiliar.",
       lessonSlugs: [
         "state-restoration",
+        "feature-module-boundaries",
+        "refresh-bookmark-races",
         "stability-and-skipping",
         "adaptive-layouts",
         "deep-link",

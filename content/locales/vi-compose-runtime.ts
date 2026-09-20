@@ -167,16 +167,21 @@ export const viComposeRuntimeConceptTranslations = {
     relationship:
       "useState và rememberSaveable cùng giữ local UI state, nhưng bảo đảm khôi phục và platform lifetime của chúng không tương đương.",
     mentalModel:
-      "Dùng remember cho state cục bộ trong composition, rememberSaveable cho UI value nhỏ cần sống qua recreation được hỗ trợ, SavedStateHandle cho input khôi phục do ViewModel sở hữu và repository cho dữ liệu bền vững.",
+      "Dùng remember cho state cục bộ trong composition, rememberSaveable cho UI value nhỏ cần sống qua recreation được hỗ trợ, SavedStateHandle cho input khôi phục do ViewModel sở hữu và repository cho dữ liệu bền vững. Trong React Native, muốn giữ route ID hoặc bản nháp phải có chính sách lưu trữ rõ ràng ở app hoặc navigation; riêng useState không có cơ chế saved state tương đương Android.",
     differences: [
       "ViewModel sống qua configuration change nhưng bản thân nó không giữ tùy ý mọi field sau process death.",
       "Saved state hỗ trợ khôi phục dữ liệu nhỏ, không phải database hay bảo đảm sau khi người dùng chủ động đóng ứng dụng.",
+      "React Navigation có thể lưu navigation state tuần tự hóa được qua lần khởi động lại khi đã cấu hình; điều đó không làm useState cục bộ của screen trở nên bền vững. Deep link cũng có thể cấp route ID mà không cần khôi phục navigation stack trước đó.",
     ],
     commonMistakes: [
       "Lưu cả response hoặc mutable graph trong Bundle thay vì lưu ID rồi tải lại qua repository.",
+      "Xem rotation hoặc ActivityScenario.recreate() là bằng chứng state vẫn còn sau khi hệ thống hủy process.",
+      "Dùng force-stop hoặc vuốt bỏ task để kiểm tra bảo đảm saved state vốn dành cho trường hợp hệ thống tạo lại process.",
     ],
     productionNotes: [
       "Kiểm thử rotation và system-initiated process recreation riêng; giữ saveable payload nhỏ và serializable.",
+      "Khi kiểm tra trên thiết bị: mở màn chi tiết, đưa app xuống nền, chạy adb shell am kill <package>, rồi quay lại qua Recents. Kiểm tra route ID, bản nháp nhỏ, loading state và domain data được tải lại. Không dùng am force-stop cho bước này.",
+      "SavedStateHandle tạo trực tiếp trong unit test không gắn với SavedStateRegistryOwner. Kiểm tra trên thiết bị để xác nhận Android khôi phục state; dùng unit test cho hành vi lấy dữ liệu từ repository theo ID.",
     ],
   },
   "stability-and-skipping": {
@@ -288,15 +293,17 @@ export const viComposeRuntimeRoadmapTranslations = {
     "state-restoration": {
       title: "Vòng đời và khôi phục state",
       exercise:
-        "Chọn owner cho search draft và profile ID, rồi kiểm thử riêng recomposition, configuration change và system-initiated process recreation.",
+        "Chọn owner cho search draft và profile ID. Mở lại màn chi tiết sau khi hệ thống hủy process; kiểm tra bản nháp nhỏ và route ID, rồi tải lại profile hiện tại thay vì khôi phục response đã cache.",
       checklist: [
         "Phân biệt remember, rememberSaveable, ViewModel và durable storage",
         "Khôi phục input nhỏ rồi tải lại domain data lớn",
+        "Không xem rotation, force-stop hay SavedStateHandle tạo trong unit test là kiểm tra system-initiated process recreation",
+        "Nêu cách route ID trong React Native sống qua lần khởi động lại: navigation state được lưu hoặc deep link",
       ],
       stages: [
         "Chỉ giữ bản nháp trong UI instance hoặc composition hiện tại.",
         "Quyết định owner của việc khôi phục rõ ràng thay vì mặc định local state sẽ tồn tại.",
-        "Khôi phục ID gọn và lấy dữ liệu mới từ repository.",
+        "Khôi phục route ID gọn, tải lại dữ liệu từ repository và kiểm tra sau khi process chạy nền bị hủy.",
       ],
     },
     "stability-and-skipping": {

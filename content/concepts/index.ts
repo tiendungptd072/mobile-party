@@ -60,6 +60,8 @@ import { coroutineScopesConcept } from "@content/concepts/coroutine-scopes";
 import { flowAndStateFlowConcept } from "@content/concepts/flow-and-stateflow";
 import { repositoryBoundaryConcept } from "@content/concepts/repository-boundary";
 import { dependencyInjectionConcept } from "@content/concepts/dependency-injection";
+import { featureModuleBoundariesConcept } from "@content/concepts/feature-module-boundaries";
+import { refreshBookmarkRacesConcept } from "@content/concepts/refresh-bookmark-races";
 import { offlineFirstDataConcept } from "@content/concepts/offline-first-data";
 import { offlinePaginationConcept } from "@content/concepts/offline-pagination";
 import { durableBackgroundWorkConcept } from "@content/concepts/durable-background-work";
@@ -132,6 +134,8 @@ const conceptDefinitions = [
   authenticationConcept,
   repositoryBoundaryConcept,
   dependencyInjectionConcept,
+  featureModuleBoundariesConcept,
+  refreshBookmarkRacesConcept,
   offlineFirstDataConcept,
   offlinePaginationConcept,
   durableBackgroundWorkConcept,

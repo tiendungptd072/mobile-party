@@ -16,7 +16,7 @@ export const viReactNativeToKotlinEntry = {
   rubricLabel: "Minh chứng hoàn thành",
   availabilityTitle: "Nội dung hiện có",
   futureContentNote:
-    "Các bài học được liên kết đã có trên website. Dự án Android chạy được và các module nền tảng nâng cao sẽ được bổ sung ở giai đoạn sau; những bài thực hành dưới đây là mục tiêu, không phải chứng chỉ do website cấp.",
+    "Các bài học được liên kết đã có trên website. Dự án Android mẫu là phần thực hành riêng, không bắt buộc để dùng website. Nội dung nâng cao vẫn đang được bổ sung; các bài thực hành dưới đây là mục tiêu, không phải chứng chỉ do website cấp.",
   modulesTitle: "Điều kiện vào module và cách bỏ qua phần đã biết",
   moduleCheckLabel: "Bài kiểm tra trước khi bỏ qua",
   skipGuidance:
@@ -126,6 +126,8 @@ export const viReactNativeToKotlinEntry = {
         "Làm được cả bốn bài tự đánh giá; xem lại bài thực hành Middle nếu data layer vẫn chưa quen.",
       lessonSlugs: [
         "state-restoration",
+        "feature-module-boundaries",
+        "refresh-bookmark-races",
         "stability-and-skipping",
         "adaptive-layouts",
         "deep-link",

@@ -1,4 +1,70 @@
 export const viArchitectureConceptTranslations = {
+  "refresh-bookmark-races": {
+    title: "Xung đột giữa refresh và bookmark",
+    description:
+      "Giữ bookmark vừa thay đổi khi phản hồi refresh đến trong lúc request còn chạy.",
+    implementations: {
+      "react-native": {
+        name: "Cập nhật từng phần state độc lập",
+        summary:
+          "React state updater đọc feed state mới nhất khi kết quả network đến.",
+      },
+      kotlin: {
+        name: "Cập nhật giá trị StateFlow hiện tại",
+        summary:
+          "ViewModel chỉ cập nhật dữ liệu bài viết từ network và giữ lựa chọn bookmark cục bộ.",
+      },
+    },
+    relationship:
+      "React functional state update và MutableStateFlow.update đều tính giá trị mới từ state hiện tại. React xếp update vào hàng đợi render; StateFlow cập nhật giá trị theo cách atomic. Bản thân hai cơ chế này không giải quyết xung đột bookmark giữa server và dữ liệu cục bộ.",
+    mentalModel:
+      "Xem trường dữ liệu bài viết lấy từ server và lựa chọn bookmark đang chờ đồng bộ là hai phần có chủ sở hữu khác nhau. Refresh có thể thay dữ liệu lấy từ server, nhưng không được xóa lựa chọn bookmark cục bộ. Phải định nghĩa chính sách hòa giải với server trước khi xóa thay đổi đang chờ.",
+    differences: [
+      "React functional updater tránh dùng closure cũ để ghi đè bookmark mới hơn. MutableStateFlow.update của Kotlin an toàn khi có nhiều cập nhật đồng thời vào cùng StateFlow.",
+      "Lớp bookmark giữ trong bộ nhớ chỉ bảo vệ một screen hoặc ViewModel còn hoạt động. Lưu ý định bookmark trong data layer nếu cần sống qua process death hoặc đồng bộ offline.",
+    ],
+    commonMistakes: [
+      "Chụp feed trước await, rồi thay toàn bộ state bằng snapshot cũ khi refresh xong.",
+      "Cho rằng hủy request hoặc chỉ nhận request mới nhất cũng giải quyết được bookmark cục bộ đổi trong khi refresh hợp lệ đang chạy.",
+    ],
+    productionNotes: [
+      "Test cả hai thứ tự: bookmark trước khi refresh hoàn tất và bookmark sau khi refresh hoàn tất. Kiểm tra đồng thời tiêu đề bài viết và trạng thái bookmark hiển thị.",
+      "Với dữ liệu offline bền vững, lưu ý định bookmark riêng hoặc gộp trong một local transaction. Định nghĩa cách server xác nhận, xử lý xung đột và retry; không giữ lớp dữ liệu cục bộ mãi mà thiếu chính sách.",
+    ],
+  },
+  "feature-module-boundaries": {
+    title: "Ranh giới module tính năng",
+    description:
+      "Chọn ranh giới module theo trách nhiệm và nhịp thay đổi; cho tính năng phụ thuộc contract thay vì implementation của data layer.",
+    implementations: {
+      "react-native": {
+        name: "Công bố contract của package",
+        summary:
+          "Package tính năng import contract nhỏ; ứng dụng cung cấp implementation.",
+      },
+      kotlin: {
+        name: "Công bố contract của Gradle module",
+        summary:
+          "Feature module phụ thuộc API module, không phụ thuộc trực tiếp implementation database.",
+      },
+    },
+    relationship:
+      "Cả hai có thể tách tính năng khỏi data implementation qua một contract hẹp. Ranh giới TypeScript package không giống hoàn toàn Android Gradle module: Gradle module còn xác định dependency khi build và phạm vi truy cập lúc biên dịch.",
+    mentalModel:
+      "Đừng biến mọi thư mục React Native thành Gradle module. Trước tiên xác định phần code có chủ sở hữu hoặc nhịp thay đổi độc lập. Đặt contract ở nơi cả feature và implementation cùng có thể phụ thuộc; để app ghép chúng lại.",
+    differences: [
+      "React Native JavaScript package tổ chức source và public export; Android Gradle module thêm dependency khi build và có thể tạo AAR.",
+      "Android app module thường phụ thuộc feature module. Tính năng cần data source có thể thay thế có thể phụ thuộc API module, còn app cung cấp implementation.",
+    ],
+    commonMistakes: [
+      "Tạo module cho từng màn hình khi chưa có ranh giới trách nhiệm hoặc tái sử dụng ổn định.",
+      "Cho feature phụ thuộc database module cụ thể, rồi tạo vòng phụ thuộc khi database cần type của feature.",
+    ],
+    productionNotes: [
+      "Vẽ dependency graph trước khi tách code. So sánh build time, kích thước public API, khả năng test độc lập và quyền sở hữu với chi phí Gradle và phối hợp tăng thêm.",
+      "Ưu tiên implementation dependency. Chỉ dùng api khi module phía trên cần type của dependency trong public compile contract.",
+    ],
+  },
   "offline-pagination": {
     title: "Phân trang offline",
     description:
@@ -132,6 +198,37 @@ export const viArchitectureConceptTranslations = {
 } as const;
 
 export const viArchitectureRoadmapTranslations = {
+  "refresh-bookmark-races": {
+    title: "Xung đột giữa refresh và bookmark",
+    exercise:
+      "Refresh feed trong lúc người dùng bookmark một bài viết. Giữ bookmark dù phản hồi network đến trước hay sau thao tác chạm, rồi giải thích cách lựa chọn này tồn tại qua đồng bộ offline.",
+    checklist: [
+      "Dữ liệu bài viết lấy từ server và ý định bookmark cục bộ có chủ sở hữu riêng",
+      "Refresh dùng state hiện tại, không dùng snapshot chụp trước await",
+      "Test kiểm soát cả hai thứ tự sự kiện và kiểm tra cả tiêu đề lẫn bookmark",
+      "Bookmark lưu bền vững có chính sách xác nhận và giải quyết xung đột rõ ràng",
+    ],
+    stages: [
+      "Model bài viết lấy từ server và các ID được bookmark thành hai phần state riêng.",
+      "Xử lý sự kiện refresh và bookmark dựa trên state hiện tại mà không ghi đè phần dữ liệu còn lại.",
+      "Kiểm soát thời điểm refresh hoàn tất trong test, kiểm tra hai thứ tự sự kiện và nêu ranh giới đồng bộ bền vững.",
+    ],
+  },
+  "feature-module-boundaries": {
+    title: "Ranh giới module tính năng",
+    exercise:
+      "Review tính năng profile đang import trực tiếp Room implementation. Đề xuất dependency graph, chuyển contract sang API boundary chung và giải thích lợi ích có bù được chi phí build/phối hợp hay không.",
+    checklist: [
+      "Feature phụ thuộc contract hẹp, không phụ thuộc database module cụ thể",
+      "App ghép feature và data implementation mà không tạo vòng phụ thuộc",
+      "Quyết định ghi rõ trách nhiệm, khả năng test độc lập, chi phí build và phương án giữ một module",
+    ],
+    stages: [
+      "Công bố một contract ổn định từ package hoặc API module.",
+      "Cho feature chỉ phụ thuộc contract, còn data implementation cũng phụ thuộc contract đó.",
+      "Ghép feature và data tại app boundary, rồi bảo vệ quyết định tách module trước phương án giữ một module.",
+    ],
+  },
   "offline-pagination": {
     title: "Phân trang offline",
     exercise:

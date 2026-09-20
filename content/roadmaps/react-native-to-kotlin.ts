@@ -328,10 +328,12 @@ export const reactNativeToKotlinRoadmap = {
           title: "State Lifetime and Restoration",
           order: 30,
           exercise:
-            "Choose ownership for a search draft and a profile ID, then test recomposition, configuration change, and system-initiated process recreation separately.",
+            "Choose ownership for a search draft and a profile ID. Reopen a detail route after system-initiated process death, verify the small draft and route ID, and reload current profile data rather than restoring a cached response.",
           checklist: [
             "Distinguishes remember, rememberSaveable, ViewModel, and durable storage",
             "Restores small inputs and reloads large domain data",
+            "Does not confuse rotation, force-stop, or a unit-created SavedStateHandle with system-initiated process recreation",
+            "States how the React Native route ID survives restart: persisted navigation state or a deep link",
           ],
           stages: [
             {
@@ -350,7 +352,7 @@ export const reactNativeToKotlinRoadmap = {
               id: "production",
               title: "Production",
               description:
-                "Restore a compact ID and fetch current data from its repository.",
+                "Restore a compact route ID, reload repository data, and verify behavior after background process kill.",
             },
           ],
         },
@@ -2865,6 +2867,71 @@ navController.navigate(ProfileRoute(user.id))`,
               title: "Production",
               description:
                 "Scope shared objects deliberately and inject a Hilt ViewModel at the route boundary.",
+            },
+          ],
+        },
+        {
+          conceptSlug: "feature-module-boundaries",
+          title: "Feature Module Boundaries",
+          order: 2.5,
+          exercise:
+            "Review a profile feature that imports a Room implementation directly. Propose a dependency graph, move the contract to a shared API boundary, and justify whether the split is worth its build and coordination cost.",
+          checklist: [
+            "Feature depends on a narrow contract, not a concrete database module",
+            "App assembles the feature and data implementation without a dependency cycle",
+            "Decision records ownership, test isolation, build cost, and a simpler alternative",
+          ],
+          stages: [
+            {
+              id: "basic",
+              title: "Basic",
+              description:
+                "Expose one stable contract from a package or API module.",
+            },
+            {
+              id: "applied",
+              title: "Applied",
+              description:
+                "Make the feature depend only on the contract while the data implementation depends on the same contract.",
+            },
+            {
+              id: "production",
+              title: "Production",
+              description:
+                "Assemble feature and data at the app boundary, then defend the module split against a single-module alternative.",
+            },
+          ],
+        },
+        {
+          conceptSlug: "refresh-bookmark-races",
+          title: "Refresh and Bookmark Races",
+          order: 2.75,
+          exercise:
+            "Refresh a feed while the user bookmarks a post. Preserve the bookmark whether the network response arrives before or after the tap, and explain how the choice survives offline sync.",
+          checklist: [
+            "Fetched post fields and local bookmark intent have separate owners",
+            "Refresh uses current state rather than a snapshot captured before await",
+            "Tests control both event orders and check title plus bookmark together",
+            "Persistent bookmarks have an explicit acknowledgement and conflict policy",
+          ],
+          stages: [
+            {
+              id: "basic",
+              title: "Basic",
+              description:
+                "Model fetched posts and local bookmark IDs as separate state fields.",
+            },
+            {
+              id: "applied",
+              title: "Applied",
+              description:
+                "Reduce refresh and bookmark events against current state without overwriting the other field.",
+            },
+            {
+              id: "production",
+              title: "Production",
+              description:
+                "Control refresh completion in a test and assert both event orders; then state the durable-sync boundary.",
             },
           ],
         },

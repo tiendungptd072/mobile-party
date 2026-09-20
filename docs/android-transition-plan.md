@@ -11,14 +11,14 @@ Tài liệu này theo dõi chương trình học React Native → Kotlin/Jetpack
 
 ## Trạng thái giai đoạn
 
-| Giai đoạn                      | Việc cần bàn giao                                                             | Trạng thái              |
-| ------------------------------ | ----------------------------------------------------------------------------- | ----------------------- |
-| 1. Kiểm tra nội dung           | Inventory, rà soát rủi ro, sửa ví dụ sai, EN/VI parity, issue register        | Hoàn thành rà soát tĩnh |
-| 2. Lộ trình theo trình độ      | Assessment đầu vào, prerequisite, tuyến junior/middle/senior và rubric        | Hoàn thành              |
-| 3. Kiến thức Android thiết yếu | Platform, Coroutines/Flow, architecture/DI, data/offline, background, testing | Hoàn thành nội dung web |
-| 4. Dự án thực hành             | Starter, checkpoint, lời giải, build và test Android thật                     | Đang thực hiện          |
-| 5. Nhánh senior                | Bài toán architecture, migration, performance và release có rubric            | Chưa bắt đầu            |
-| 6. Kiểm chứng hiệu quả         | Kiểm tra hai nền tảng và thử nghiệm với người học React Native                | Chưa bắt đầu            |
+| Giai đoạn                      | Việc cần bàn giao                                                             | Trạng thái                |
+| ------------------------------ | ----------------------------------------------------------------------------- | ------------------------- |
+| 1. Kiểm tra nội dung           | Inventory, rà soát rủi ro, sửa ví dụ sai, EN/VI parity, issue register        | Hoàn thành rà soát tĩnh   |
+| 2. Lộ trình theo trình độ      | Assessment đầu vào, prerequisite, tuyến junior/middle/senior và rubric        | Hoàn thành                |
+| 3. Kiến thức Android thiết yếu | Platform, Coroutines/Flow, architecture/DI, data/offline, background, testing | Hoàn thành nội dung web   |
+| 4. Dự án thực hành             | Starter, checkpoint, lời giải, build và test Android thật                     | Tạm dừng; sample tùy chọn |
+| 5. Nhánh senior                | Bài toán architecture, migration, performance và release có rubric            | Đang thực hiện trên web   |
+| 6. Kiểm chứng hiệu quả         | Kiểm tra hai nền tảng và thử nghiệm với người học React Native                | Chưa bắt đầu              |
 
 ## Giai đoạn 1: Kiểm tra nội dung
 
@@ -81,32 +81,41 @@ Tiến độ cụm Flow/test (2026-09-19): thêm `flow-composition` sau Flow and
 
 Tiến độ cụm integration test (2026-09-19): thêm `navigation-testing` và `background-work-testing` vào App Architecture/tuyến Middle. Bài navigation test bám theo thao tác người dùng, UI mở ở đích, route ID, timer animation và trường hợp route không hợp lệ. Bài WorkManager tách worker unit test khỏi scheduler integration test, phân biệt `Result.retry()`/`Result.failure()` và dùng `TestListenableWorkerBuilder`, `WorkManagerTestInitHelper`, `TestDriver` không chờ thời gian thật. Những ví dụ trước đó đã bao phủ cancellation và failure state từ UI → ViewModel → repository; các bài mới bổ sung điểm kiểm chứng ở navigation và durable work.
 
-Giai đoạn 3 đã hoàn thành ở phạm vi nội dung web. Bài thực hành có Android project chạy được để kiểm tra Gradle/merged manifest, Intent, lifecycle, worker và notification trên thiết bị thuộc giai đoạn 4. Chưa biên dịch các snippet Android bằng Gradle vì sample project thuộc giai đoạn 4.
+Giai đoạn 3 đã hoàn thành ở phạm vi nội dung web. Kotlin/Jetpack Compose snippets là nội dung so sánh hiển thị trên website; chúng không phải Android project chạy trong repository.
 
-Điều kiện kết thúc: các bài mới giúp triển khai những checkpoint tương ứng của dự án mẫu, với EN/VI và test nội dung đạt.
+Điều kiện kết thúc: các bài mới có EN/VI tương đương, ví dụ theo ba mức và test nội dung đạt.
 
-## Giai đoạn 4: Dự án thực hành
+## Giai đoạn 4: Dự án mẫu native
 
-Một ứng dụng danh sách/chi tiết có tìm kiếm, phân trang, bookmark offline và đồng bộ. Tạo starter và checkpoint theo thứ tự: UI giả lập → state/navigation → network → Room → Paging/background → test/release. Mỗi checkpoint có hướng dẫn chạy, lời giải, bài tập và tiêu chí nghiệm thu. Dự kiến đặt sample trong `examples/android/` để liên kết theo commit/file; Gradle chỉ phục vụ sample Android, website tiếp tục dùng Bun.
-
-Tiến độ checkpoint 1 (2026-09-19): tạo `examples/android/` với Gradle Wrapper 8.13, Android SDK Platform 35, Compose, `AppViewModel`, Navigation Compose, feed/detail giả lập, bookmark action, UI test và unit test. `testDebugUnitTest` đã build và chạy thành công bằng JDK 21. Không có emulator hoặc thiết bị kết nối nên `connectedDebugAndroidTest` chưa chạy; test UI đã có trong source và sẽ chạy ở checkpoint test/release. Checkpoint tiếp theo: tách repository, thêm fake data source và kiểm thử state transition.
-
-Điều kiện kết thúc: mỗi checkpoint build và test bằng Android toolchain trong CI. Việc chạy trên emulator/thiết bị được xác nhận khi môi trường hỗ trợ.
+Đã loại bỏ `examples/android/` và workflow Android CI. Repository chỉ phục vụ website; không yêu cầu Gradle, Android SDK, emulator, native build hoặc native CI để dùng và phát hành website.
 
 ## Giai đoạn 5: Nhánh senior
 
 Bài tập về ranh giới module, dependency scope, race condition, process recreation, migration View/XML ↔ Compose, profiling, signing và release. Rubric đánh giá quyết định và bằng chứng, không ép một đáp án kiến trúc duy nhất.
 
+Tiến độ web (2026-09-20): thêm `feature-module-boundaries` và `refresh-bookmark-races` vào App Architecture và tuyến Senior; đào sâu `state-restoration` đã có thay vì tạo bài trùng. Bài race condition tách dữ liệu server khỏi bookmark cục bộ và kiểm thử hai thứ tự sự kiện. Bài restoration phân biệt rotation, system-initiated process death và force-stop; nêu quy trình kiểm tra bằng `adb shell am kill`, điều kiện giữ route ID của React Native, SavedStateHandle và việc tải lại domain data. Có ví dụ ba mức, bài tập, checklist, nguồn chính thức và bản EN/VI tương đương. 72 concept/lesson, 216 stage; 60 test, lint, typecheck và build 690 trang đạt. Còn migration View/XML ↔ Compose, profiling và release; quy trình process death chưa chạy trên thiết bị, snippet chưa được biên dịch độc lập bằng Android toolchain hoặc thử nghiệm với người học. Ví dụ race condition xử lý state trong bộ nhớ; chính sách đồng bộ bookmark bền vững vẫn là bài tập thiết kế.
+
 Điều kiện kết thúc: có thể review một lời giải và chỉ rõ correctness, khả năng kiểm thử, trade-off và dữ liệu đo lường.
 
 ## Giai đoạn 6: Kiểm chứng hiệu quả
 
-Website chạy lint, typecheck, test, build và kiểm tra EN/VI. Sample Android chạy compile, unit/UI test và kiểm tra trên emulator khi có môi trường. Cho developer React Native ở các mức khác nhau thử một tính năng, ghi lại thời gian hoàn thành, lỗi, số lần cần trợ giúp và khả năng tự giải thích. Sửa thứ tự và độ sâu bài học theo kết quả.
+Website chạy lint, typecheck, test, build và kiểm tra EN/VI. Người học làm bài thực hành trong dự án riêng. Cho developer React Native ở các mức khác nhau thử một tính năng, ghi lại thời gian hoàn thành, lỗi, số lần cần trợ giúp và khả năng tự giải thích. Sửa thứ tự và độ sâu bài học theo kết quả.
 
 Điều kiện kết thúc: có bằng chứng thực nghiệm để đánh giá lời hứa "chuyển đổi nhanh" và mức năng lực thực tế.
 
 ## Nhật ký
 
+- 2026-09-20: Xóa `examples/android/` và workflow Android CI. Repository chỉ chứa website; Kotlin/Jetpack Compose snippets tiếp tục hiển thị như nội dung học trên web.
+- 2026-09-20: Đào sâu bài `state-restoration` EN/VI ở giai đoạn 5: thêm ranh giới navigation state của React Native, process death của Android, quy trình `adb shell am kill` và lỗi kiểm thử thường gặp. Giữ 72 concept/216 stage; 60 test, lint, typecheck, build 690 trang đạt. Chưa chạy quy trình trên thiết bị; Android sample không thay đổi.
+- 2026-09-20: Tiếp tục giai đoạn 5 trên website bằng `refresh-bookmark-races` EN/VI. Ba mức ví dụ đi từ state ownership tới reducer và test thứ tự sự kiện. 72 concept, 216 stage, 59 test, lint, typecheck, build 690 trang đạt. Android sample không thay đổi.
+- 2026-09-20: Bắt đầu giai đoạn 5 trên website bằng bài ranh giới module tính năng EN/VI và ví dụ ba mức. 71 concept, 213 stage, 58 test, lint, typecheck, build 681 trang đạt. Android sample tạm dừng, chỉ là phần thực hành tùy chọn.
+- 2026-09-20: Thêm CI Android build/unit test; chưa xác nhận run trên GitHub. Thử Room Plugin, pin serialization trong KSP và KSP2 nhưng schema export vẫn lỗi; đã hoàn nguyên cấu hình thử nghiệm. Còn chạy test trên thiết bị, phân trang mạng và migration.
+- 2026-09-20: Thêm tìm kiếm cục bộ trên Room Paging, trạng thái rỗng EN/VI và bỏ snapshot đầy đủ khỏi ViewModel. 17 unit test cùng hai APK build đạt. Còn test trên thiết bị, phân trang mạng và sửa Room schema export.
+- 2026-09-20: Tiếp tục checkpoint 5 với WorkManager đồng bộ một lần, chính sách retry có giới hạn và UI EN/VI. 16 unit test và hai APK build đạt. Còn chạy test trên thiết bị, phân trang mạng, tìm kiếm và sửa Room schema export.
+- 2026-09-20: Bắt đầu checkpoint 5 với phân trang Room cục bộ và UI Paging 3, hướng dẫn EN/VI. 12 unit test cùng APK app/test build đạt; chưa có WorkManager, remote paging hay test trên thiết bị. Ghi nhận vấn đề Room/KSP schema export và tạm tắt export; phải giải quyết trước giai đoạn test/release.
+- 2026-09-20: Hoàn thành mã checkpoint 4 giai đoạn 4: Room làm local source of truth, cache mở app, bookmark bền vững, test và hướng dẫn EN/VI. 11 unit test cùng hai APK build thành công. Còn cần chạy instrumentation/offline scenario trên thiết bị. Bước tiếp theo: Paging và WorkManager.
+- 2026-09-20: Tiếp tục giai đoạn 4 với checkpoint 3: HTTP source, retry có giới hạn, cancellation, trạng thái tải/lỗi và nhãn EN/VI cho Android sample. `testDebugUnitTest`, `assembleDebug` và `assembleDebugAndroidTest` đạt; chưa có emulator hoặc thiết bị để chạy UI test. Bước tiếp theo: Room làm local source of truth.
+- 2026-09-20: Hoàn thành checkpoint 2 của giai đoạn 4: repository boundary, constructor injection, fake data source, loading/failure state và ViewModel unit test. `testDebugUnitTest` đạt. Chưa có emulator hoặc thiết bị nên `connectedDebugAndroidTest` chưa chạy. Bước tiếp theo: network source, cancellation và retry.
 - 2026-09-19: Bắt đầu giai đoạn 4. Thêm Android sample chạy được tại `examples/android/`, gồm checkpoint 1 cho UI giả lập, state owner, Navigation Compose, bookmark và test. Gradle Wrapper 8.13 cùng `testDebugUnitTest` đạt; không có thiết bị/emulator nên chưa chạy `connectedDebugAndroidTest`. Bước tiếp theo: repository boundary, fake data source và state test.
 - 2026-09-19: Hoàn thành nội dung web giai đoạn 3 với `navigation-testing` và `background-work-testing`. Tổng cộng 70 concept/lesson và 210 stage; EN/VI parity, 57 test, lint, typecheck và build 672 trang tĩnh đạt. Bài mới test navigation theo hành vi người dùng và test WorkManager bằng TestDriver, không cần chờ thời gian thật; các snippet Android chưa được biên dịch bằng Gradle. Bước tiếp theo: giai đoạn 4, Android sample chạy được và checkpoint.
 - 2026-09-19: Tiếp tục giai đoạn 3 với `flow-composition` và `state-owner-testing`. Tổng cộng 68 concept/lesson và 204 stage; EN/VI parity, 56 test, lint, typecheck và build 654 trang tĩnh đạt. Ví dụ `renderHook` đã cập nhật theo API async của React Native Testing Library 14. Các snippet Android chưa được biên dịch bằng Gradle; bước tiếp theo: test navigation/WorkManager và đường đi lỗi xuyên các layer.

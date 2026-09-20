@@ -129,7 +129,7 @@ describe("concept content", () => {
   test("loads concepts in stable order", () => {
     const concepts = getConcepts();
 
-    expect(concepts).toHaveLength(70);
+    expect(concepts).toHaveLength(72);
     expect(concepts.map((concept) => concept.slug)).toEqual([
       "null-safety",
       "data-classes",
@@ -186,6 +186,8 @@ describe("concept content", () => {
       "back-navigation",
       "repository-boundary",
       "dependency-injection",
+      "feature-module-boundaries",
+      "refresh-bookmark-races",
       "offline-first-data",
       "offline-pagination",
       "durable-background-work",
@@ -419,6 +421,84 @@ describe("roadmap content", () => {
     expect(getConceptBySlug("dependency-injection", "vi")?.title).toBe(
       "Dependency injection và lifetime",
     );
+  });
+
+  test("teaches senior module boundaries without equating packages and Gradle modules", () => {
+    const roadmap = getRoadmap("react-native", "kotlin", "en")!;
+    const lesson = getRoadmapLessonLocation(
+      roadmap,
+      "feature-module-boundaries",
+    )?.lesson;
+    const concept = getConceptBySlug("feature-module-boundaries", "en")!;
+    const translated = getConceptBySlug("feature-module-boundaries", "vi")!;
+
+    expect(lesson?.stages[0].examples?.kotlin?.code).toContain(
+      "interface ProfileReader",
+    );
+    expect(lesson?.stages[1].examples?.kotlin?.code).not.toContain("Room");
+    expect(lesson?.stages[2].examples?.kotlin?.code).toContain(
+      "RoomProfileReader",
+    );
+    expect(concept.relationships[0].type).toBe("similar");
+    expect(concept.relationships[0].explanation).toContain("not the same");
+    expect(translated.relationships[0].explanation).toContain(
+      "không giống hoàn toàn",
+    );
+  });
+
+  test("keeps bookmark intent through a late refresh in both locales", () => {
+    const roadmap = getRoadmap("react-native", "kotlin", "en")!;
+    const lesson = getRoadmapLessonLocation(
+      roadmap,
+      "refresh-bookmark-races",
+    )?.lesson;
+    const concept = getConceptBySlug("refresh-bookmark-races", "en")!;
+    const translated = getConceptBySlug("refresh-bookmark-races", "vi")!;
+
+    expect(lesson?.stages).toHaveLength(3);
+    expect(lesson?.stages[1].examples?.["react-native"]?.code).toContain(
+      "setFeed((current)",
+    );
+    expect(lesson?.stages[1].examples?.kotlin?.code).toContain(
+      "feed.update { current",
+    );
+    expect(lesson?.stages[2].examples?.kotlin?.code).toContain(
+      "CompletableDeferred",
+    );
+    expect(concept.relationships[0].type).toBe("similar");
+    expect(translated.title).not.toBe(concept.title);
+    expect(translated.implementations.kotlin?.code).toBe(
+      concept.implementations.kotlin?.code,
+    );
+  });
+
+  test("separates rotation from process recreation in the senior restoration drill", () => {
+    const english = getConceptBySlug("state-restoration", "en")!;
+    const vietnamese = getConceptBySlug("state-restoration", "vi")!;
+    const lesson = getRoadmapLessonLocation(
+      getRoadmap("react-native", "kotlin", "en")!,
+      "state-restoration",
+    )?.lesson;
+
+    expect(english.productionNotes?.join(" ")).toContain(
+      "adb shell am kill <package>",
+    );
+    expect(english.productionNotes?.join(" ")).toContain(
+      "Do not use am force-stop",
+    );
+    expect(vietnamese.productionNotes).toHaveLength(
+      english.productionNotes?.length,
+    );
+    expect(lesson?.checklist.join(" ")).toContain("SavedStateHandle");
+    expect(lesson?.stages[2].examples?.["react-native"]?.code).toContain(
+      "route.params.userId",
+    );
+    expect(lesson?.stages[2].examples?.kotlin?.code).toContain(
+      'savedStateHandle["userId"]',
+    );
+    expect(
+      english.references.some(({ url }) => url.includes("state-persistence")),
+    ).toBe(true);
   });
 
   test("keeps background sync durable and notification delivery permission-aware", () => {
@@ -820,6 +900,8 @@ describe("roadmap content", () => {
       "secure-storage",
       "repository-boundary",
       "dependency-injection",
+      "feature-module-boundaries",
+      "refresh-bookmark-races",
       "offline-first-data",
       "offline-pagination",
       "durable-background-work",
