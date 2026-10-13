@@ -253,11 +253,13 @@ describe("concept content", () => {
           name: "Flutter fixture",
           summary: "Implementation used only for schema validation.",
           language: "dart",
+          code: "// Flutter schema fixture",
         },
         swiftui: {
           name: "SwiftUI fixture",
           summary: "Implementation used only for schema validation.",
           language: "swift",
+          code: "// SwiftUI schema fixture",
         },
       },
       relationships: [

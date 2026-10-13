@@ -14,18 +14,12 @@ export const layoutConstraintsConcept = {
       summary: "A child stretches inside its parent's horizontal padding.",
       language: "tsx",
       filename: "Card.tsx",
-      code: `<View style={{ paddingHorizontal: 16 }}>
-  <View style={{ alignSelf: "stretch", height: 80, backgroundColor: "#dbeafe" }} />
-</View>`,
     },
     kotlin: {
       name: "Fill the available width",
       summary: "The child fills the width available after parent padding.",
       language: "kotlin",
       filename: "Card.kt",
-      code: `Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
-    Box(Modifier.fillMaxWidth().height(80.dp).background(Color(0xFFDBEAFE)))
-}`,
     },
   },
   relationships: [

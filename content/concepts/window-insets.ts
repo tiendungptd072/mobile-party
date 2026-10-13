@@ -15,10 +15,6 @@ export const windowInsetsConcept = {
         "Read current safe-area insets and apply only the edge padding the screen needs.",
       language: "tsx",
       filename: "ProfileScreen.tsx",
-      code: `function ProfileScreen() {
-  const insets = useSafeAreaInsets();
-  return <View style={{ flex: 1, paddingTop: insets.top }}><Profile /></View>;
-}`,
     },
     kotlin: {
       name: "Safe drawing padding",
@@ -26,12 +22,6 @@ export const windowInsetsConcept = {
         "Apply Compose safe-drawing insets to controls that must stay clear of system UI.",
       language: "kotlin",
       filename: "ProfileScreen.kt",
-      code: `@Composable
-fun ProfileScreen() {
-    Box(Modifier.fillMaxSize().safeDrawingPadding()) {
-        Profile()
-    }
-}`,
     },
   },
   relationships: [

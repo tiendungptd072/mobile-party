@@ -14,26 +14,12 @@ export const accessibilitySemanticsConcept = {
       summary: "Give a custom touch target a label, role, and selected state.",
       language: "tsx",
       filename: "FavoriteButton.tsx",
-      code: `<Pressable
-  accessibilityLabel="Favorite article"
-  accessibilityRole="button"
-  accessibilityState={{ selected: isFavorite }}
-  onPress={onToggle}
->
-  <HeartIcon filled={isFavorite} />
-</Pressable>`,
     },
     kotlin: {
       name: "Semantic custom control",
       summary: "Expose an equivalent role and state through Compose semantics.",
       language: "kotlin",
       filename: "FavoriteButton.kt",
-      code: `IconToggleButton(checked = isFavorite, onCheckedChange = onToggle) {
-    Icon(
-        imageVector = Icons.Default.Favorite,
-        contentDescription = "Favorite article",
-    )
-}`,
     },
   },
   relationships: [

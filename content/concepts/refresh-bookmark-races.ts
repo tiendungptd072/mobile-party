@@ -21,12 +21,6 @@ export const refreshBookmarkRacesConcept = {
         "A React state updater reads the latest feed state when the network result arrives.",
       language: "tsx",
       filename: "use-feed.ts",
-      code: `const [feed, setFeed] = useState<FeedState>(initialFeed);
-
-async function refresh() {
-  const posts = await api.loadPosts();
-  setFeed((current) => ({ ...current, posts }));
-}`,
     },
     kotlin: {
       name: "Update the current StateFlow value",
@@ -34,12 +28,6 @@ async function refresh() {
         "A ViewModel updates only remote post fields and preserves the local bookmark overlay.",
       language: "kotlin",
       filename: "FeedViewModel.kt",
-      code: `private val feed = MutableStateFlow(FeedState())
-
-suspend fun refresh() {
-    val posts = api.loadPosts()
-    feed.update { current -> current.copy(posts = posts) }
-}`,
     },
   },
   relationships: [

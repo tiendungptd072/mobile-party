@@ -15,21 +15,12 @@ export const lifecycleConcept = {
         "The returned function removes a subscription when dependencies change or the component unmounts.",
       language: "tsx",
       filename: "ConnectivityStatus.tsx",
-      code: `useEffect(() => {
-  const unsubscribe = netInfo.addEventListener(setConnection);
-  return unsubscribe;
-}, []);`,
     },
     kotlin: {
       name: "DisposableEffect",
       summary: "Registers an observer for a key and removes it from onDispose.",
       language: "kotlin",
       filename: "AnalyticsLifecycle.kt",
-      code: `DisposableEffect(lifecycleOwner) {
-    val observer = LifecycleEventObserver { _, event -> track(event) }
-    lifecycleOwner.lifecycle.addObserver(observer)
-    onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
-}`,
     },
   },
   relationships: [

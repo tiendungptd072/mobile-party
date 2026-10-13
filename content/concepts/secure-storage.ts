@@ -15,12 +15,6 @@ export const secureStorageConcept = {
         "A native Keychain or Keystore wrapper persists credentials behind an async API.",
       language: "typescript",
       filename: "credentials.ts",
-      code: `await Keychain.setGenericPassword("session", refreshToken);
-
-export async function loadRefreshToken() {
-  const credentials = await Keychain.getGenericPassword();
-  return credentials ? credentials.password : null;
-}`,
     },
     kotlin: {
       name: "Android Keystore-backed storage",
@@ -28,13 +22,6 @@ export async function loadRefreshToken() {
         "A storage abstraction encrypts data with a key held by Android Keystore.",
       language: "kotlin",
       filename: "SessionStore.kt",
-      code: `interface SessionStore {
-  suspend fun saveRefreshToken(token: String)
-  suspend fun readRefreshToken(): String?
-  suspend fun clear()
-}
-
-// The implementation encrypts values using an Android Keystore key.`,
     },
   },
   relationships: [

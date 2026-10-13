@@ -6,10 +6,7 @@ export const adaptiveStageExamples = {
         summary: "The hook re-renders when the app window changes size.",
         language: "tsx",
         filename: "SettingsScreen.tsx",
-        code: `function SettingsScreen() {
-  const { width } = useWindowDimensions();
-  return width >= 600 ? <SettingsGrid /> : <SettingsList />;
-}`,
+        snippet: "adaptive-layouts/react-native/learn-basic.tsx",
       },
       kotlin: {
         name: "Choose layout from size class",
@@ -17,15 +14,7 @@ export const adaptiveStageExamples = {
           "Use the available window class for a high-level layout decision.",
         language: "kotlin",
         filename: "SettingsScreen.kt",
-        code: `@Composable
-fun SettingsScreen() {
-    val sizeClass = currentWindowAdaptiveInfo().windowSizeClass
-    if (sizeClass.isWidthAtLeastBreakpoint(WindowSizeClass.WIDTH_DP_MEDIUM_LOWER_BOUND)) {
-        SettingsGrid()
-    } else {
-        SettingsList()
-    }
-}`,
+        snippet: "adaptive-layouts/kotlin/learn-basic.kt",
       },
     },
     applied: {
@@ -34,12 +23,7 @@ fun SettingsScreen() {
         summary: "Keep selected mail state outside the layout branch.",
         language: "tsx",
         filename: "MailScreen.tsx",
-        code: `function MailScreen({ selectedId }: Props) {
-  const { width } = useWindowDimensions();
-  return width >= 600
-    ? <TwoPaneMail selectedId={selectedId} />
-    : <SinglePaneMail selectedId={selectedId} />;
-}`,
+        snippet: "adaptive-layouts/react-native/applied.tsx",
       },
       kotlin: {
         name: "Select one or two panes",
@@ -47,15 +31,7 @@ fun SettingsScreen() {
           "Pass selection into either layout instead of creating separate owners.",
         language: "kotlin",
         filename: "MailScreen.kt",
-        code: `@Composable
-fun MailScreen(selectedId: String?) {
-    val sizeClass = currentWindowAdaptiveInfo().windowSizeClass
-    if (sizeClass.isWidthAtLeastBreakpoint(WindowSizeClass.WIDTH_DP_MEDIUM_LOWER_BOUND)) {
-        TwoPaneMail(selectedId)
-    } else {
-        SinglePaneMail(selectedId)
-    }
-}`,
+        snippet: "adaptive-layouts/kotlin/applied.kt",
       },
     },
     production: {
@@ -65,10 +41,7 @@ fun MailScreen(selectedId: String?) {
           "The route owns selection while the visible pane arrangement changes.",
         language: "tsx",
         filename: "MailRoute.tsx",
-        code: `function MailRoute() {
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  return <MailScreen selectedId={selectedId} onSelect={setSelectedId} />;
-}`,
+        snippet: "adaptive-layouts/react-native/production.tsx",
       },
       kotlin: {
         name: "Keep navigation state across resize",
@@ -76,11 +49,7 @@ fun MailScreen(selectedId: String?) {
           "The ViewModel owns selection while the composable changes its pane arrangement.",
         language: "kotlin",
         filename: "MailRoute.kt",
-        code: `@Composable
-fun MailRoute(viewModel: MailViewModel = viewModel()) {
-    val selectedId by viewModel.selectedId.collectAsStateWithLifecycle()
-    MailScreen(selectedId = selectedId)
-}`,
+        snippet: "adaptive-layouts/kotlin/production.kt",
       },
     },
   },

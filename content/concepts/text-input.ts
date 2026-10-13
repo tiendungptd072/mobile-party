@@ -15,7 +15,6 @@ export const textInputConcept = {
         "The rendered value and change handler are owned by component state.",
       language: "tsx",
       filename: "NameField.tsx",
-      code: `<TextInput value={name} onChangeText={setName} placeholder="Name" />`,
     },
     kotlin: {
       name: "Controlled TextField",
@@ -23,7 +22,6 @@ export const textInputConcept = {
         "The value flows down and the change event requests a state update.",
       language: "kotlin",
       filename: "NameField.kt",
-      code: `TextField(value = name, onValueChange = { name = it }, label = { Text("Name") })`,
     },
   },
   relationships: [

@@ -21,11 +21,6 @@ export const authenticationConcept = {
         "An app-level state owner chooses public or authenticated navigation based on session state.",
       language: "typescript",
       filename: "app-gate.tsx",
-      code: `function AppGate() {
-  const { status } = useSession();
-  if (status === "restoring") return <SplashScreen />;
-  return status === "signedIn" ? <AppNavigator /> : <AuthNavigator />;
-}`,
     },
     kotlin: {
       name: "Session ViewModel and navigation gate",
@@ -33,16 +28,6 @@ export const authenticationConcept = {
         "A root composable collects immutable session state and selects the appropriate graph.",
       language: "kotlin",
       filename: "AppGate.kt",
-      code: `@Composable
-fun AppGate(viewModel: SessionViewModel = viewModel()) {
-  val state by viewModel.state.collectAsStateWithLifecycle()
-
-  when (state) {
-    SessionState.Restoring -> SplashScreen()
-    SessionState.SignedOut -> AuthNavGraph()
-    is SessionState.SignedIn -> AppNavGraph()
-  }
-}`,
     },
   },
   relationships: [

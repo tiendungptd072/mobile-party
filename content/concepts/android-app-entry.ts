@@ -15,13 +15,6 @@ export const androidAppEntryConcept = {
         "AppRegistry registers the root component; an Android host still launches the native app.",
       language: "tsx",
       filename: "index.tsx",
-      code: `import { AppRegistry, Text } from "react-native";
-
-function App() {
-  return <Text>Welcome</Text>;
-}
-
-AppRegistry.registerComponent("MobileApp", () => App);`,
     },
     kotlin: {
       name: "Launch an Activity and set Compose content",
@@ -29,14 +22,6 @@ AppRegistry.registerComponent("MobileApp", () => App);`,
         "Android resolves a declared launcher Activity; ComponentActivity then installs the Compose UI.",
       language: "kotlin",
       filename: "MainActivity.kt",
-      code: `// AndroidManifest.xml declares .MainActivity with MAIN/LAUNCHER
-// and android:exported="true" for an external launcher.
-class MainActivity : ComponentActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContent { Text("Welcome") }
-    }
-}`,
     },
   },
   relationships: [

@@ -20,12 +20,6 @@ export const runtimePermissionsConcept = {
         "An interaction requests a dangerous permission and receives a result.",
       language: "tsx",
       filename: "CameraButton.tsx",
-      code: `async function requestCamera() {
-  const result = await PermissionsAndroid.request(
-    PermissionsAndroid.PERMISSIONS.CAMERA,
-  );
-  if (result === PermissionsAndroid.RESULTS.GRANTED) openCamera();
-}`,
     },
     kotlin: {
       name: "Launch an Activity Result contract",
@@ -33,13 +27,6 @@ export const runtimePermissionsConcept = {
         "Compose registers a permission launcher and reacts to its asynchronous result.",
       language: "kotlin",
       filename: "CameraButton.kt",
-      code: `val requestCamera = rememberLauncherForActivityResult(
-    ActivityResultContracts.RequestPermission(),
-) { granted -> if (granted) openCamera() }
-
-Button(onClick = { requestCamera.launch(Manifest.permission.CAMERA) }) {
-    Text("Use camera")
-}`,
     },
   },
   relationships: [

@@ -28,8 +28,6 @@ export const androidBuildVariantsConcept = {
         "The Android project under android/ uses Gradle and the React Native Gradle Plugin.",
       language: "bash",
       filename: "android/gradlew",
-      code: `cd android
-./gradlew :app:assembleDebug`,
     },
     kotlin: {
       name: "Build the Compose app",
@@ -37,7 +35,6 @@ export const androidBuildVariantsConcept = {
         "The app module uses the Android Gradle Plugin to assemble the selected variant.",
       language: "bash",
       filename: "gradlew",
-      code: `./gradlew :app:assembleDebug`,
     },
   },
   relationships: [

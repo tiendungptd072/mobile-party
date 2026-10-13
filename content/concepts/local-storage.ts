@@ -15,15 +15,6 @@ export const localStorageConcept = {
         "A promise-based key-value store persists serialized values on the device.",
       language: "typescript",
       filename: "theme-storage.ts",
-      code: `const themeKey = "theme";
-
-export async function saveTheme(theme: "light" | "dark") {
-  await AsyncStorage.setItem(themeKey, theme);
-}
-
-export function loadTheme() {
-  return AsyncStorage.getItem(themeKey);
-}`,
     },
     kotlin: {
       name: "Preferences DataStore",
@@ -31,15 +22,6 @@ export function loadTheme() {
         "A typed Flow reads preferences reactively and an edit transaction writes updates.",
       language: "kotlin",
       filename: "ThemePreferences.kt",
-      code: `val Context.dataStore by preferencesDataStore(name = "settings")
-val themeKey = stringPreferencesKey("theme")
-
-val Context.theme: Flow<String?>
-  get() = dataStore.data.map { it[themeKey] }
-
-suspend fun Context.saveTheme(theme: String) {
-  dataStore.edit { it[themeKey] = theme }
-}`,
     },
   },
   relationships: [

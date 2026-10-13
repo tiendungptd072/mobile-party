@@ -14,11 +14,6 @@ export const uiIdentityConcept = {
       summary: "A domain ID identifies each row across ordering changes.",
       language: "tsx",
       filename: "Feed.tsx",
-      code: `<FlatList
-  data={posts}
-  keyExtractor={(post) => post.id}
-  renderItem={({ item }) => <PostRow post={item} />}
-/>`,
     },
     kotlin: {
       name: "LazyColumn item key",
@@ -26,11 +21,6 @@ export const uiIdentityConcept = {
         "A stable key associates each item with its composition identity.",
       language: "kotlin",
       filename: "Feed.kt",
-      code: `LazyColumn {
-    items(posts, key = { it.id }) { post ->
-        PostRow(post)
-    }
-}`,
     },
   },
   relationships: [

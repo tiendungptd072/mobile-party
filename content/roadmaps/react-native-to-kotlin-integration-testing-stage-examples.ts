@@ -7,22 +7,14 @@ export const integrationTestingStageExamples = {
           "The test checks what the user sees after pressing the action.",
         language: "tsx",
         filename: "AppNavigator.test.tsx",
-        code: `const Navigation = createStaticNavigation(AppStack);
-const user = userEvent.setup();
-await render(<Navigation />);
-await user.press(screen.getByRole("button", { name: "Open profile" }));
-expect(screen.getByText("Profile: Ada")).toBeVisible();`,
+        snippet: "navigation-testing/react-native/learn-basic.tsx",
       },
       kotlin: {
         name: "Open the destination from a semantic action",
         summary: "The real NavHost renders the destination UI after the click.",
         language: "kotlin",
         filename: "AppNavHostTest.kt",
-        code: `composeTestRule.setContent { AppNavHost() }
-composeTestRule.onNodeWithContentDescription("Open profile")
-    .performClick()
-composeTestRule.onNodeWithText("Profile: Ada")
-    .assertIsDisplayed()`,
+        snippet: "navigation-testing/kotlin/learn-basic.kt",
       },
     },
     applied: {
@@ -32,10 +24,7 @@ composeTestRule.onNodeWithText("Profile: Ada")
           "Fake timers make the test deterministic when navigation schedules animation work.",
         language: "tsx",
         filename: "AppNavigator.test.tsx",
-        code: `jest.useFakeTimers();
-await user.press(screen.getByRole("button", { name: "Open profile" }));
-await act(() => jest.runAllTimers());
-expect(screen.getByText("Profile: Ada")).toBeVisible();`,
+        snippet: "navigation-testing/react-native/applied.tsx",
       },
       kotlin: {
         name: "Prove the route ID reaches the screen",
@@ -43,9 +32,7 @@ expect(screen.getByText("Profile: Ada")).toBeVisible();`,
           "The destination loads by ID rather than receiving a stale object.",
         language: "kotlin",
         filename: "ProfileRouteTest.kt",
-        code: `composeTestRule.setContent { AppNavHost(startProfileId = "ada") }
-composeTestRule.onNodeWithText("Profile: Ada")
-    .assertIsDisplayed()`,
+        snippet: "navigation-testing/kotlin/applied.kt",
       },
     },
     production: {
@@ -54,17 +41,14 @@ composeTestRule.onNodeWithText("Profile: Ada")
         summary: "An unknown profile remains a recoverable visible state.",
         language: "tsx",
         filename: "AppNavigator.test.tsx",
-        code: `await render(<AppNavigator initialUrl="myapp://profiles/missing" />);
-expect(screen.getByText("Profile unavailable")).toBeVisible();`,
+        snippet: "navigation-testing/react-native/production.tsx",
       },
       kotlin: {
         name: "Exercise a restored destination",
         summary: "A restored route still resolves current authorized data.",
         language: "kotlin",
         filename: "ProfileRouteTest.kt",
-        code: `composeTestRule.setContent { AppNavHost(startProfileId = "missing") }
-composeTestRule.onNodeWithText("Profile unavailable")
-    .assertIsDisplayed()`,
+        snippet: "navigation-testing/kotlin/production.kt",
       },
     },
   },
@@ -75,17 +59,14 @@ composeTestRule.onNodeWithText("Profile unavailable")
         summary: "Two calls still schedule only one named sync operation.",
         language: "typescript",
         filename: "sync-scheduler.test.ts",
-        code: `await schedulePendingSync(scheduler);
-await schedulePendingSync(scheduler);
-expect(scheduler.uniqueWork).toHaveLength(1);`,
+        snippet: "background-work-testing/react-native/learn-basic.tsx",
       },
       kotlin: {
         name: "Test worker logic directly",
         summary: "A worker returns retry for a controlled transient failure.",
         language: "kotlin",
         filename: "SyncWorkerTest.kt",
-        code: `val worker = TestListenableWorkerBuilder<SyncWorker>(context).build()
-assertEquals(ListenableWorker.Result.retry(), worker.doWork())`,
+        snippet: "background-work-testing/kotlin/learn-basic.kt",
       },
     },
     applied: {
@@ -95,8 +76,7 @@ assertEquals(ListenableWorker.Result.retry(), worker.doWork())`,
           "The scheduler sees a retry only for a transient transport failure.",
         language: "typescript",
         filename: "sync-policy.test.ts",
-        code: `expect(toSyncOutcome(new NetworkError())).toBe("retry");
-expect(toSyncOutcome(new ValidationError())).toBe("failure");`,
+        snippet: "background-work-testing/react-native/applied.tsx",
       },
       kotlin: {
         name: "Classify Worker results",
@@ -104,8 +84,7 @@ expect(toSyncOutcome(new ValidationError())).toBe("failure");`,
           "The worker maps transient and permanent failures to distinct results.",
         language: "kotlin",
         filename: "SyncWorkerTest.kt",
-        code: `assertEquals(Result.retry(), runWorker(NetworkError()))
-assertEquals(Result.failure(), runWorker(ValidationError()))`,
+        snippet: "background-work-testing/kotlin/applied.kt",
       },
     },
     production: {
@@ -115,21 +94,14 @@ assertEquals(Result.failure(), runWorker(ValidationError()))`,
           "App tests verify the request contract; one device test proves the native bridge registration.",
         language: "typescript",
         filename: "sync-scheduler.test.ts",
-        code: `expect(toWorkRequest(accountId)).toEqual({
-  uniqueName: "pending-sync",
-  network: "connected",
-});`,
+        snippet: "background-work-testing/react-native/production.tsx",
       },
       kotlin: {
         name: "Drive a WorkManager constraint",
         summary: "The test driver releases network work without real waiting.",
         language: "kotlin",
         filename: "SyncWorkManagerTest.kt",
-        code: `WorkManagerTestInitHelper.initializeTestWorkManager(context)
-val request = OneTimeWorkRequestBuilder<SyncWorker>().build()
-workManager.enqueue(request).result.get()
-WorkManagerTestInitHelper.getTestDriver(context)!!
-    .setAllConstraintsMet(request.id)`,
+        snippet: "background-work-testing/kotlin/production.kt",
       },
     },
   },

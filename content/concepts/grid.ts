@@ -15,12 +15,6 @@ export const gridConcept = {
         "FlatList virtualizes a collection while numColumns controls the row layout.",
       language: "typescript",
       filename: "photo-grid.tsx",
-      code: `<FlatList
-  data={photos}
-  numColumns={2}
-  keyExtractor={(photo) => photo.id}
-  renderItem={({ item }) => <PhotoTile photo={item} />}
-/>`,
     },
     kotlin: {
       name: "LazyVerticalGrid",
@@ -28,11 +22,6 @@ export const gridConcept = {
         "LazyVerticalGrid virtualizes cells and uses an adaptive or fixed column definition.",
       language: "kotlin",
       filename: "PhotoGrid.kt",
-      code: `LazyVerticalGrid(columns = GridCells.Adaptive(minSize = 160.dp)) {
-  items(photos, key = { it.id }) { photo ->
-    PhotoTile(photo)
-  }
-}`,
     },
   },
   relationships: [

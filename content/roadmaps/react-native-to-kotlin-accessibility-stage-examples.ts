@@ -7,9 +7,7 @@ export const accessibilityStageExamples = {
           "The screen reader receives a meaningful action label and role.",
         language: "tsx",
         filename: "DeleteButton.tsx",
-        code: `<Pressable accessibilityLabel="Delete draft" accessibilityRole="button" onPress={onDelete}>
-  <TrashIcon />
-</Pressable>`,
+        snippet: "accessibility-semantics/react-native/learn-basic.tsx",
       },
       kotlin: {
         name: "Label an icon-only action",
@@ -17,9 +15,7 @@ export const accessibilityStageExamples = {
           "A standard IconButton exposes button semantics and the icon supplies its label.",
         language: "kotlin",
         filename: "DeleteButton.kt",
-        code: `IconButton(onClick = onDelete) {
-    Icon(Icons.Default.Delete, contentDescription = "Delete draft")
-}`,
+        snippet: "accessibility-semantics/kotlin/learn-basic.kt",
       },
     },
     applied: {
@@ -29,14 +25,7 @@ export const accessibilityStageExamples = {
           "A custom control tells assistive technology its selected state.",
         language: "tsx",
         filename: "FavoriteButton.tsx",
-        code: `<Pressable
-  accessibilityLabel="Favorite article"
-  accessibilityRole="togglebutton"
-  accessibilityState={{ checked: isFavorite }}
-  onPress={onToggle}
->
-  <HeartIcon filled={isFavorite} />
-</Pressable>`,
+        snippet: "accessibility-semantics/react-native/applied.tsx",
       },
       kotlin: {
         name: "Expose a checked toggle",
@@ -44,9 +33,7 @@ export const accessibilityStageExamples = {
           "IconToggleButton provides toggle semantics and checked state.",
         language: "kotlin",
         filename: "FavoriteButton.kt",
-        code: `IconToggleButton(checked = isFavorite, onCheckedChange = onToggle) {
-    Icon(Icons.Default.Favorite, contentDescription = "Favorite article")
-}`,
+        snippet: "accessibility-semantics/kotlin/applied.kt",
       },
     },
     production: {
@@ -56,14 +43,7 @@ export const accessibilityStageExamples = {
           "testID is a stable selector, while accessibility props remain user-facing metadata.",
         language: "tsx",
         filename: "SaveButton.tsx",
-        code: `<Pressable
-  testID="profile-save"
-  accessibilityRole="button"
-  accessibilityLabel="Save profile"
-  onPress={onSave}
->
-  <Text>Save</Text>
-</Pressable>`,
+        snippet: "accessibility-semantics/react-native/production.tsx",
       },
       kotlin: {
         name: "Keep test selection separate",
@@ -71,11 +51,7 @@ export const accessibilityStageExamples = {
           "testTag selects a node in tests; contentDescription remains user-facing semantics.",
         language: "kotlin",
         filename: "SaveButtonTest.kt",
-        code: `IconButton(onClick = onSave, modifier = Modifier.testTag("profile-save")) {
-    Icon(Icons.Default.Save, contentDescription = "Save profile")
-}
-
-composeTestRule.onNodeWithTag("profile-save").performClick()`,
+        snippet: "accessibility-semantics/kotlin/production.kt",
       },
     },
   },

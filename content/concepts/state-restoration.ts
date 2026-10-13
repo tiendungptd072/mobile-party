@@ -26,10 +26,6 @@ export const stateRestorationConcept = {
         "useState retains a draft while its React component instance remains mounted.",
       language: "tsx",
       filename: "SearchDraft.tsx",
-      code: `function SearchDraft() {
-  const [query, setQuery] = useState("");
-  return <TextInput value={query} onChangeText={setQuery} />;
-}`,
     },
     kotlin: {
       name: "Saveable local draft",
@@ -37,11 +33,6 @@ export const stateRestorationConcept = {
         "rememberSaveable also restores a small saveable value after supported Android recreation.",
       language: "kotlin",
       filename: "SearchDraft.kt",
-      code: `@Composable
-fun SearchDraft() {
-    var query by rememberSaveable { mutableStateOf("") }
-    TextField(value = query, onValueChange = { query = it })
-}`,
     },
   },
   relationships: [

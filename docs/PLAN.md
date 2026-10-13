@@ -87,8 +87,8 @@ Note: before P0.1, `bun build` needs network access to Google Fonts and fails of
 - **Do:** remove the hard requirement that every concept has `react-native` and `kotlin` implementations. Require **at least two** implementations. Relationships must still reference existing implementations. Relationships stay optional overrides; do not add a rule that every pair must be described.
 - **Accept:** a test concept with only `flutter` + `swiftui` validates; a concept with one implementation is rejected; existing content unchanged; docs updated.
 
-### P0.4 ☐ Snippets as real files, loaded at build time — Level 3
-- **Files:** new `content/snippets/**`, new `src/lib/content/snippets.ts`, `src/lib/content/schema.ts`, `content/concepts/*.ts`, `content/recipes/index.ts`, `tsconfig.json`, `eslint.config.mjs`, `.prettierignore`, tests.
+### P0.4 ☑ Snippets as real files, loaded at build time — Level 3
+- **Files:** new `content/snippets/**`, new `src/lib/content/snippets.ts`, `src/lib/content/schema.ts`, client-safe technology validation, `content/concepts/*.ts`, `content/recipes/index.ts`, `content/roadmaps/*.ts`, `tsconfig.json`, `eslint.config.mjs`, `.prettierignore`, Bun test preload, tests.
 - **Convention:**
   ```text
   content/snippets/<concept-slug>/<technology>/<stage>.<ext>
@@ -97,9 +97,10 @@ Note: before P0.1, `bun build` needs network access to Google Fonts and fails of
   content/snippets/recipes/<recipe-slug>/<technology>/main.<ext>
   ```
   `recipes` is a reserved slug. The `basic` snippet is what Compare shows as the implementation.
+- **Confirmed scope adjustment (2026-10-13):** the repository has 72 concepts, 6 recipes, and 216 lesson stages. Migrate all existing snippets. Source metadata may use an explicit `snippet` path relative to `content/snippets/`; distinct Learn basic examples use `learn-basic.tsx` / `learn-basic.kt` to preserve their displayed code. Shell examples use `.sh` and display the full file.
 - **Display region:** only the code between `// #region show` and `// #endregion` is displayed; imports, `package` lines, and support code stay outside it. A file without a region displays in full. The loader strips the markers.
-- **Kotlin rule:** each file declares its own package, `package snippets.<slug_with_underscores>.<stage>` (recipes: `snippets.recipes.<slug_with_underscores>`), so top-level names never collide.
-- **Do:** implement a server-only loader that reads files with `node:fs` at build time and fills `implementation.code`. Migrate the 8 existing concepts and the 6 recipes. If `code` is omitted, the loader resolves the file by convention. After migration, the validator rejects inline `code` for `tsx`, `typescript`, and `kotlin`. A missing file produces a `ContentValidationError` naming the path. Exclude `content/snippets/**` and `verify/**` from the root `tsconfig.json`, ESLint, and Prettier (Kotlin is not handled by Prettier).
+- **Kotlin rule:** each file declares its own package, `package snippets.<slug_with_underscores>.<stage>` (distinct Learn basic: `snippets.<slug_with_underscores>.learn_basic`; recipes: `snippets.recipes.<slug_with_underscores>`), so top-level names never collide.
+- **Do:** implement a server-only loader that reads files with `node:fs` at build time and fills `implementation.code`. Migrate the 72 current concepts, the 6 recipes, and existing lesson stage examples. If `code` is omitted, the loader resolves the file by convention or an explicit source reference. After migration, the validator rejects inline `code` for `tsx`, `typescript`, and `kotlin`. A missing file produces a `ContentValidationError` naming the path. Exclude `content/snippets/**` and `verify/**` from the root `tsconfig.json`, ESLint, and Prettier (Kotlin is not handled by Prettier).
 - **Accept:** the site renders identical code (minus markers); the search index does not contain snippet bodies; tests cover region extraction, missing file, and inline-code rejection; `bun typecheck` does not try to compile snippets.
 
 ### P0.5 ☐ CI that compiles every snippet — Level 2–3 (depends on P0.4) `⚠ Owner` (needs a human run if no Android SDK locally)

@@ -20,9 +20,6 @@ export const nullSafetyConcept = {
         "A union and optional chaining make absence explicit under strictNullChecks.",
       language: "typescript",
       filename: "display-name.ts",
-      code: `function displayName(user: User | null): string {
-  return user?.profile?.name ?? "Guest";
-}`,
     },
     kotlin: {
       name: "Nullable type",
@@ -30,9 +27,6 @@ export const nullSafetyConcept = {
         "A question mark, safe calls, and the Elvis operator handle absence explicitly.",
       language: "kotlin",
       filename: "DisplayName.kt",
-      code: `fun displayName(user: User?): String {
-    return user?.profile?.name ?: "Guest"
-}`,
     },
   },
   relationships: [

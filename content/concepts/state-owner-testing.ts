@@ -27,10 +27,6 @@ export const stateOwnerTestingConcept = {
         "Inject a fake data source and assert the next observable state after a user action.",
       language: "tsx",
       filename: "use-feed.test.tsx",
-      code: `const repository = new FakeFeedRepository();
-const { result } = await renderHook(() => useFeed(repository));
-await act(async () => repository.emit([post]));
-expect(result.current.items).toEqual([post]);`,
     },
     kotlin: {
       name: "Test ViewModel state with runTest",
@@ -38,17 +34,6 @@ expect(result.current.items).toEqual([post]);`,
         "A fake repository emits controlled data while a test dispatcher drives ViewModel work.",
       language: "kotlin",
       filename: "FeedViewModelTest.kt",
-      code: `@get:Rule val mainDispatcherRule = MainDispatcherRule()
-
-@Test fun showsSavedPost() = runTest {
-    val repository = FakeFeedRepository()
-    val viewModel = FeedViewModel(repository)
-    backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
-        viewModel.uiState.collect {}
-    }
-    repository.emit(listOf(post))
-    assertEquals(listOf(post), viewModel.uiState.value.items)
-}`,
     },
   },
   relationships: [

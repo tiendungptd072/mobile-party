@@ -6,14 +6,7 @@ export const backNavigationStageExamples = {
         summary: "The listener consumes back only when there is unsaved work.",
         language: "tsx",
         filename: "EditProfileScreen.tsx",
-        code: `useEffect(() => {
-  const subscription = BackHandler.addEventListener("hardwareBackPress", () => {
-    if (!hasUnsavedChanges) return false;
-    setShowDiscardDialog(true);
-    return true;
-  });
-  return () => subscription.remove();
-}, [hasUnsavedChanges]);`,
+        snippet: "back-navigation/react-native/basic.tsx",
       },
       kotlin: {
         name: "Enable only for an unsaved draft",
@@ -21,9 +14,7 @@ export const backNavigationStageExamples = {
           "The navigation stack handles back unless the handler is enabled.",
         language: "kotlin",
         filename: "EditProfileScreen.kt",
-        code: `BackHandler(enabled = hasUnsavedChanges) {
-    showDiscardDialog = true
-}`,
+        snippet: "back-navigation/kotlin/basic.kt",
       },
     },
     applied: {
@@ -33,11 +24,7 @@ export const backNavigationStageExamples = {
           "The dialog decides whether to continue the normal navigation action.",
         language: "tsx",
         filename: "EditProfileScreen.tsx",
-        code: `<DiscardDialog
-  visible={showDiscardDialog}
-  onDiscard={() => navigation.goBack()}
-  onKeepEditing={() => setShowDiscardDialog(false)}
-/>`,
+        snippet: "back-navigation/react-native/applied.tsx",
       },
       kotlin: {
         name: "Confirm before discard",
@@ -45,13 +32,7 @@ export const backNavigationStageExamples = {
           "The route owns popping the back stack after the user confirms.",
         language: "kotlin",
         filename: "EditProfileRoute.kt",
-        code: `if (showDiscardDialog) {
-    AlertDialog(
-        onDismissRequest = { showDiscardDialog = false },
-        confirmButton = { TextButton(onClick = navController::popBackStack) { Text("Discard") } },
-        dismissButton = { TextButton(onClick = { showDiscardDialog = false }) { Text("Keep editing") },
-    )
-}`,
+        snippet: "back-navigation/kotlin/applied.kt",
       },
     },
     production: {
@@ -60,11 +41,7 @@ export const backNavigationStageExamples = {
         summary: "The screen hook exists only for the temporary draft state.",
         language: "tsx",
         filename: "EditProfileScreen.tsx",
-        code: `useEffect(() => {
-  if (!hasUnsavedChanges) return;
-  const subscription = BackHandler.addEventListener("hardwareBackPress", confirmDiscard);
-  return () => subscription.remove();
-}, [hasUnsavedChanges, confirmDiscard]);`,
+        snippet: "back-navigation/react-native/production.tsx",
       },
       kotlin: {
         name: "Keep handler composition stable",
@@ -72,11 +49,7 @@ export const backNavigationStageExamples = {
           "Call BackHandler consistently and toggle only its enabled state.",
         language: "kotlin",
         filename: "EditProfileScreen.kt",
-        code: `BackHandler(enabled = hasUnsavedChanges) {
-    showDiscardDialog = true
-}
-
-EditProfileContent(draft = draft, onChange = onChange)`,
+        snippet: "back-navigation/kotlin/production.kt",
       },
     },
   },

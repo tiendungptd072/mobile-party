@@ -1,13 +1,20 @@
 import { describe, expect, mock, test } from "bun:test";
-import { apiRequestConcept } from "@content/concepts/api-request";
-import { asyncConcept } from "@content/concepts/async";
-import { rawRecipes } from "@content/recipes";
+import { getConceptBySlug } from "@/lib/content/concepts";
+import { getRecipeBySlug } from "@/lib/content/recipes";
 import { getRoadmap, getRoadmapLessonLocations } from "@/lib/content/roadmaps";
 
 const transpiler = new Bun.Transpiler({ loader: "ts" });
 type FetchRequest = (url: string, options: RequestInit) => Promise<Response>;
 type UserLoader = (id: string, signal: AbortSignal) => Promise<unknown>;
 type AuthenticatedGet = (path: string) => Promise<Response>;
+
+function publishedCode(kind: "concept" | "recipe", slug: string): string {
+  const entry =
+    kind === "concept" ? getConceptBySlug(slug) : getRecipeBySlug(slug);
+  const code = entry?.implementations["react-native"]?.code;
+  if (!code) throw new Error(`Missing published code: ${kind}/${slug}`);
+  return code;
+}
 
 // Execute the published snippets with controlled dependencies, without changing globals.
 function compileExample(
@@ -26,9 +33,8 @@ function createSession(
   refresh: () => Promise<string>,
   signOut: () => void,
 ): AuthenticatedGet {
-  const recipe = rawRecipes.find((recipe) => recipe.slug === "refresh-token")!;
   const create = compileExample(
-    recipe.implementations["react-native"].code,
+    publishedCode("recipe", "refresh-token"),
     { fetch },
     "createAuthenticatedGet",
   ) as (
@@ -44,7 +50,7 @@ describe("published request examples", () => {
     const user = { id: "user/42", name: "An" };
     const fetch = mock(async () => Response.json(user));
     const load = compileExample(
-      asyncConcept.implementations["react-native"].code,
+      publishedCode("concept", "async"),
       { fetch },
       "loadUser",
     ) as UserLoader;
@@ -61,7 +67,7 @@ describe("published request examples", () => {
     "fetch rejects HTTP %i instead of returning JSON",
     async (status) => {
       const load = compileExample(
-        asyncConcept.implementations["react-native"].code,
+        publishedCode("concept", "async"),
         { fetch: async () => Response.json({}, { status }) },
         "loadUser",
       ) as UserLoader;
@@ -78,7 +84,7 @@ describe("published request examples", () => {
     "fetch propagates transport and cancellation failures: %s",
     async (error) => {
       const load = compileExample(
-        asyncConcept.implementations["react-native"].code,
+        publishedCode("concept", "async"),
         {
           fetch: async () => {
             throw error;
@@ -97,7 +103,7 @@ describe("published request examples", () => {
     const get = mock(async () => ({ data: user }));
     const create = mock(() => ({ get }));
     const load = compileExample(
-      apiRequestConcept.implementations["react-native"].code,
+      publishedCode("concept", "api-request"),
       { axios: { create } },
       "getUser",
     ) as UserLoader;
@@ -121,11 +127,8 @@ describe("published request examples", () => {
       const response = Promise.withResolvers<Response>();
       const states: unknown[] = [];
       const fetch = mock(() => response.promise);
-      const recipe = rawRecipes.find(
-        (recipe) => recipe.slug === "api-request",
-      )!;
       const load = compileExample(
-        recipe.implementations["react-native"].code,
+        publishedCode("recipe", "api-request"),
         { fetch, setState: (state: unknown) => states.push(state) },
         "loadProfile",
       ) as (signal: AbortSignal) => Promise<void>;

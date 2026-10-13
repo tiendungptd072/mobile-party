@@ -21,10 +21,6 @@ export const flowAndStateFlowConcept = {
         "An app-owned store supplies a current immutable snapshot and a cleanup-returning subscribe function.",
       language: "tsx",
       filename: "FeedRoute.tsx",
-      code: `function FeedRoute() {
-  const state = useSyncExternalStore(feedStore.subscribe, feedStore.getSnapshot);
-  return <FeedScreen state={state} />;
-}`,
     },
     kotlin: {
       name: "Collect screen StateFlow",
@@ -32,11 +28,6 @@ export const flowAndStateFlowConcept = {
         "The ViewModel exposes current state and Compose collects it only while the screen lifecycle is active.",
       language: "kotlin",
       filename: "FeedRoute.kt",
-      code: `@Composable
-fun FeedRoute(viewModel: FeedViewModel) {
-    val state by viewModel.uiState.collectAsStateWithLifecycle()
-    FeedScreen(state)
-}`,
     },
   },
   relationships: [

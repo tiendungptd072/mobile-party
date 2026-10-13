@@ -15,12 +15,6 @@ export const apiRequestConcept = {
         "A configured Axios client returns one user and forwards cancellation to the request.",
       language: "typescript",
       filename: "user-api.ts",
-      code: `const api = axios.create({ baseURL: "https://api.example.com/" });
-
-async function getUser(id: string, signal: AbortSignal): Promise<User> {
-  const response = await api.get<User>(\`users/\${encodeURIComponent(id)}\`, { signal });
-  return response.data;
-}`,
     },
     kotlin: {
       name: "Retrofit + OkHttp",
@@ -28,13 +22,6 @@ async function getUser(id: string, signal: AbortSignal): Promise<User> {
         "A Retrofit suspend call returns the same user and inherits its caller's cancellation.",
       language: "kotlin",
       filename: "UserApi.kt",
-      code: `// userApi uses https://api.example.com/ and a JSON converter for User.
-interface UserApi {
-    @GET("users/{id}")
-    suspend fun getUser(@Path("id") id: String): User
-}
-
-suspend fun getUser(id: String): User = userApi.getUser(id)`,
     },
   },
   relationships: [

@@ -26,13 +26,6 @@ export const androidNotificationsConcept = {
         "React Native UI calls an app-owned Android bridge or library; the platform still owns delivery.",
       language: "tsx",
       filename: "reminder.ts",
-      code: `interface ReminderNotifier {
-  show(postId: string, title: string): Promise<void>;
-}
-
-async function notifySavedPost(notifier: ReminderNotifier, post: Post) {
-  await notifier.show(post.id, post.title);
-}`,
     },
     kotlin: {
       name: "NotificationCompat on a channel",
@@ -40,12 +33,6 @@ async function notifySavedPost(notifier: ReminderNotifier, post: Post) {
         "Android posts a notification using a registered channel and a small icon.",
       language: "kotlin",
       filename: "ReminderNotifier.kt",
-      code: `val notification = NotificationCompat.Builder(context, REMINDER_CHANNEL_ID)
-    .setSmallIcon(R.drawable.ic_notification)
-    .setContentTitle(context.getString(R.string.saved_post_title))
-    .setContentText(post.title)
-    .build()
-NotificationManagerCompat.from(context).notify(post.id.hashCode(), notification)`,
     },
   },
   relationships: [

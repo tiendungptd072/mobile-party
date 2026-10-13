@@ -14,25 +14,12 @@ export const listConcept = {
       summary: "Virtualizes rows from an array and a renderItem callback.",
       language: "tsx",
       filename: "UserList.tsx",
-      code: `<FlatList
-  data={users}
-  keyExtractor={(user) => user.id}
-  renderItem={({ item }) => <UserRow user={item} />}
-/>`,
     },
     kotlin: {
       name: "LazyColumn",
       summary: "Composes visible items through a lazy list scope.",
       language: "kotlin",
       filename: "UserList.kt",
-      code: `LazyColumn {
-    items(
-        items = users,
-        key = { user -> user.id },
-    ) { user ->
-        UserRow(user = user)
-    }
-}`,
     },
   },
   relationships: [

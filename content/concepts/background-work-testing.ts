@@ -15,13 +15,6 @@ export const backgroundWorkTestingConcept = {
         "Use a fake scheduler to verify unique work and retry policy without running Headless JS.",
       language: "typescript",
       filename: "sync-scheduler.test.ts",
-      code: `const scheduler = new FakeSyncScheduler();
-await schedulePendingSync(scheduler);
-await schedulePendingSync(scheduler);
-
-expect(scheduler.uniqueWork).toEqual([
-  { name: "pending-sync", policy: "keep" },
-]);`,
     },
     kotlin: {
       name: "Test a CoroutineWorker result",
@@ -29,13 +22,6 @@ expect(scheduler.uniqueWork).toEqual([
         "Build the worker with controlled input and assert retry versus permanent failure directly.",
       language: "kotlin",
       filename: "SyncWorkerTest.kt",
-      code: `@Test fun retriesNetworkFailure() = runTest {
-    val worker = TestListenableWorkerBuilder<SyncWorker>(context)
-        .setInputData(workDataOf("accountId" to "ada"))
-        .build()
-
-    assertEquals(ListenableWorker.Result.retry(), worker.doWork())
-}`,
     },
   },
   relationships: [

@@ -15,12 +15,6 @@ export const formConcept = {
         "The screen owns field values, validation, and the submit event.",
       language: "tsx",
       filename: "LoginForm.tsx",
-      code: `function LoginForm() {
-  const [email, setEmail] = useState("");
-  const isValid = email.includes("@");
-
-  return <Button title="Continue" disabled={!isValid} onPress={() => signIn(email)} />;
-}`,
     },
     kotlin: {
       name: "Hoisted form state",
@@ -28,13 +22,6 @@ export const formConcept = {
         "The screen derives validation from field state and emits a submit intent.",
       language: "kotlin",
       filename: "LoginForm.kt",
-      code: `@Composable
-fun LoginForm(onSubmit: (String) -> Unit) {
-    var email by rememberSaveable { mutableStateOf("") }
-    val isValid = email.contains("@")
-
-    Button(onClick = { onSubmit(email) }, enabled = isValid) { Text("Continue") }
-}`,
     },
   },
   relationships: [

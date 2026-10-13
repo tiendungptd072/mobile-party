@@ -25,9 +25,6 @@ export const stabilityAndSkippingConcept = {
       summary: "React.memo can skip a row render when props compare equal.",
       language: "tsx",
       filename: "UserRow.tsx",
-      code: `const UserRow = memo(function UserRow({ id, name }: Props) {
-  return <Text>{name}</Text>;
-});`,
     },
     kotlin: {
       name: "Stable row inputs",
@@ -35,10 +32,6 @@ export const stabilityAndSkippingConcept = {
         "Compose can skip an eligible call when its input values compare unchanged.",
       language: "kotlin",
       filename: "UserRow.kt",
-      code: `@Composable
-fun UserRow(id: String, name: String) {
-    Text(name)
-}`,
     },
   },
   relationships: [

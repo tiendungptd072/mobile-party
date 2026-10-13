@@ -7,14 +7,7 @@ export const coroutinesStageExamples = {
           "Cleanup aborts work and stale results cannot update the screen.",
         language: "tsx",
         filename: "use-user.ts",
-        code: `useEffect(() => {
-  const controller = new AbortController();
-  setHasError(false);
-  void repository.loadUser(userId, controller.signal)
-    .then((user) => { if (!controller.signal.aborted) setUser(user); })
-    .catch(() => { if (!controller.signal.aborted) setHasError(true); });
-  return () => controller.abort();
-}, [repository, userId]);`,
+        snippet: "coroutine-scopes/react-native/basic.tsx",
       },
       kotlin: {
         name: "Own a request in composition",
@@ -22,18 +15,7 @@ export const coroutinesStageExamples = {
           "LaunchedEffect cancels its child Job when the key or UI lifetime changes.",
         language: "kotlin",
         filename: "UserRoute.kt",
-        code: `var user by remember(userId) { mutableStateOf<User?>(null) }
-var hasError by remember(userId) { mutableStateOf(false) }
-LaunchedEffect(userId) {
-    hasError = false
-    try {
-        user = repository.loadUser(userId)
-    } catch (cancelled: CancellationException) {
-        throw cancelled
-    } catch (_: Exception) {
-        hasError = true
-    }
-}`,
+        snippet: "coroutine-scopes/kotlin/basic.kt",
       },
     },
     applied: {
@@ -43,14 +25,7 @@ LaunchedEffect(userId) {
           "A new query aborts the previous request and ignores its late result.",
         language: "tsx",
         filename: "use-search.ts",
-        code: `useEffect(() => {
-  const controller = new AbortController();
-  setHasError(false);
-  void repository.search(query, controller.signal)
-    .then((items) => { if (!controller.signal.aborted) setItems(items); })
-    .catch(() => { if (!controller.signal.aborted) setHasError(true); });
-  return () => controller.abort();
-}, [query, repository]);`,
+        snippet: "coroutine-scopes/react-native/applied.tsx",
       },
       kotlin: {
         name: "Cancel work when the query changes",
@@ -58,18 +33,7 @@ LaunchedEffect(userId) {
           "The previous LaunchedEffect child is canceled before new keyed work.",
         language: "kotlin",
         filename: "SearchRoute.kt",
-        code: `var items by remember(query) { mutableStateOf<List<Item>>(emptyList()) }
-var hasError by remember(query) { mutableStateOf(false) }
-LaunchedEffect(query) {
-    hasError = false
-    try {
-        items = repository.search(query)
-    } catch (cancelled: CancellationException) {
-        throw cancelled
-    } catch (_: Exception) {
-        hasError = true
-    }
-}`,
+        snippet: "coroutine-scopes/kotlin/applied.kt",
       },
     },
     production: {
@@ -79,20 +43,7 @@ LaunchedEffect(query) {
           "The hook aborts old work and cleans up when its screen leaves.",
         language: "tsx",
         filename: "use-profile.ts",
-        code: `const current = useRef<AbortController | null>(null);
-function reload() {
-  current.current?.abort();
-  const controller = new AbortController();
-  current.current = controller;
-  void repository.load(controller.signal)
-    .then((profile) => {
-      if (!controller.signal.aborted) setState({ kind: "ready", profile });
-    })
-    .catch(() => {
-      if (!controller.signal.aborted) setState({ kind: "error" });
-    });
-}
-useEffect(() => () => current.current?.abort(), []);`,
+        snippet: "coroutine-scopes/react-native/production.tsx",
       },
       kotlin: {
         name: "Keep request ownership in a ViewModel",
@@ -100,21 +51,7 @@ useEffect(() => () => current.current?.abort(), []);`,
           "A ViewModel Job cancels old work and preserves cancellation semantics.",
         language: "kotlin",
         filename: "ProfileViewModel.kt",
-        code: `private var loadJob: Job? = null
-
-fun reload() {
-    loadJob?.cancel()
-    loadJob = viewModelScope.launch {
-        _state.value = ProfileState.Loading
-        try {
-            _state.value = ProfileState.Ready(repository.load())
-        } catch (cancelled: CancellationException) {
-            throw cancelled
-        } catch (error: Exception) {
-            _state.value = ProfileState.Error
-        }
-    }
-}`,
+        snippet: "coroutine-scopes/kotlin/production.kt",
       },
     },
   },
@@ -126,28 +63,14 @@ fun reload() {
           "Calling the async generator starts a fresh sequence for each consumer.",
         language: "typescript",
         filename: "pages.ts",
-        code: `async function* pages() {
-  yield await api.loadPage(1);
-  yield await api.loadPage(2);
-}
-
-async function loadPages() {
-  for await (const page of pages()) append(page);
-}`,
+        snippet: "flow-and-stateflow/react-native/learn-basic.tsx",
       },
       kotlin: {
         name: "Collect a cold Flow",
         summary: "The flow block executes anew for each collector.",
         language: "kotlin",
         filename: "Pages.kt",
-        code: `fun pages(): Flow<Page> = flow {
-    emit(api.loadPage(1))
-    emit(api.loadPage(2))
-}
-
-suspend fun loadPages() {
-    pages().collect { page -> append(page) }
-}`,
+        snippet: "flow-and-stateflow/kotlin/learn-basic.kt",
       },
     },
     applied: {
@@ -157,21 +80,14 @@ suspend fun loadPages() {
           "A store supplies an immutable snapshot and unsubscribe contract.",
         language: "tsx",
         filename: "FeedRoute.tsx",
-        code: `function FeedRoute() {
-  const state = useSyncExternalStore(feedStore.subscribe, feedStore.getSnapshot);
-  return <FeedScreen state={state} />;
-}`,
+        snippet: "flow-and-stateflow/react-native/applied.tsx",
       },
       kotlin: {
         name: "Read current StateFlow value",
         summary: "The collection follows the screen LifecycleOwner.",
         language: "kotlin",
         filename: "FeedRoute.kt",
-        code: `@Composable
-fun FeedRoute(viewModel: FeedViewModel) {
-    val state by viewModel.uiState.collectAsStateWithLifecycle()
-    FeedScreen(state)
-}`,
+        snippet: "flow-and-stateflow/kotlin/applied.kt",
       },
     },
     production: {
@@ -181,25 +97,7 @@ fun FeedRoute(viewModel: FeedViewModel) {
           "The app store starts on first subscriber and stops on last cleanup.",
         language: "typescript",
         filename: "feed-store.ts",
-        code: `function createFeedStore(source: FeedSource) {
-  let snapshot: FeedState = { kind: "loading" };
-  let stop: (() => void) | undefined;
-  const listeners = new Set<() => void>();
-  return {
-    getSnapshot: () => snapshot,
-    subscribe(listener: () => void) {
-      listeners.add(listener);
-      if (!stop) stop = source.subscribe((next) => {
-        snapshot = next;
-        listeners.forEach((notify) => notify());
-      });
-      return () => {
-        listeners.delete(listener);
-        if (listeners.size === 0) { stop?.(); stop = undefined; }
-      };
-    },
-  };
-}`,
+        snippet: "flow-and-stateflow/react-native/production.tsx",
       },
       kotlin: {
         name: "Share one upstream Flow as screen state",
@@ -207,17 +105,7 @@ fun FeedRoute(viewModel: FeedViewModel) {
           "stateIn owns an initial value and a subscription-aware sharing policy.",
         language: "kotlin",
         filename: "FeedViewModel.kt",
-        code: `val uiState: StateFlow<FeedUiState> = repository.posts
-    .map<List<Post>, FeedUiState> { posts -> FeedUiState.Ready(posts) }
-    .catch { error ->
-        if (error is IOException) emit(FeedUiState.Error)
-        else throw error
-    }
-    .stateIn(
-        viewModelScope,
-        SharingStarted.WhileSubscribed(5_000),
-        FeedUiState.Loading,
-    )`,
+        snippet: "flow-and-stateflow/kotlin/production.kt",
       },
     },
   },

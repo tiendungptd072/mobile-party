@@ -1024,10 +1024,7 @@ export const reactNativeToKotlinRoadmap = {
                   summary: "The rendered value always comes from React state.",
                   language: "tsx",
                   filename: "NameField.tsx",
-                  code: `function NameField() {
-  const [name, setName] = useState("");
-  return <TextInput value={name} onChangeText={setName} />;
-}`,
+                  snippet: "text-input/react-native/learn-basic.tsx",
                 },
                 kotlin: {
                   name: "Controlled TextField",
@@ -1035,11 +1032,7 @@ export const reactNativeToKotlinRoadmap = {
                     "The rendered value comes from observable Compose state.",
                   language: "kotlin",
                   filename: "NameField.kt",
-                  code: `@Composable
-fun NameField() {
-    var name by rememberSaveable { mutableStateOf("") }
-    TextField(value = name, onValueChange = { name = it })
-}`,
+                  snippet: "text-input/kotlin/learn-basic.kt",
                 },
               },
             },
@@ -1055,14 +1048,7 @@ fun NameField() {
                     "The field receives a value and emits text changes to its owner.",
                   language: "tsx",
                   filename: "EmailField.tsx",
-                  code: `function EmailField({ value, onChange }: Props) {
-  return <TextInput
-    value={value}
-    onChangeText={onChange}
-    autoCapitalize="none"
-    keyboardType="email-address"
-  />;
-}`,
+                  snippet: "text-input/react-native/applied.tsx",
                 },
                 kotlin: {
                   name: "State-hoisted field",
@@ -1070,14 +1056,7 @@ fun NameField() {
                     "The composable receives immutable text and emits edit events.",
                   language: "kotlin",
                   filename: "EmailField.kt",
-                  code: `@Composable
-fun EmailField(value: String, onValueChange: (String) -> Unit) {
-    TextField(
-        value = value,
-        onValueChange = onValueChange,
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-    )
-}`,
+                  snippet: "text-input/kotlin/applied.kt",
                 },
               },
             },
@@ -1093,12 +1072,7 @@ fun EmailField(value: String, onValueChange: (String) -> Unit) {
                     "Validation state is supplied without coupling the field to form logic.",
                   language: "tsx",
                   filename: "EmailField.tsx",
-                  code: `function EmailField({ value, error, onChange }: Props) {
-  return <View>
-    <TextInput value={value} onChangeText={onChange} accessibilityLabel="Email" />
-    {error ? <Text accessibilityLiveRegion="polite">{error}</Text> : null}
-  </View>;
-}`,
+                  snippet: "text-input/react-native/production.tsx",
                 },
                 kotlin: {
                   name: "Field presentation contract",
@@ -1106,16 +1080,7 @@ fun EmailField(value: String, onValueChange: (String) -> Unit) {
                     "The reusable field renders external validation and remains state-free.",
                   language: "kotlin",
                   filename: "EmailField.kt",
-                  code: `@Composable
-fun EmailField(value: String, error: String?, onValueChange: (String) -> Unit) {
-    TextField(
-        value = value,
-        onValueChange = onValueChange,
-        isError = error != null,
-        supportingText = { error?.let { Text(it) } },
-        label = { Text("Email") },
-    )
-}`,
+                  snippet: "text-input/kotlin/production.kt",
                 },
               },
             },
@@ -1139,13 +1104,7 @@ fun EmailField(value: String, error: String?, onValueChange: (String) -> Unit) {
                     "The component owns a small value used only by its UI.",
                   language: "tsx",
                   filename: "Counter.tsx",
-                  code: `function Counter() {
-  const [count, setCount] = useState(0);
-
-  return (
-    <Button title={\`Count: \${count}\`} onPress={() => setCount(count + 1)} />
-  );
-}`,
+                  snippet: "local-state/react-native/learn-basic.tsx",
                 },
                 kotlin: {
                   name: "remember counter",
@@ -1153,14 +1112,7 @@ fun EmailField(value: String, error: String?, onValueChange: (String) -> Unit) {
                     "The composition retains observable state across recompositions.",
                   language: "kotlin",
                   filename: "Counter.kt",
-                  code: `@Composable
-fun Counter() {
-    var count by remember { mutableIntStateOf(0) }
-
-    Button(onClick = { count++ }) {
-        Text("Count: $count")
-    }
-}`,
+                  snippet: "local-state/kotlin/learn-basic.kt",
                 },
               },
             },
@@ -1175,14 +1127,7 @@ fun Counter() {
                     "The parent owns state while the child exposes an event callback.",
                   language: "tsx",
                   filename: "Counter.tsx",
-                  code: `function Counter({ count, onIncrement }: Props) {
-  return <Button title={\`Count: \${count}\`} onPress={onIncrement} />;
-}
-
-function CounterScreen() {
-  const [count, setCount] = useState(0);
-  return <Counter count={count} onIncrement={() => setCount((n) => n + 1)} />;
-}`,
+                  snippet: "local-state/react-native/applied.tsx",
                 },
                 kotlin: {
                   name: "State-hoisted counter",
@@ -1190,16 +1135,7 @@ function CounterScreen() {
                     "The reusable composable receives immutable state and emits intent.",
                   language: "kotlin",
                   filename: "Counter.kt",
-                  code: `@Composable
-fun Counter(count: Int, onIncrement: () -> Unit) {
-    Button(onClick = onIncrement) { Text("Count: $count") }
-}
-
-@Composable
-fun CounterScreen() {
-    var count by rememberSaveable { mutableIntStateOf(0) }
-    Counter(count, onIncrement = { count++ })
-}`,
+                  snippet: "local-state/kotlin/applied.kt",
                 },
               },
             },
@@ -1215,15 +1151,7 @@ fun CounterScreen() {
                     "A screen-level hook owns state and exposes intent methods.",
                   language: "tsx",
                   filename: "counter-screen.tsx",
-                  code: `function useCounterScreen() {
-  const [count, setCount] = useState(0);
-  return { count, increment: () => setCount((value) => value + 1) };
-}
-
-function CounterScreen() {
-  const state = useCounterScreen();
-  return <Counter count={state.count} onIncrement={state.increment} />;
-}`,
+                  snippet: "local-state/react-native/production.tsx",
                 },
                 kotlin: {
                   name: "ViewModel and StateFlow",
@@ -1231,18 +1159,7 @@ function CounterScreen() {
                     "A lifecycle-scoped state holder exposes immutable screen state.",
                   language: "kotlin",
                   filename: "CounterScreen.kt",
-                  code: `class CounterViewModel : ViewModel() {
-    private val _count = MutableStateFlow(0)
-    val count = _count.asStateFlow()
-
-    fun increment() = _count.update { it + 1 }
-}
-
-@Composable
-fun CounterRoute(viewModel: CounterViewModel = viewModel()) {
-    val count by viewModel.count.collectAsStateWithLifecycle()
-    Counter(count, onIncrement = viewModel::increment)
-}`,
+                  snippet: "local-state/kotlin/production.kt",
                 },
               },
             },
@@ -1271,10 +1188,7 @@ fun CounterRoute(viewModel: CounterViewModel = viewModel()) {
                     "A cheap total is recalculated from the current source data.",
                   language: "tsx",
                   filename: "CartSummary.tsx",
-                  code: `function CartSummary({ items }: Props) {
-  const total = items.reduce((sum, item) => sum + item.price, 0);
-  return <Text>Total: {total}</Text>;
-}`,
+                  snippet: "derived-state/react-native/basic.tsx",
                 },
                 kotlin: {
                   name: "Inline derivation",
@@ -1282,11 +1196,7 @@ fun CounterRoute(viewModel: CounterViewModel = viewModel()) {
                     "A cheap value is calculated directly during composition.",
                   language: "kotlin",
                   filename: "CartSummary.kt",
-                  code: `@Composable
-fun CartSummary(items: List<CartItem>) {
-    val total = items.sumOf { it.price }
-    Text("Total: $total")
-}`,
+                  snippet: "derived-state/kotlin/basic.kt",
                 },
               },
             },
@@ -1302,13 +1212,7 @@ fun CartSummary(items: List<CartItem>) {
                     "Filtered results come from props and query without another state variable.",
                   language: "tsx",
                   filename: "ProductList.tsx",
-                  code: `function ProductList({ products, query }: Props) {
-  const visibleProducts = products.filter((product) =>
-    product.name.toLowerCase().includes(query.toLowerCase()),
-  );
-
-  return <FlatList data={visibleProducts} renderItem={renderProduct} />;
-}`,
+                  snippet: "derived-state/react-native/applied.tsx",
                 },
                 kotlin: {
                   name: "Derived filtered list",
@@ -1316,13 +1220,7 @@ fun CartSummary(items: List<CartItem>) {
                     "The composable calculates visible items from its current inputs.",
                   language: "kotlin",
                   filename: "ProductList.kt",
-                  code: `@Composable
-fun ProductList(products: List<Product>, query: String) {
-    val visibleProducts = products.filter {
-        it.name.contains(query, ignoreCase = true)
-    }
-    LazyColumn { items(visibleProducts, key = { it.id }) { ProductRow(it) } }
-}`,
+                  snippet: "derived-state/kotlin/applied.kt",
                 },
               },
             },
@@ -1338,17 +1236,7 @@ fun ProductList(products: List<Product>, query: String) {
                     "The scroll handler updates React state only when the threshold result changes.",
                   language: "tsx",
                   filename: "Feed.tsx",
-                  code: `function Feed({ posts }: Props) {
-  const [showTop, setShowTop] = useState(false);
-
-  return <FlatList
-    data={posts}
-    onScroll={({ nativeEvent }) => {
-      const next = nativeEvent.contentOffset.y > 200;
-      setShowTop((current) => current === next ? current : next);
-    }}
-  />;
-}`,
+                  snippet: "derived-state/react-native/production.tsx",
                 },
                 kotlin: {
                   name: "derivedStateOf threshold",
@@ -1356,18 +1244,7 @@ fun ProductList(products: List<Product>, query: String) {
                     "The observed result changes only when the visible-item threshold changes.",
                   language: "kotlin",
                   filename: "Feed.kt",
-                  code: `@Composable
-fun Feed(posts: List<Post>) {
-    val listState = rememberLazyListState()
-    val showTop by remember {
-        derivedStateOf { listState.firstVisibleItemIndex > 0 }
-    }
-
-    LazyColumn(state = listState) {
-        items(posts, key = { it.id }) { PostRow(it) }
-    }
-    AnimatedVisibility(showTop) { ScrollToTopButton() }
-}`,
+                  snippet: "derived-state/kotlin/production.kt",
                 },
               },
             },
@@ -1396,13 +1273,7 @@ fun Feed(posts: List<Post>) {
                     "A focused hook owns screen state and exposes intent methods.",
                   language: "tsx",
                   filename: "use-profile-screen.ts",
-                  code: `function useProfileScreen() {
-  const [state, dispatch] = useReducer(profileReducer, initialState);
-  return {
-    state,
-    rename: (name: string) => dispatch({ type: "rename", name }),
-  };
-}`,
+                  snippet: "global-state/react-native/learn-basic.tsx",
                 },
                 kotlin: {
                   name: "ViewModel state holder",
@@ -1410,14 +1281,7 @@ fun Feed(posts: List<Post>) {
                     "A ViewModel exposes immutable StateFlow and intent methods.",
                   language: "kotlin",
                   filename: "ProfileViewModel.kt",
-                  code: `class ProfileViewModel : ViewModel() {
-    private val _state = MutableStateFlow(ProfileUiState())
-    val state = _state.asStateFlow()
-
-    fun rename(name: String) {
-        _state.update { it.copy(name = name) }
-    }
-}`,
+                  snippet: "global-state/kotlin/learn-basic.kt",
                 },
               },
             },
@@ -1433,14 +1297,7 @@ fun Feed(posts: List<Post>) {
                     "The route owns the state hook; presentational content receives values and events.",
                   language: "tsx",
                   filename: "ProfileRoute.tsx",
-                  code: `function ProfileRoute() {
-  const model = useProfileScreen();
-  return <ProfileScreen state={model.state} onRename={model.rename} />;
-}
-
-function ProfileScreen({ state, onRename }: ScreenProps) {
-  return <ProfileForm name={state.name} onRename={onRename} />;
-}`,
+                  snippet: "global-state/react-native/applied.tsx",
                 },
                 kotlin: {
                   name: "Route and screen boundary",
@@ -1448,16 +1305,7 @@ function ProfileScreen({ state, onRename }: ScreenProps) {
                     "The route collects lifecycle-aware state and passes plain UI contracts.",
                   language: "kotlin",
                   filename: "ProfileRoute.kt",
-                  code: `@Composable
-fun ProfileRoute(viewModel: ProfileViewModel = viewModel()) {
-    val state by viewModel.state.collectAsStateWithLifecycle()
-    ProfileScreen(state = state, onRename = viewModel::rename)
-}
-
-@Composable
-fun ProfileScreen(state: ProfileUiState, onRename: (String) -> Unit) {
-    ProfileForm(name = state.name, onRename = onRename)
-}`,
+                  snippet: "global-state/kotlin/applied.kt",
                 },
               },
             },
@@ -1473,16 +1321,7 @@ fun ProfileScreen(state: ProfileUiState, onRename: (String) -> Unit) {
                     "Checkout state exists only while the checkout navigator is mounted.",
                   language: "tsx",
                   filename: "CheckoutNavigator.tsx",
-                  code: `function CheckoutNavigator() {
-  return (
-    <CheckoutProvider>
-      <Stack.Navigator>
-        <Stack.Screen name="Cart" component={CartScreen} />
-        <Stack.Screen name="Payment" component={PaymentScreen} />
-      </Stack.Navigator>
-    </CheckoutProvider>
-  );
-}`,
+                  snippet: "global-state/react-native/production.tsx",
                 },
                 kotlin: {
                   name: "Graph-scoped ViewModel",
@@ -1490,15 +1329,7 @@ fun ProfileScreen(state: ProfileUiState, onRename: (String) -> Unit) {
                     "Destinations resolve one ViewModel from their parent navigation graph.",
                   language: "kotlin",
                   filename: "CheckoutGraph.kt",
-                  code: `navigation(startDestination = "cart", route = "checkout") {
-    composable("cart") { entry ->
-        val parent = remember(entry) {
-            navController.getBackStackEntry("checkout")
-        }
-        val viewModel: CheckoutViewModel = viewModel(viewModelStoreOwner = parent)
-        CartRoute(viewModel)
-    }
-}`,
+                  snippet: "global-state/kotlin/production.kt",
                 },
               },
             },
@@ -1534,11 +1365,7 @@ fun ProfileScreen(state: ProfileUiState, onRename: (String) -> Unit) {
                     "Changing the query clears the previous timer before scheduling another search.",
                   language: "tsx",
                   filename: "SearchScreen.tsx",
-                  code: `useEffect(() => {
-  if (!query) return;
-  const timer = setTimeout(() => onSearch(query), 300);
-  return () => clearTimeout(timer);
-}, [query, onSearch]);`,
+                  snippet: "side-effects/react-native/learn-basic.tsx",
                 },
                 kotlin: {
                   name: "Keyed LaunchedEffect",
@@ -1546,11 +1373,7 @@ fun ProfileScreen(state: ProfileUiState, onRename: (String) -> Unit) {
                     "Changing the key cancels the previous coroutine before starting a new search.",
                   language: "kotlin",
                   filename: "SearchScreen.kt",
-                  code: `LaunchedEffect(query, onSearch) {
-    if (query.isBlank()) return@LaunchedEffect
-    delay(300)
-    onSearch(query)
-}`,
+                  snippet: "side-effects/kotlin/learn-basic.kt",
                 },
               },
             },
@@ -1566,10 +1389,7 @@ fun ProfileScreen(state: ProfileUiState, onRename: (String) -> Unit) {
                     "The effect removes exactly the listener it registered.",
                   language: "tsx",
                   filename: "use-app-state.ts",
-                  code: `useEffect(() => {
-  const subscription = AppState.addEventListener("change", onChange);
-  return () => subscription.remove();
-}, [onChange]);`,
+                  snippet: "side-effects/react-native/applied.tsx",
                 },
                 kotlin: {
                   name: "DisposableEffect cleanup",
@@ -1577,14 +1397,7 @@ fun ProfileScreen(state: ProfileUiState, onRename: (String) -> Unit) {
                     "The observer belongs to the current LifecycleOwner and is removed on disposal.",
                   language: "kotlin",
                   filename: "AppStateObserver.kt",
-                  code: `val owner = LocalLifecycleOwner.current
-val currentOnEvent by rememberUpdatedState(onEvent)
-
-DisposableEffect(owner) {
-    val observer = LifecycleEventObserver { _, event -> currentOnEvent(event) }
-    owner.lifecycle.addObserver(observer)
-    onDispose { owner.lifecycle.removeObserver(observer) }
-}`,
+                  snippet: "side-effects/kotlin/applied.kt",
                 },
               },
             },
@@ -1600,15 +1413,7 @@ DisposableEffect(owner) {
                     "A ref supplies the latest callback without restarting the timer.",
                   language: "tsx",
                   filename: "SplashScreen.tsx",
-                  code: `const latestOnTimeout = useRef(onTimeout);
-useEffect(() => {
-  latestOnTimeout.current = onTimeout;
-}, [onTimeout]);
-
-useEffect(() => {
-  const timer = setTimeout(() => latestOnTimeout.current(), 2_000);
-  return () => clearTimeout(timer);
-}, []);`,
+                  snippet: "side-effects/react-native/production.tsx",
                 },
                 kotlin: {
                   name: "rememberUpdatedState",
@@ -1616,12 +1421,7 @@ useEffect(() => {
                     "The effect keeps its lifetime while invoking the latest callback value.",
                   language: "kotlin",
                   filename: "SplashScreen.kt",
-                  code: `val currentOnTimeout by rememberUpdatedState(onTimeout)
-
-LaunchedEffect(Unit) {
-    delay(2_000)
-    currentOnTimeout()
-}`,
+                  snippet: "side-effects/kotlin/production.kt",
                 },
               },
             },
@@ -1679,10 +1479,7 @@ LaunchedEffect(Unit) {
                     "The listener is removed whenever the component unmounts.",
                   language: "tsx",
                   filename: "use-connectivity.ts",
-                  code: `useEffect(() => {
-  const unsubscribe = connectivity.subscribe(setIsOnline);
-  return unsubscribe;
-}, []);`,
+                  snippet: "lifecycle/react-native/learn-basic.tsx",
                 },
                 kotlin: {
                   name: "DisposableEffect cleanup",
@@ -1690,11 +1487,7 @@ LaunchedEffect(Unit) {
                     "The listener is removed when the composable leaves composition.",
                   language: "kotlin",
                   filename: "ConnectivityStatus.kt",
-                  code: `DisposableEffect(connectivity) {
-    val listener = ConnectivityListener(onStatusChanged)
-    connectivity.addListener(listener)
-    onDispose { connectivity.removeListener(listener) }
-}`,
+                  snippet: "lifecycle/kotlin/learn-basic.kt",
                 },
               },
             },
@@ -1710,11 +1503,7 @@ LaunchedEffect(Unit) {
                     "Changing the room ID cleans up the old subscription before joining the new room.",
                   language: "tsx",
                   filename: "use-room.ts",
-                  code: `useEffect(() => {
-  const connection = chat.connect(roomId);
-  connection.start();
-  return () => connection.stop();
-}, [chat, roomId]);`,
+                  snippet: "lifecycle/react-native/applied.tsx",
                 },
                 kotlin: {
                   name: "Keyed resource subscription",
@@ -1722,10 +1511,7 @@ LaunchedEffect(Unit) {
                     "DisposableEffect restarts only when the connection owner or room changes.",
                   language: "kotlin",
                   filename: "RoomConnection.kt",
-                  code: `DisposableEffect(chat, roomId) {
-    val connection = chat.connect(roomId).also { it.start() }
-    onDispose { connection.stop() }
-}`,
+                  snippet: "lifecycle/kotlin/applied.kt",
                 },
               },
             },
@@ -1741,13 +1527,7 @@ LaunchedEffect(Unit) {
                     "A React hook owns the store subscription and provides the current snapshot.",
                   language: "tsx",
                   filename: "use-session.ts",
-                  code: `function useSession() {
-  return useSyncExternalStore(
-    sessionStore.subscribe,
-    sessionStore.getSnapshot,
-    sessionStore.getSnapshot,
-  );
-}`,
+                  snippet: "lifecycle/react-native/production.tsx",
                 },
                 kotlin: {
                   name: "Lifecycle-aware Flow collection",
@@ -1755,11 +1535,7 @@ LaunchedEffect(Unit) {
                     "The lifecycle adapter starts and stops collection with the visible UI.",
                   language: "kotlin",
                   filename: "SessionRoute.kt",
-                  code: `@Composable
-fun SessionRoute(viewModel: SessionViewModel = viewModel()) {
-    val state by viewModel.state.collectAsStateWithLifecycle()
-    SessionScreen(state)
-}`,
+                  snippet: "lifecycle/kotlin/production.kt",
                 },
               },
             },
@@ -1794,9 +1570,7 @@ fun SessionRoute(viewModel: SessionViewModel = viewModel()) {
                     "The button emits one user intent through a callback.",
                   language: "tsx",
                   filename: "SaveButton.tsx",
-                  code: `function SaveButton({ onSave }: Props) {
-  return <Button title="Save" onPress={onSave} />;
-}`,
+                  snippet: "button/react-native/learn-basic.tsx",
                 },
                 kotlin: {
                   name: "Click action",
@@ -1804,10 +1578,7 @@ fun SessionRoute(viewModel: SessionViewModel = viewModel()) {
                     "The composable emits one user intent through onClick.",
                   language: "kotlin",
                   filename: "SaveButton.kt",
-                  code: `@Composable
-fun SaveButton(onSave: () -> Unit) {
-    Button(onClick = onSave) { Text("Save") }
-}`,
+                  snippet: "button/kotlin/learn-basic.kt",
                 },
               },
             },
@@ -1822,13 +1593,7 @@ fun SaveButton(onSave: () -> Unit) {
                     "The action is disabled and its label changes while work is running.",
                   language: "tsx",
                   filename: "SaveButton.tsx",
-                  code: `function SaveButton({ isSaving, canSave, onSave }: Props) {
-  return <Button
-    title={isSaving ? "Saving…" : "Save"}
-    disabled={isSaving || !canSave}
-    onPress={onSave}
-  />;
-}`,
+                  snippet: "button/react-native/applied.tsx",
                 },
                 kotlin: {
                   name: "Submitting state",
@@ -1836,12 +1601,7 @@ fun SaveButton(onSave: () -> Unit) {
                     "Enabled state and visible feedback are derived from screen state.",
                   language: "kotlin",
                   filename: "SaveButton.kt",
-                  code: `@Composable
-fun SaveButton(isSaving: Boolean, canSave: Boolean, onSave: () -> Unit) {
-    Button(onClick = onSave, enabled = canSave && !isSaving) {
-        Text(if (isSaving) "Saving…" else "Save")
-    }
-}`,
+                  snippet: "button/kotlin/applied.kt",
                 },
               },
             },
@@ -1857,21 +1617,7 @@ fun SaveButton(isSaving: Boolean, canSave: Boolean, onSave: () -> Unit) {
                     "The screen owner prevents duplicate saves; the button remains presentation-only.",
                   language: "tsx",
                   filename: "ProfileScreen.tsx",
-                  code: `const saveInFlight = useRef(false);
-
-async function handleSave() {
-  if (saveInFlight.current) return;
-  saveInFlight.current = true;
-  setIsSaving(true);
-  try {
-    await saveProfile();
-  } finally {
-    saveInFlight.current = false;
-    setIsSaving(false);
-  }
-}
-
-<SaveButton canSave={canSave} isSaving={isSaving} onSave={handleSave} />`,
+                  snippet: "button/react-native/production.tsx",
                 },
                 kotlin: {
                   name: "Guarded intent",
@@ -1879,23 +1625,7 @@ async function handleSave() {
                     "The state owner rejects duplicate intent while the Material button supplies semantics.",
                   language: "kotlin",
                   filename: "ProfileViewModel.kt",
-                  code: `private var saveJob: Job? = null
-
-fun save() {
-    if (saveJob?.isActive == true) return
-    saveJob = viewModelScope.launch {
-        _state.update { it.copy(isSaving = true) }
-        try {
-            repository.save()
-        } catch (cancelled: CancellationException) {
-            throw cancelled
-        } catch (error: Throwable) {
-            _state.update { it.copy(saveError = error.toUiMessage()) }
-        } finally {
-            _state.update { it.copy(isSaving = false) }
-        }
-    }
-}`,
+                  snippet: "button/kotlin/production.kt",
                 },
               },
             },
@@ -1986,15 +1716,7 @@ fun save() {
                     "Validity is derived from the current email instead of stored separately.",
                   language: "tsx",
                   filename: "SignInForm.tsx",
-                  code: `function SignInForm({ onSubmit }: Props) {
-  const [email, setEmail] = useState("");
-  const isValid = email.includes("@");
-
-  return <>
-    <TextInput value={email} onChangeText={setEmail} />
-    <Button title="Continue" disabled={!isValid} onPress={() => onSubmit(email)} />
-  </>;
-}`,
+                  snippet: "form/react-native/learn-basic.tsx",
                 },
                 kotlin: {
                   name: "Local validated field",
@@ -2002,14 +1724,7 @@ fun save() {
                     "Validity is calculated from saveable field state during composition.",
                   language: "kotlin",
                   filename: "SignInForm.kt",
-                  code: `@Composable
-fun SignInForm(onSubmit: (String) -> Unit) {
-    var email by rememberSaveable { mutableStateOf("") }
-    val isValid = "@" in email
-
-    EmailField(email, onValueChange = { email = it })
-    Button(onClick = { onSubmit(email) }, enabled = isValid) { Text("Continue") }
-}`,
+                  snippet: "form/kotlin/learn-basic.kt",
                 },
               },
             },
@@ -2025,13 +1740,7 @@ fun SignInForm(onSubmit: (String) -> Unit) {
                     "The form receives values and emits field and submit events.",
                   language: "tsx",
                   filename: "SignInForm.tsx",
-                  code: `function SignInForm({ state, onEmailChange, onPasswordChange, onSubmit }: Props) {
-  return <>
-    <EmailField value={state.email} onChange={onEmailChange} />
-    <PasswordField value={state.password} onChange={onPasswordChange} />
-    <Button title="Sign in" disabled={!state.canSubmit} onPress={onSubmit} />
-  </>;
-}`,
+                  snippet: "form/react-native/applied.tsx",
                 },
                 kotlin: {
                   name: "Hoisted form contract",
@@ -2039,14 +1748,7 @@ fun SignInForm(onSubmit: (String) -> Unit) {
                     "The composable renders form state and emits typed events.",
                   language: "kotlin",
                   filename: "SignInForm.kt",
-                  code: `@Composable
-fun SignInForm(state: SignInUiState, onEvent: (SignInEvent) -> Unit) {
-    EmailField(state.email) { onEvent(SignInEvent.EmailChanged(it)) }
-    PasswordField(state.password) { onEvent(SignInEvent.PasswordChanged(it)) }
-    Button(onClick = { onEvent(SignInEvent.Submit) }, enabled = state.canSubmit) {
-        Text("Sign in")
-    }
-}`,
+                  snippet: "form/kotlin/applied.kt",
                 },
               },
             },
@@ -2062,16 +1764,7 @@ fun SignInForm(state: SignInUiState, onEvent: (SignInEvent) -> Unit) {
                     "The screen owner models pending and server-error states around one submit action.",
                   language: "tsx",
                   filename: "use-sign-in.ts",
-                  code: `async function submit() {
-  if (!state.canSubmit || state.status === "submitting") return;
-  dispatch({ type: "submitStarted" });
-  try {
-    await auth.signIn(state.email, state.password);
-    dispatch({ type: "submitSucceeded" });
-  } catch {
-    dispatch({ type: "submitFailed", message: "Unable to sign in" });
-  }
-}`,
+                  snippet: "form/react-native/production.tsx",
                 },
                 kotlin: {
                   name: "ViewModel submission state",
@@ -2079,23 +1772,7 @@ fun SignInForm(state: SignInUiState, onEvent: (SignInEvent) -> Unit) {
                     "The ViewModel owns asynchronous submission while fields stay reusable.",
                   language: "kotlin",
                   filename: "SignInViewModel.kt",
-                  code: `fun submit() {
-    val current = state.value
-    if (!current.canSubmit || current.isSubmitting) return
-    viewModelScope.launch {
-        _state.update { it.copy(isSubmitting = true, serverError = null) }
-        try {
-            auth.signIn(current.email, current.password)
-            _state.update { it.copy(isSignedIn = true) }
-        } catch (cancelled: CancellationException) {
-            throw cancelled
-        } catch (error: Throwable) {
-            _state.update { it.copy(serverError = error.toUiMessage()) }
-        } finally {
-            _state.update { it.copy(isSubmitting = false) }
-        }
-    }
-}`,
+                  snippet: "form/kotlin/production.kt",
                 },
               },
             },
@@ -2131,7 +1808,7 @@ fun SignInForm(state: SignInUiState, onEvent: (SignInEvent) -> Unit) {
                     "The navigation object pushes a destination onto the active stack.",
                   language: "tsx",
                   filename: "HomeScreen.tsx",
-                  code: `<Button title="Open profile" onPress={() => navigation.navigate("Profile")} />`,
+                  snippet: "navigation/react-native/learn-basic.tsx",
                 },
                 kotlin: {
                   name: "Navigate with NavController",
@@ -2139,9 +1816,7 @@ fun SignInForm(state: SignInUiState, onEvent: (SignInEvent) -> Unit) {
                     "NavController moves to a destination declared in the graph.",
                   language: "kotlin",
                   filename: "HomeScreen.kt",
-                  code: `Button(onClick = { navController.navigate("profile") }) {
-    Text("Open profile")
-}`,
+                  snippet: "navigation/kotlin/learn-basic.kt",
                 },
               },
             },
@@ -2157,13 +1832,7 @@ fun SignInForm(state: SignInUiState, onEvent: (SignInEvent) -> Unit) {
                     "Only the route component knows about the navigation object.",
                   language: "tsx",
                   filename: "ProfileRoute.tsx",
-                  code: `function ProfileRoute({ navigation }: Props) {
-  return <ProfileScreen onEdit={() => navigation.navigate("EditProfile")} />;
-}
-
-function ProfileScreen({ onEdit }: ScreenProps) {
-  return <Button title="Edit" onPress={onEdit} />;
-}`,
+                  snippet: "navigation/react-native/applied.tsx",
                 },
                 kotlin: {
                   name: "Route boundary callback",
@@ -2171,15 +1840,7 @@ function ProfileScreen({ onEdit }: ScreenProps) {
                     "The route owns NavController and content receives a plain event.",
                   language: "kotlin",
                   filename: "ProfileRoute.kt",
-                  code: `@Composable
-fun ProfileRoute(navController: NavController) {
-    ProfileScreen(onEdit = { navController.navigate("edit-profile") })
-}
-
-@Composable
-fun ProfileScreen(onEdit: () -> Unit) {
-    Button(onClick = onEdit) { Text("Edit") }
-}`,
+                  snippet: "navigation/kotlin/applied.kt",
                 },
               },
             },
@@ -2195,12 +1856,7 @@ fun ProfileScreen(onEdit: () -> Unit) {
                     "A feature owns its stack while screens expose navigation intent.",
                   language: "tsx",
                   filename: "ProfileNavigator.tsx",
-                  code: `function ProfileNavigator() {
-  return <Stack.Navigator>
-    <Stack.Screen name="Profile" component={ProfileRoute} />
-    <Stack.Screen name="EditProfile" component={EditProfileRoute} />
-  </Stack.Navigator>;
-}`,
+                  snippet: "navigation/react-native/production.tsx",
                 },
                 kotlin: {
                   name: "Feature graph",
@@ -2208,14 +1864,7 @@ fun ProfileScreen(onEdit: () -> Unit) {
                     "A graph builder owns destinations and wires route-level callbacks.",
                   language: "kotlin",
                   filename: "ProfileGraph.kt",
-                  code: `fun NavGraphBuilder.profileGraph(navController: NavController) {
-    navigation(startDestination = "profile", route = "profile-graph") {
-        composable("profile") {
-            ProfileRoute(onEdit = { navController.navigate("edit-profile") })
-        }
-        composable("edit-profile") { EditProfileRoute() }
-    }
-}`,
+                  snippet: "navigation/kotlin/production.kt",
                 },
               },
             },
@@ -2273,11 +1922,7 @@ fun ProfileScreen(onEdit: () -> Unit) {
                   summary: "Navigation carries only the profile identifier.",
                   language: "tsx",
                   filename: "routes.tsx",
-                  code: `type RootStackParams = {
-  Profile: { userId: string };
-};
-
-navigation.navigate("Profile", { userId: user.id });`,
+                  snippet: "route-parameters/react-native/learn-basic.tsx",
                 },
                 kotlin: {
                   name: "Type-safe route",
@@ -2285,10 +1930,7 @@ navigation.navigate("Profile", { userId: user.id });`,
                     "A serializable destination carries only the profile identifier.",
                   language: "kotlin",
                   filename: "Routes.kt",
-                  code: `@Serializable
-data class ProfileRoute(val userId: String)
-
-navController.navigate(ProfileRoute(user.id))`,
+                  snippet: "route-parameters/kotlin/learn-basic.kt",
                 },
               },
             },
@@ -2304,11 +1946,7 @@ navController.navigate(ProfileRoute(user.id))`,
                     "The route reads params and supplies a plain identifier to screen state.",
                   language: "tsx",
                   filename: "ProfileRoute.tsx",
-                  code: `function ProfileRoute({ route }: Props) {
-  const { userId } = route.params;
-  const profile = useProfile(userId);
-  return <ProfileScreen profile={profile} />;
-}`,
+                  snippet: "route-parameters/react-native/applied.tsx",
                 },
                 kotlin: {
                   name: "Destination boundary",
@@ -2316,10 +1954,7 @@ navController.navigate(ProfileRoute(user.id))`,
                     "The destination decodes its typed route before loading screen data.",
                   language: "kotlin",
                   filename: "ProfileGraph.kt",
-                  code: `composable<ProfileRoute> { entry ->
-    val route = entry.toRoute<ProfileRoute>()
-    ProfileRoute(userId = route.userId)
-}`,
+                  snippet: "route-parameters/kotlin/applied.kt",
                 },
               },
             },
@@ -2335,23 +1970,7 @@ navController.navigate(ProfileRoute(user.id))`,
                     "The state owner resolves authorized data through a repository that accepts an abort signal.",
                   language: "tsx",
                   filename: "use-profile.ts",
-                  code: `function useProfile(userId: string) {
-  const [state, setState] = useState<ProfileState>({ status: "loading" });
-  useEffect(() => {
-    const controller = new AbortController();
-    setState({ status: "loading" });
-    void profileRepository.loadAuthorized(userId, controller.signal).then(
-      (profile) => {
-        if (!controller.signal.aborted) setState({ status: "ready", profile });
-      },
-      () => {
-        if (!controller.signal.aborted) setState({ status: "unavailable" });
-      },
-    );
-    return () => controller.abort();
-  }, [userId]);
-  return state;
-}`,
+                  snippet: "route-parameters/react-native/production.tsx",
                 },
                 kotlin: {
                   name: "Saved route ID",
@@ -2359,14 +1978,7 @@ navController.navigate(ProfileRoute(user.id))`,
                     "SavedStateHandle supplies the ID; the repository remains the source of current data.",
                   language: "kotlin",
                   filename: "ProfileViewModel.kt",
-                  code: `class ProfileViewModel(
-    savedStateHandle: SavedStateHandle,
-    repository: ProfileRepository,
-) : ViewModel() {
-    private val route = savedStateHandle.toRoute<ProfileRoute>()
-    val state = repository.observeAuthorized(route.userId)
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), Loading)
-}`,
+                  snippet: "route-parameters/kotlin/production.kt",
                 },
               },
             },
@@ -2394,10 +2006,7 @@ navController.navigate(ProfileRoute(user.id))`,
                     "A URL pattern maps to the Profile screen and its userId parameter.",
                   language: "typescript",
                   filename: "linking.ts",
-                  code: `export const linking = {
-  prefixes: ["https://example.com"],
-  config: { screens: { Profile: "users/:userId" } },
-};`,
+                  snippet: "deep-link/react-native/learn-basic.tsx",
                 },
                 kotlin: {
                   name: "Navigation deep link",
@@ -2405,11 +2014,7 @@ navController.navigate(ProfileRoute(user.id))`,
                     "The destination declares the external URI pattern it accepts.",
                   language: "kotlin",
                   filename: "ProfileGraph.kt",
-                  code: `composable<ProfileRoute>(
-    deepLinks = listOf(
-        navDeepLink { uriPattern = "https://example.com/users/{userId}" },
-    ),
-) { entry -> ProfileRoute(entry.toRoute<ProfileRoute>().userId) }`,
+                  snippet: "deep-link/kotlin/learn-basic.kt",
                 },
               },
             },
@@ -2425,11 +2030,7 @@ navController.navigate(ProfileRoute(user.id))`,
                     "The route rejects malformed external identifiers before loading data.",
                   language: "tsx",
                   filename: "ProfileRoute.tsx",
-                  code: `function ProfileRoute({ route }: Props) {
-  const userId = parseUserId(route.params.userId);
-  if (!userId) return <InvalidLinkScreen />;
-  return <AuthorizedProfileRoute userId={userId} />;
-}`,
+                  snippet: "deep-link/react-native/applied.tsx",
                 },
                 kotlin: {
                   name: "Validated destination argument",
@@ -2437,11 +2038,7 @@ navController.navigate(ProfileRoute(user.id))`,
                     "The destination validates decoded external data before creating screen state.",
                   language: "kotlin",
                   filename: "ProfileGraph.kt",
-                  code: `composable<ProfileRoute> { entry ->
-    val userId = UserId.parse(entry.toRoute<ProfileRoute>().userId)
-    if (userId == null) InvalidLinkScreen()
-    else AuthorizedProfileRoute(userId)
-}`,
+                  snippet: "deep-link/kotlin/applied.kt",
                 },
               },
             },
@@ -2457,15 +2054,7 @@ navController.navigate(ProfileRoute(user.id))`,
                     "An unauthenticated link is retained until sign-in completes.",
                   language: "typescript",
                   filename: "link-handler.ts",
-                  code: `async function handleIncomingUrl(url: string) {
-  const destination = parseAndValidateLink(url);
-  if (!destination) return;
-  if (!session.isSignedIn()) {
-    pendingLinks.save(destination);
-    return navigation.navigate("SignIn");
-  }
-  navigation.navigate(destination.name, destination.params);
-}`,
+                  snippet: "deep-link/react-native/production.tsx",
                 },
                 kotlin: {
                   name: "Authorized deep-link boundary",
@@ -2473,14 +2062,7 @@ navController.navigate(ProfileRoute(user.id))`,
                     "Validated navigation waits for session state and checks access before opening data.",
                   language: "kotlin",
                   filename: "DeepLinkHandler.kt",
-                  code: `suspend fun handleDeepLink(uri: Uri) {
-    val destination = parser.parseAndValidate(uri) ?: return
-    if (!session.isSignedIn()) {
-        pendingLinks.save(destination)
-        return navigator.openSignIn()
-    }
-    if (authorization.canOpen(destination)) navigator.open(destination)
-}`,
+                  snippet: "deep-link/kotlin/production.kt",
                 },
               },
             },

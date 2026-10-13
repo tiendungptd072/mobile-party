@@ -15,11 +15,6 @@ export const sideEffectsConcept = {
         "Runs an effect after render and restarts it when a dependency changes.",
       language: "tsx",
       filename: "ProfileScreen.tsx",
-      code: `useEffect(() => {
-  const controller = new AbortController();
-  loadProfile(userId, controller.signal);
-  return () => controller.abort();
-}, [userId]);`,
     },
     kotlin: {
       name: "LaunchedEffect",
@@ -27,9 +22,6 @@ export const sideEffectsConcept = {
         "Launches a composition-scoped coroutine and restarts it when a key changes.",
       language: "kotlin",
       filename: "ProfileScreen.kt",
-      code: `LaunchedEffect(userId) {
-    viewModel.loadProfile(userId)
-}`,
     },
   },
   relationships: [

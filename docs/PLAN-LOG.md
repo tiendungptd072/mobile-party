@@ -65,3 +65,26 @@ Unverified: None. This task changes local schema validation and adds no external
 Gaps found: None.
 
 Open questions: None.
+
+## P0.4 — Snippets as real files, loaded at build time — 2026-10-13 — Codex
+
+Changed: Migrated all 588 implementation occurrences across 72 concepts, 6 recipes, and 216 lesson stages into 560 snippet files. Matching Compare/Learn basics share a file; 116 distinct Learn basic examples use explicit `snippet` references to `learn-basic` files. The owner confirmed this expanded scope because the original plan assumed only eight concepts. Preserved displayed code, including existing visible imports. New Kotlin package declarations remain outside the display region; all Kotlin packages are unique. Existing shell examples use full-file `.sh` display.
+
+Added a `server-only` loader using `node:fs`, convention-based and explicit path resolution, display region extraction, missing-file errors with paths, and path containment checks. Concepts, stages, and recipes reject inline `tsx`, `typescript`, and `kotlin` code. Reserved the `recipes` concept slug. Split client-safe technology validation and shared primitive validation from the file-backed schema after the first build exposed the SiteHeader import chain; this preserves technology validation without shipping filesystem code to the client. Next.js handles the `server-only` marker internally, so no dependency was added. Bun's test preload mocks only that marker in server-side tests. Updated root exclusions and snippet authoring documentation.
+
+Verification:
+
+- Captured normalized English and Vietnamese concepts, recipes, and roadmaps before migration. Deep comparison after migration passed for both complete locale models: every code string, stage example, and metadata field is identical.
+- Captured rendered code before migration. After the final build, SHA-256 hashes matched for all 3,492 highlighted `<pre>` blocks across 234 generated pages, including English and Vietnamese Learn/Recipes pages.
+- `bun lint`, `bun typecheck`, and `bun test`: passed; 107 tests passed, 0 failed. New tests cover display regions, CRLF normalization, full-file display, malformed/empty regions, missing files, path containment, distinct Learn basic resolution, unique Kotlin packages, reserved slugs, inline-code rejection for concepts/stages/recipes, and absence of snippet bodies in both locale search indexes.
+- Updated request behavior tests to execute loaded, normalized snippets instead of inline raw content. The arbitrary-pair schema fixture keeps small inline Dart/Swift comments, which are outside the languages prohibited by this task. No educational content claims changed.
+- `bunx --no-install tsc --listFilesOnly`: no files under `content/snippets/` or `verify/`. Prettier ignored representative TSX and Kotlin snippet paths as configured; supported changed source/document formats passed Prettier checks. ESLint passed with the new snippet exclusions.
+- `bun run build`: passed, generating 690 static pages. The initial build revealed the client/server dependency issue described above. A subsequent Turbopack run failed internally with a canceled source-map task; preserving the old generated cache under `.next/cache/turbopack-p04-backup` and retrying with a fresh cache resolved it. No persistent tooling workaround or dependency change was required. Builds used approved execution outside the sandbox because earlier tasks established `spawn EPERM` for workers.
+- Inspected all four dynamic Compare route output traces: each includes all 560 snippet assets and their README, so the runtime file dependencies are retained. No tracing configuration was needed.
+- `git diff --check`: passed. Final review is limited to snippet extraction, loading/validation boundaries, root-tool exclusions, tests, and task documentation.
+
+Unverified: The complete snippet compilation projects are still P0.5 work. This migration preserves the original educational fragments and does not claim they all compile as standalone React Native or Android files. The initial TypeScript test fixture caused expensive inference over raw roadmap unions; using the existing normalized Roadmap model restored the typecheck to normal duration.
+
+Gaps found: None beyond the compilation harness already planned in P0.5. P0.6 still owns automatic discovery of stage files for lessons without explicit examples and missing-stage UI/status reporting.
+
+Open questions: None.

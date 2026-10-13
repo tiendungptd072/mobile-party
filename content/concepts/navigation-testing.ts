@@ -15,16 +15,6 @@ export const navigationTestingConcept = {
         "Render the app navigation tree, perform the user action, then assert the destination content.",
       language: "tsx",
       filename: "AppNavigator.test.tsx",
-      code: `jest.useFakeTimers();
-
-test("opens Ada's profile", async () => {
-  const Navigation = createStaticNavigation(AppStack);
-  const user = userEvent.setup();
-  await render(<Navigation />);
-  await user.press(screen.getByRole("button", { name: "Open profile" }));
-  await act(() => jest.runAllTimers());
-  expect(screen.getByText("Profile: Ada")).toBeVisible();
-});`,
     },
     kotlin: {
       name: "Test a visible Compose destination",
@@ -32,15 +22,6 @@ test("opens Ada's profile", async () => {
         "Render the real NavHost, trigger the semantic action, and assert the destination UI.",
       language: "kotlin",
       filename: "AppNavHostTest.kt",
-      code: `@Test fun opensAdaProfile() {
-    composeTestRule.setContent { AppNavHost() }
-
-    composeTestRule.onNodeWithContentDescription("Open profile")
-        .performClick()
-
-    composeTestRule.onNodeWithText("Profile: Ada")
-        .assertIsDisplayed()
-}`,
     },
   },
   relationships: [

@@ -15,7 +15,6 @@ export const conditionalUiConcept = {
         "Choose JSX with a conditional expression during a component render.",
       language: "tsx",
       filename: "Profile.tsx",
-      code: `return isLoading ? <ActivityIndicator /> : <ProfileCard user={user} />;`,
     },
     kotlin: {
       name: "Kotlin if expression",
@@ -23,7 +22,6 @@ export const conditionalUiConcept = {
         "Choose which composable is emitted from the current composition.",
       language: "kotlin",
       filename: "Profile.kt",
-      code: `if (isLoading) CircularProgressIndicator() else ProfileCard(user)`,
     },
   },
   relationships: [

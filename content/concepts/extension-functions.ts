@@ -15,9 +15,6 @@ export const extensionFunctionsConcept = {
         "A plain function transforms a domain value without changing its runtime prototype.",
       language: "typescript",
       filename: "user-display.ts",
-      code: `function displayName(user: User): string {
-  return user.nickname?.trim() || user.name;
-}`,
     },
     kotlin: {
       name: "Extension function",
@@ -25,9 +22,6 @@ export const extensionFunctionsConcept = {
         "An extension adds call-site syntax without modifying or subclassing the receiver type.",
       language: "kotlin",
       filename: "UserDisplay.kt",
-      code: `fun User.displayName(): String {
-    return nickname?.trim().takeUnless { it.isNullOrEmpty() } ?: name
-}`,
     },
   },
   relationships: [

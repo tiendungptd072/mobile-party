@@ -21,14 +21,6 @@ export const coroutineScopesConcept = {
         "AbortController is explicit and must reach the API or repository that performs work.",
       language: "tsx",
       filename: "use-user.ts",
-      code: `useEffect(() => {
-  const controller = new AbortController();
-  setHasError(false);
-  void repository.loadUser(userId, controller.signal)
-    .then((user) => { if (!controller.signal.aborted) setUser(user); })
-    .catch(() => { if (!controller.signal.aborted) setHasError(true); });
-  return () => controller.abort();
-}, [repository, userId]);`,
     },
     kotlin: {
       name: "Own work with a coroutine scope",
@@ -36,18 +28,6 @@ export const coroutineScopesConcept = {
         "LaunchedEffect cancels and restarts its child coroutine when its key changes.",
       language: "kotlin",
       filename: "UserRoute.kt",
-      code: `var user by remember(userId) { mutableStateOf<User?>(null) }
-var hasError by remember(userId) { mutableStateOf(false) }
-LaunchedEffect(userId) {
-    hasError = false
-    try {
-        user = repository.loadUser(userId)
-    } catch (cancelled: CancellationException) {
-        throw cancelled
-    } catch (_: Exception) {
-        hasError = true
-    }
-}`,
     },
   },
   relationships: [

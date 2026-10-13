@@ -20,22 +20,12 @@ export const stateDrivenAnimationConcept = {
         "Animated.Value is retained and driven to a target when state changes.",
       language: "tsx",
       filename: "FavoriteButton.tsx",
-      code: `const scale = useRef(new Animated.Value(1)).current;
-
-useEffect(() => {
-  Animated.spring(scale, { toValue: isFavorite ? 1.2 : 1, useNativeDriver: true }).start();
-}, [isFavorite, scale]);`,
     },
     kotlin: {
       name: "Animate a state target",
       summary: "The animation follows a target derived from the current state.",
       language: "kotlin",
       filename: "FavoriteButton.kt",
-      code: `val scale by animateFloatAsState(
-    targetValue = if (isFavorite) 1.2f else 1f,
-    label = "favorite scale",
-)
-Icon(Icons.Default.Favorite, null, Modifier.scale(scale))`,
     },
   },
   relationships: [

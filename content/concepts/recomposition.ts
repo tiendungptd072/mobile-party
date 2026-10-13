@@ -14,10 +14,6 @@ export const recompositionConcept = {
       summary: "A state update schedules React to call the component again.",
       language: "tsx",
       filename: "Counter.tsx",
-      code: `function Counter() {
-  const [count, setCount] = useState(0);
-  return <Button title={String(count)} onPress={() => setCount((n) => n + 1)} />;
-}`,
     },
     kotlin: {
       name: "Recompose from snapshot state",
@@ -25,11 +21,6 @@ export const recompositionConcept = {
         "Reading observable state lets Compose update affected composition scopes.",
       language: "kotlin",
       filename: "Counter.kt",
-      code: `@Composable
-fun Counter() {
-    var count by remember { mutableIntStateOf(0) }
-    Button(onClick = { count++ }) { Text("$count") }
-}`,
     },
   },
   relationships: [

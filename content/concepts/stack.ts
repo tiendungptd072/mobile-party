@@ -15,20 +15,12 @@ export const stackConcept = {
         "A relative parent anchors an overlay child with absolute positioning.",
       language: "typescript",
       filename: "avatar-badge.tsx",
-      code: `<View style={{ position: "relative" }}>
-  <Avatar user={user} />
-  <View style={{ position: "absolute", right: 0, bottom: 0 }}><OnlineBadge /></View>
-</View>`,
     },
     kotlin: {
       name: "Box",
       summary: "Box layers children and lets each child choose an alignment.",
       language: "kotlin",
       filename: "AvatarBadge.kt",
-      code: `Box {
-  Avatar(user)
-  OnlineBadge(Modifier.align(Alignment.BottomEnd))
-}`,
     },
   },
   relationships: [

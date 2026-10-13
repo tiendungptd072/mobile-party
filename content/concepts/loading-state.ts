@@ -20,15 +20,6 @@ export const loadingStateConcept = {
         "A dedicated status controls loading UI while data remains a separate value.",
       language: "typescript",
       filename: "profile-screen.tsx",
-      code: `type ProfileState =
-  | { status: "loading" }
-  | { status: "ready"; profile: Profile };
-
-function ProfileScreen({ state }: { state: ProfileState }) {
-  if (state.status === "loading") return <ActivityIndicator />;
-
-  return <ProfileCard profile={state.profile} />;
-}`,
     },
     kotlin: {
       name: "CircularProgressIndicator with sealed UI state",
@@ -36,16 +27,6 @@ function ProfileScreen({ state }: { state: ProfileState }) {
         "An exhaustive when expression renders the explicit state exposed by the screen owner.",
       language: "kotlin",
       filename: "ProfileScreen.kt",
-      code: `sealed interface ProfileUiState {
-  data object Loading : ProfileUiState
-  data class Ready(val profile: Profile) : ProfileUiState
-}
-
-@Composable
-fun ProfileScreen(state: ProfileUiState) = when (state) {
-  ProfileUiState.Loading -> CircularProgressIndicator()
-  is ProfileUiState.Ready -> ProfileCard(state.profile)
-}`,
     },
   },
   relationships: [

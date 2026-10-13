@@ -15,11 +15,6 @@ export const dependencyInjectionConcept = {
         "The root builds production services and passes narrow contracts to routes or providers.",
       language: "tsx",
       filename: "AppRoot.tsx",
-      code: `const repository = new HttpProfileRepository(apiClient);
-
-export function AppRoot() {
-  return <ProfileRoute repository={repository} />;
-}`,
     },
     kotlin: {
       name: "Constructor-inject ViewModel dependencies",
@@ -27,13 +22,6 @@ export function AppRoot() {
         "Hilt creates the ViewModel and supplies its repository from the dependency graph.",
       language: "kotlin",
       filename: "ProfileViewModel.kt",
-      code: `@HiltViewModel
-class ProfileViewModel @Inject constructor(
-    private val repository: ProfileRepository,
-) : ViewModel()
-
-@Composable
-fun ProfileRoute(viewModel: ProfileViewModel = hiltViewModel()) { /* render */ }`,
     },
   },
   relationships: [

@@ -19,11 +19,6 @@ export const globalStateConcept = {
       summary: "A component subscribes to the smallest state slice it renders.",
       language: "tsx",
       filename: "ProfileScreen.tsx",
-      code: `function ProfileScreen() {
-  const user = useSessionStore((state) => state.user);
-  const signOut = useSessionStore((state) => state.signOut);
-  return <Profile user={user} onSignOut={signOut} />;
-}`,
     },
     kotlin: {
       name: "ViewModel + StateFlow",
@@ -31,11 +26,6 @@ export const globalStateConcept = {
         "A screen collects immutable state from a lifecycle-aware state holder.",
       language: "kotlin",
       filename: "ProfileScreen.kt",
-      code: `@Composable
-fun ProfileRoute(viewModel: ProfileViewModel = viewModel()) {
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    ProfileScreen(uiState, viewModel::signOut)
-}`,
     },
   },
   relationships: [

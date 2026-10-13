@@ -13,23 +13,12 @@ export const componentConcept = {
       summary: "A function returns React elements from props and state.",
       language: "tsx",
       filename: "Greeting.tsx",
-      code: `type GreetingProps = {
-  name: string;
-};
-
-function Greeting({ name }: GreetingProps) {
-  return <Text>Hello, {name}</Text>;
-}`,
     },
     kotlin: {
       name: "Composable function",
       summary: "A function annotated with @Composable describes UI.",
       language: "kotlin",
       filename: "Greeting.kt",
-      code: `@Composable
-fun Greeting(name: String) {
-    Text(text = "Hello, $name")
-}`,
     },
   },
   relationships: [

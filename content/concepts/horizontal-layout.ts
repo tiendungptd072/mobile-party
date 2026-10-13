@@ -14,11 +14,6 @@ export const horizontalLayoutConcept = {
       summary: "A View lays children out on the horizontal main axis.",
       language: "typescript",
       filename: "profile-row.tsx",
-      code: `<View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-  <Avatar user={user} />
-  <Text style={{ flex: 1 }}>{user.name}</Text>
-  <IconButton icon="more" />
-</View>`,
     },
     kotlin: {
       name: "Row",
@@ -26,12 +21,6 @@ export const horizontalLayoutConcept = {
         "Row uses weight for a flexible child and verticalAlignment for the cross axis.",
       language: "kotlin",
       filename: "ProfileRow.kt",
-      code: `Row(verticalAlignment = Alignment.CenterVertically) {
-  Avatar(user)
-  Spacer(Modifier.width(12.dp))
-  Text(user.name, Modifier.weight(1f))
-  IconButton(onClick = onMore) { Icon(Icons.Default.MoreVert, null) }
-}`,
     },
   },
   relationships: [

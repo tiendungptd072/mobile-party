@@ -27,12 +27,6 @@ export const androidActivityLifecycleConcept = {
         "AppState reports app-wide foreground/background changes and requires listener cleanup.",
       language: "tsx",
       filename: "ForegroundTracker.tsx",
-      code: `useEffect(() => {
-  const subscription = AppState.addEventListener("change", (state) => {
-    if (state === "active") analytics.trackVisible();
-  });
-  return () => subscription.remove();
-}, [analytics]);`,
     },
     kotlin: {
       name: "React to a lifecycle event",
@@ -40,12 +34,6 @@ export const androidActivityLifecycleConcept = {
         "LifecycleEventEffect observes the current LifecycleOwner inside Compose.",
       language: "kotlin",
       filename: "ForegroundTracker.kt",
-      code: `@Composable
-fun ForegroundTracker(analytics: Analytics) {
-    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
-        analytics.trackVisible()
-    }
-}`,
     },
   },
   relationships: [

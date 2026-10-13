@@ -20,14 +20,6 @@ export const backNavigationConcept = {
         "A focused listener consumes back only when the screen has custom behavior.",
       language: "tsx",
       filename: "EditProfileScreen.tsx",
-      code: `useEffect(() => {
-  const subscription = BackHandler.addEventListener("hardwareBackPress", () => {
-    if (!hasUnsavedChanges) return false;
-    setShowDiscardDialog(true);
-    return true;
-  });
-  return () => subscription.remove();
-}, [hasUnsavedChanges]);`,
     },
     kotlin: {
       name: "Enable a Compose back handler",
@@ -35,9 +27,6 @@ export const backNavigationConcept = {
         "BackHandler consumes system back only while unsaved changes need confirmation.",
       language: "kotlin",
       filename: "EditProfileScreen.kt",
-      code: `BackHandler(enabled = hasUnsavedChanges) {
-    showDiscardDialog = true
-}`,
     },
   },
   relationships: [

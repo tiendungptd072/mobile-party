@@ -14,16 +14,6 @@ export const compositionLocalConcept = {
       summary: "A context provider supplies a value to descendants.",
       language: "tsx",
       filename: "Spacing.tsx",
-      code: `const SpacingContext = createContext(8);
-
-function Card() {
-  const spacing = useContext(SpacingContext);
-  return <View style={{ padding: spacing }}><Text>Profile</Text></View>;
-}
-
-function Screen() {
-  return <SpacingContext.Provider value={16}><Card /></SpacingContext.Provider>;
-}`,
     },
     kotlin: {
       name: "Provide a local spacing value",
@@ -31,17 +21,6 @@ function Screen() {
         "CompositionLocalProvider supplies a value to its composition subtree.",
       language: "kotlin",
       filename: "Spacing.kt",
-      code: `val LocalSpacing = compositionLocalOf { 8.dp }
-
-@Composable
-fun Card() {
-    Box(Modifier.padding(LocalSpacing.current)) { Text("Profile") }
-}
-
-@Composable
-fun Screen() {
-    CompositionLocalProvider(LocalSpacing provides 16.dp) { Card() }
-}`,
     },
   },
   relationships: [

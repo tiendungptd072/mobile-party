@@ -20,10 +20,6 @@ export const adaptiveLayoutsConcept = {
         "Choose a layout from the current window width, which updates on resize.",
       language: "tsx",
       filename: "MailScreen.tsx",
-      code: `function MailScreen() {
-  const { width } = useWindowDimensions();
-  return width >= 600 ? <TwoPaneMail /> : <SinglePaneMail />;
-}`,
     },
     kotlin: {
       name: "React to window size class",
@@ -31,15 +27,6 @@ export const adaptiveLayoutsConcept = {
         "Choose a high-level layout from the current available window size.",
       language: "kotlin",
       filename: "MailScreen.kt",
-      code: `@Composable
-fun MailScreen() {
-    val sizeClass = currentWindowAdaptiveInfo().windowSizeClass
-    if (sizeClass.isWidthAtLeastBreakpoint(WindowSizeClass.WIDTH_DP_MEDIUM_LOWER_BOUND)) {
-        TwoPaneMail()
-    } else {
-        SinglePaneMail()
-    }
-}`,
     },
   },
   relationships: [

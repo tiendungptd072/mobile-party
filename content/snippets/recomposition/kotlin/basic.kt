@@ -1,0 +1,9 @@
+package snippets.recomposition.basic
+
+// #region show
+@Composable
+fun Counter() {
+    var count by remember { mutableIntStateOf(0) }
+    Button(onClick = { count++ }) { Text("$count") }
+}
+// #endregion

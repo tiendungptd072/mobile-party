@@ -20,15 +20,6 @@ export const offlineFirstDataConcept = {
         "The screen subscribes to cached domain data; refresh updates that cache.",
       language: "tsx",
       filename: "use-feed.ts",
-      code: `function useFeed(repository: FeedRepository) {
-  const feed = useSyncExternalStore(
-    repository.subscribe,
-    repository.getSnapshot,
-  );
-
-  useEffect(() => { void repository.refresh(); }, [repository]);
-  return feed;
-}`,
     },
     kotlin: {
       name: "Observe Room through a repository",
@@ -36,12 +27,6 @@ export const offlineFirstDataConcept = {
         "The ViewModel collects local rows while the repository refreshes them from the network.",
       language: "kotlin",
       filename: "FeedViewModel.kt",
-      code: `class FeedViewModel(repository: FeedRepository) : ViewModel() {
-    val feed = repository.observeFeed()
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
-
-    init { viewModelScope.launch { repository.refresh() } }
-}`,
     },
   },
   relationships: [

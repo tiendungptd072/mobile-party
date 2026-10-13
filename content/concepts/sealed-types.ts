@@ -19,10 +19,6 @@ export const sealedTypesConcept = {
       summary: "A literal status field narrows each possible UI-state shape.",
       language: "typescript",
       filename: "profile-state.ts",
-      code: `type ProfileState =
-  | { status: "loading" }
-  | { status: "ready"; profile: Profile }
-  | { status: "error"; message: string };`,
     },
     kotlin: {
       name: "Sealed UI state",
@@ -30,11 +26,6 @@ export const sealedTypesConcept = {
         "A sealed hierarchy gives when an exhaustive, type-safe state set.",
       language: "kotlin",
       filename: "ProfileUiState.kt",
-      code: `sealed interface ProfileUiState {
-    data object Loading : ProfileUiState
-    data class Ready(val profile: Profile) : ProfileUiState
-    data class Error(val message: String) : ProfileUiState
-}`,
     },
   },
   relationships: [

@@ -15,27 +15,12 @@ export const propsConcept = {
         "A typed props object carries values and callbacks into a component.",
       language: "tsx",
       filename: "UserCard.tsx",
-      code: `type UserCardProps = {
-  name: string;
-  onOpen: () => void;
-};
-
-function UserCard({ name, onOpen }: UserCardProps) {
-  return <Button title={name} onPress={onOpen} />;
-}`,
     },
     kotlin: {
       name: "Composable parameters",
       summary: "Function parameters carry state down and event lambdas up.",
       language: "kotlin",
       filename: "UserCard.kt",
-      code: `@Composable
-fun UserCard(
-    name: String,
-    onOpen: () -> Unit,
-) {
-    Button(onClick = onOpen) { Text(name) }
-}`,
     },
   },
   relationships: [

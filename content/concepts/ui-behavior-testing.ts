@@ -20,9 +20,6 @@ export const uiBehaviorTestingConcept = {
         "Render the screen, trigger a press, and assert what the user can observe.",
       language: "tsx",
       filename: "Counter.test.tsx",
-      code: `render(<Counter />);
-fireEvent.press(screen.getByRole("button", { name: "Add" }));
-expect(screen.getByText("Count: 1")).toBeTruthy();`,
     },
     kotlin: {
       name: "Test a semantic interaction",
@@ -30,9 +27,6 @@ expect(screen.getByText("Count: 1")).toBeTruthy();`,
         "Compose tests find semantic nodes, perform an action, and assert visible output.",
       language: "kotlin",
       filename: "CounterTest.kt",
-      code: `composeTestRule.setContent { Counter() }
-composeTestRule.onNodeWithText("Add").performClick()
-composeTestRule.onNodeWithText("Count: 1").assertExists()`,
     },
   },
   relationships: [

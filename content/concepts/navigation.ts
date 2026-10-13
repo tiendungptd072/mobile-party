@@ -14,14 +14,6 @@ export const navigationConcept = {
       summary: "A screen requests navigation through the navigation object.",
       language: "tsx",
       filename: "HomeScreen.tsx",
-      code: `function HomeScreen({ navigation }: Props) {
-  return (
-    <Button
-      title="Open profile"
-      onPress={() => navigation.navigate("Profile", { userId: "42" })}
-    />
-  );
-}`,
     },
     kotlin: {
       name: "Navigation Compose",
@@ -29,12 +21,6 @@ export const navigationConcept = {
         "A route-level callback asks NavController to navigate to a destination.",
       language: "kotlin",
       filename: "HomeRoute.kt",
-      code: `@Composable
-fun HomeRoute(navController: NavController) {
-    HomeScreen(onOpenProfile = { userId ->
-        navController.navigate(Profile(userId))
-    })
-}`,
     },
   },
   relationships: [

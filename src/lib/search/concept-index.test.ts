@@ -25,4 +25,20 @@ describe("concept search index", () => {
   test("returns no result for unrelated text", () => {
     expect(searchConceptIndex(index, "unrelated-term")).toEqual([]);
   });
+
+  test("does not include snippet bodies in either locale's search index", () => {
+    for (const locale of ["en", "vi"] as const) {
+      const concepts = getConcepts(locale);
+      const serialized = JSON.stringify(createConceptSearchIndex(concepts));
+      for (const concept of concepts) {
+        for (const implementation of Object.values(concept.implementations)) {
+          if (implementation.code) {
+            expect(serialized).not.toContain(
+              JSON.stringify(implementation.code).slice(1, -1),
+            );
+          }
+        }
+      }
+    }
+  });
 });

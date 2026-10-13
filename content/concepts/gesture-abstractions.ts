@@ -15,9 +15,6 @@ export const gestureAbstractionsConcept = {
         "A high-level control owns tap feedback and responder negotiation.",
       language: "tsx",
       filename: "ArchiveButton.tsx",
-      code: `<Pressable onPress={onArchive} accessibilityRole="button">
-  <Text>Archive</Text>
-</Pressable>`,
     },
     kotlin: {
       name: "Button interaction",
@@ -25,9 +22,6 @@ export const gestureAbstractionsConcept = {
         "A standard Compose control includes gesture, focus, and accessibility behavior.",
       language: "kotlin",
       filename: "ArchiveButton.kt",
-      code: `Button(onClick = onArchive) {
-    Text("Archive")
-}`,
     },
   },
   relationships: [

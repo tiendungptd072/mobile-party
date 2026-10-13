@@ -15,12 +15,6 @@ export const paginationConcept = {
         "A list requests another page near its end while append state prevents duplicate work.",
       language: "typescript",
       filename: "feed.tsx",
-      code: `<FlatList
-  data={state.items}
-  keyExtractor={(item) => item.id}
-  onEndReached={() => state.canLoadMore && loadMore()}
-  ListFooterComponent={state.isAppending ? <ActivityIndicator /> : null}
-/>`,
     },
     kotlin: {
       name: "LazyColumn append state",
@@ -28,14 +22,6 @@ export const paginationConcept = {
         "A lazy list observes append availability and renders a footer from explicit state.",
       language: "kotlin",
       filename: "Feed.kt",
-      code: `LazyColumn {
-  items(state.items, key = { it.id }) { item -> FeedRow(item) }
-  if (state.isAppending) item { CircularProgressIndicator() }
-}
-
-LaunchedEffect(state.nearEnd, state.canLoadMore) {
-  if (state.nearEnd && state.canLoadMore) viewModel.loadMore()
-}`,
     },
   },
   relationships: [

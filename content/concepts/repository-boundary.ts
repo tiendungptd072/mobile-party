@@ -21,15 +21,6 @@ export const repositoryBoundaryConcept = {
         "The hook receives a domain-facing repository, not a fetch client.",
       language: "tsx",
       filename: "use-profile.ts",
-      code: `function toReadyState(profile: Profile): ProfileState {
-  return { kind: "ready", profile };
-}
-
-function useProfile(repository: ProfileRepository, id: string) {
-  const [state, setState] = useState<ProfileState>({ kind: "loading" });
-  useEffect(() => { void repository.getProfile(id).then(toReadyState); }, [id, repository]);
-  return state;
-}`,
     },
     kotlin: {
       name: "Inject a repository into a ViewModel",
@@ -37,13 +28,6 @@ function useProfile(repository: ProfileRepository, id: string) {
         "The ViewModel depends on domain data, not Retrofit, Room, or Context.",
       language: "kotlin",
       filename: "ProfileViewModel.kt",
-      code: `class ProfileViewModel(
-    private val repository: ProfileRepository,
-) : ViewModel() {
-    fun load(id: String) = viewModelScope.launch {
-        _uiState.value = ProfileUiState.Ready(repository.getProfile(id))
-    }
-}`,
     },
   },
   relationships: [

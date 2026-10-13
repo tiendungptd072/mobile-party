@@ -14,30 +14,12 @@ export const localStateConcept = {
       summary: "Stores state for a mounted component instance.",
       language: "tsx",
       filename: "Counter.tsx",
-      code: `function Counter() {
-  const [count, setCount] = useState(0);
-
-  return (
-    <Button
-      title={\`Count: \${count}\`}
-      onPress={() => setCount((value) => value + 1)}
-    />
-  );
-}`,
     },
     kotlin: {
       name: "remember + mutableStateOf",
       summary: "Retains observable state across recompositions.",
       language: "kotlin",
       filename: "Counter.kt",
-      code: `@Composable
-fun Counter() {
-    var count by remember { mutableStateOf(0) }
-
-    Button(onClick = { count++ }) {
-        Text("Count: $count")
-    }
-}`,
     },
   },
   relationships: [

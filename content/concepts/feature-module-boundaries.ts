@@ -21,9 +21,6 @@ export const featureModuleBoundariesConcept = {
         "A feature package imports a small contract; the application supplies its implementation.",
       language: "tsx",
       filename: "packages/profile-contract/src/index.ts",
-      code: `export interface ProfileReader {
-  load(id: string): Promise<Profile>;
-}`,
     },
     kotlin: {
       name: "Expose a Gradle module contract",
@@ -31,9 +28,6 @@ export const featureModuleBoundariesConcept = {
         "A feature module depends on an API module, not on the database implementation.",
       language: "kotlin",
       filename: "core/profile-api/src/main/kotlin/ProfileReader.kt",
-      code: `interface ProfileReader {
-    suspend fun load(id: String): Profile
-}`,
     },
   },
   relationships: [

@@ -26,13 +26,6 @@ export const androidIntentsConcept = {
         "Linking asks the native platform to handle a URL and rejects when it cannot open it.",
       language: "tsx",
       filename: "open-help.ts",
-      code: `async function openHelp() {
-  try {
-    await Linking.openURL("https://example.com/help");
-  } catch {
-    showUnavailable();
-  }
-}`,
     },
     kotlin: {
       name: "Dispatch an implicit ACTION_VIEW Intent",
@@ -40,14 +33,6 @@ export const androidIntentsConcept = {
         "Android resolves the Intent to an Activity that can handle the URL.",
       language: "kotlin",
       filename: "OpenHelp.kt",
-      code: `fun openHelp(context: Context) {
-    val uri = Uri.parse("https://example.com/help")
-    try {
-        context.startActivity(Intent(Intent.ACTION_VIEW, uri))
-    } catch (_: ActivityNotFoundException) {
-        showUnavailable()
-    }
-}`,
     },
   },
   relationships: [

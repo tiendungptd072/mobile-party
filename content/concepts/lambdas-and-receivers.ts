@@ -25,9 +25,6 @@ export const lambdasAndReceiversConcept = {
       summary: "A function type describes the value emitted by a callback.",
       language: "typescript",
       filename: "select-user.ts",
-      code: `function selectUser(id: string, onSelected: (id: string) => void) {
-  onSelected(id);
-}`,
     },
     kotlin: {
       name: "Function type",
@@ -35,9 +32,6 @@ export const lambdasAndReceiversConcept = {
         "A Kotlin function type expresses the same value-in and Unit-out contract.",
       language: "kotlin",
       filename: "SelectUser.kt",
-      code: `fun selectUser(id: String, onSelected: (String) -> Unit) {
-    onSelected(id)
-}`,
     },
   },
   relationships: [

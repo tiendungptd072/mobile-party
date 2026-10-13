@@ -14,20 +14,6 @@ export const asyncConcept = {
         "Loads one user, rejects failed HTTP responses, and forwards the owner's AbortSignal.",
       language: "typescript",
       filename: "load-user.ts",
-      code: `const API_BASE_URL = "https://api.example.com";
-
-async function loadUser(id: string, signal: AbortSignal): Promise<User> {
-  const response = await fetch(
-    \`\${API_BASE_URL}/users/\${encodeURIComponent(id)}\`,
-    { signal },
-  );
-
-  if (!response.ok) {
-    throw new Error("HTTP " + response.status);
-  }
-
-  return response.json();
-}`,
     },
     kotlin: {
       name: "Coroutine + suspend",
@@ -35,15 +21,6 @@ async function loadUser(id: string, signal: AbortSignal): Promise<User> {
         "Loads the same user through Retrofit, propagating HTTP failures and caller cancellation.",
       language: "kotlin",
       filename: "UserRepository.kt",
-      code: `// userApi uses https://api.example.com/ and a JSON converter for User.
-interface UserApi {
-    @GET("users/{id}")
-    suspend fun getUser(@Path("id") id: String): User
-}
-
-suspend fun loadUser(id: String): User {
-    return userApi.getUser(id)
-}`,
     },
   },
   relationships: [

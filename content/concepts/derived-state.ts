@@ -19,10 +19,6 @@ export const derivedStateConcept = {
       summary: "Calculate a cheap value directly from current props and state.",
       language: "tsx",
       filename: "CartSummary.tsx",
-      code: `function CartSummary({ items }: Props) {
-  const total = items.reduce((sum, item) => sum + item.price, 0);
-  return <Text>Total: {total}</Text>;
-}`,
     },
     kotlin: {
       name: "Recomposition-time derivation",
@@ -30,11 +26,6 @@ export const derivedStateConcept = {
         "Calculate a cheap value directly from the latest composable parameters.",
       language: "kotlin",
       filename: "CartSummary.kt",
-      code: `@Composable
-fun CartSummary(items: List<CartItem>) {
-    val total = items.sumOf { it.price }
-    Text("Total: $total")
-}`,
     },
   },
   relationships: [

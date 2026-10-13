@@ -20,9 +20,6 @@ export const androidResourcesConcept = {
         "React Native does not provide this t() function; the application or its chosen i18n library owns it.",
       language: "tsx",
       filename: "Welcome.tsx",
-      code: `function Welcome({ t }: { t: (key: "welcome") => string }) {
-  return <Text>{t("welcome")}</Text>;
-}`,
     },
     kotlin: {
       name: "Read an Android string resource",
@@ -30,10 +27,6 @@ export const androidResourcesConcept = {
         "Compose's stringResource reads the matching Android resource for the current configuration.",
       language: "kotlin",
       filename: "Welcome.kt",
-      code: `@Composable
-fun Welcome() {
-    Text(stringResource(R.string.welcome))
-}`,
     },
   },
   relationships: [

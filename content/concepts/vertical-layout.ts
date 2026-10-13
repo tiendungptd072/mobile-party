@@ -15,10 +15,6 @@ export const verticalLayoutConcept = {
         "A View arranges children vertically when flexDirection is column.",
       language: "typescript",
       filename: "profile-summary.tsx",
-      code: `<View style={{ flexDirection: "column", gap: 12, alignItems: "center" }}>
-  <Avatar user={user} />
-  <Text>{user.name}</Text>
-</View>`,
     },
     kotlin: {
       name: "Column",
@@ -26,13 +22,6 @@ export const verticalLayoutConcept = {
         "Column arranges children vertically with explicit arrangement and alignment.",
       language: "kotlin",
       filename: "ProfileSummary.kt",
-      code: `Column(
-  verticalArrangement = Arrangement.spacedBy(12.dp),
-  horizontalAlignment = Alignment.CenterHorizontally,
-) {
-  Avatar(user)
-  Text(user.name)
-}`,
     },
   },
   relationships: [

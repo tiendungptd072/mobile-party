@@ -14,10 +14,6 @@ export const layoutConcept = {
       summary: "React Native uses a style object to configure layout on View.",
       language: "tsx",
       filename: "ProfileHeader.tsx",
-      code: `<View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-  <Avatar />
-  <Text>{name}</Text>
-</View>`,
     },
     kotlin: {
       name: "Row with Modifier",
@@ -25,11 +21,6 @@ export const layoutConcept = {
         "Compose uses a layout composable and modifier chain for placement.",
       language: "kotlin",
       filename: "ProfileHeader.kt",
-      code: `Row(verticalAlignment = Alignment.CenterVertically) {
-    Avatar()
-    Spacer(Modifier.width(12.dp))
-    Text(name)
-}`,
     },
   },
   relationships: [

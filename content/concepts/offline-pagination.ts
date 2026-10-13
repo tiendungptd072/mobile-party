@@ -15,11 +15,6 @@ export const offlinePaginationConcept = {
         "A repository keeps list rows and the next cursor together in its local cache.",
       language: "tsx",
       filename: "feed-repository.ts",
-      code: `async function append() {
-  if (cache.nextCursor === null) return;
-  const page = await api.getFeed({ cursor: cache.nextCursor });
-  cache.transaction(() => cache.upsert(page.items, page.nextCursor));
-}`,
     },
     kotlin: {
       name: "Page Room with RemoteMediator",
@@ -27,10 +22,6 @@ export const offlinePaginationConcept = {
         "PagingSource reads Room; RemoteMediator fetches remote pages and writes them back.",
       language: "kotlin",
       filename: "FeedRepository.kt",
-      code: `val posts: Flow<PagingData<PostEntity>> = Pager(
-    config = PagingConfig(pageSize = 30),
-    remoteMediator = FeedRemoteMediator(api, database),
-) { database.postDao().pagingSource() }.flow`,
     },
   },
   relationships: [

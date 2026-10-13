@@ -7,12 +7,7 @@ export const permissionStageExamples = {
           "The user initiates the capability before the OS prompt appears.",
         language: "tsx",
         filename: "CameraButton.tsx",
-        code: `async function requestCamera() {
-  const result = await PermissionsAndroid.request(
-    PermissionsAndroid.PERMISSIONS.CAMERA,
-  );
-  if (result === PermissionsAndroid.RESULTS.GRANTED) openCamera();
-}`,
+        snippet: "runtime-permissions/react-native/basic.tsx",
       },
       kotlin: {
         name: "Launch after a camera action",
@@ -20,13 +15,7 @@ export const permissionStageExamples = {
           "The launcher receives the permission result after the user action.",
         language: "kotlin",
         filename: "CameraButton.kt",
-        code: `val requestCamera = rememberLauncherForActivityResult(
-    ActivityResultContracts.RequestPermission(),
-) { granted -> if (granted) openCamera() }
-
-Button(onClick = { requestCamera.launch(Manifest.permission.CAMERA) }) {
-    Text("Use camera")
-}`,
+        snippet: "runtime-permissions/kotlin/basic.kt",
       },
     },
     applied: {
@@ -36,11 +25,7 @@ Button(onClick = { requestCamera.launch(Manifest.permission.CAMERA) }) {
           "The screen keeps a usable alternative after permission is denied.",
         language: "tsx",
         filename: "AvatarPicker.tsx",
-        code: `const [cameraGranted, setCameraGranted] = useState(false);
-
-return cameraGranted
-  ? <CameraPicker />
-  : <Button title="Choose from library" onPress={openLibrary} />;`,
+        snippet: "runtime-permissions/react-native/applied.tsx",
       },
       kotlin: {
         name: "Render a denied fallback",
@@ -48,13 +33,7 @@ return cameraGranted
           "Permission result updates UI state; the fallback does not need camera access.",
         language: "kotlin",
         filename: "AvatarPicker.kt",
-        code: `var cameraGranted by rememberSaveable { mutableStateOf(false) }
-
-if (cameraGranted) {
-    CameraPicker()
-} else {
-    Button(onClick = openLibrary) { Text("Choose from library") }
-}`,
+        snippet: "runtime-permissions/kotlin/applied.kt",
       },
     },
     production: {
@@ -64,9 +43,7 @@ if (cameraGranted) {
           "App UI explains why the action needs access before requesting it.",
         language: "tsx",
         filename: "CameraEducation.tsx",
-        code: `function CameraEducation() {
-  return <Button title="Allow camera to scan a receipt" onPress={requestCamera} />;
-}`,
+        snippet: "runtime-permissions/react-native/production.tsx",
       },
       kotlin: {
         name: "Explain the feature benefit first",
@@ -74,10 +51,7 @@ if (cameraGranted) {
           "The rationale is app UI; the platform permission dialog remains system-owned.",
         language: "kotlin",
         filename: "CameraEducation.kt",
-        code: `@Composable
-fun CameraEducation(onRequest: () -> Unit) {
-    Button(onClick = onRequest) { Text("Allow camera to scan a receipt") }
-}`,
+        snippet: "runtime-permissions/kotlin/production.kt",
       },
     },
   },

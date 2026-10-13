@@ -15,18 +15,12 @@ export const dataClassesConcept = {
         "A readonly object is replaced with a new value using object spread.",
       language: "typescript",
       filename: "user.ts",
-      code: `type User = Readonly<{ id: string; name: string }>;
-
-const renamed: User = { ...user, name: "Linh" };`,
     },
     kotlin: {
       name: "Data class copy",
       summary: "A data class provides value equality and copy-based updates.",
       language: "kotlin",
       filename: "User.kt",
-      code: `data class User(val id: String, val name: String)
-
-val renamed = user.copy(name = "Linh")`,
     },
   },
   relationships: [

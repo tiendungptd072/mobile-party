@@ -1,5 +1,5 @@
 import { rawTechnologies } from "@content/technologies";
-import { validateTechnologies } from "@/lib/content/schema";
+import { validateTechnologies } from "@/lib/content/technology-schema";
 import { TECHNOLOGY_IDS, type Technology } from "@/types/technology";
 
 const technologies = validateTechnologies(rawTechnologies);

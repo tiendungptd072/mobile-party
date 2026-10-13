@@ -15,9 +15,6 @@ export const genericsConcept = {
         "A type parameter preserves the success payload across a reusable result contract.",
       language: "typescript",
       filename: "result.ts",
-      code: `type Result<T> =
-  | { ok: true; value: T }
-  | { ok: false; error: AppError };`,
     },
     kotlin: {
       name: "Covariant generic result",
@@ -25,10 +22,6 @@ export const genericsConcept = {
         "A covariant type parameter lets failure carry no success value while preserving type safety.",
       language: "kotlin",
       filename: "AppResult.kt",
-      code: `sealed interface AppResult<out T> {
-    data class Success<T>(val value: T) : AppResult<T>
-    data class Failure(val error: AppError) : AppResult<Nothing>
-}`,
     },
   },
   relationships: [

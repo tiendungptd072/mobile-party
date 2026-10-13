@@ -13,42 +13,24 @@ import type { Roadmap, RoadmapLesson, RoadmapSection } from "@/types/roadmap";
 import type { Recipe, RecipeImplementation } from "@/types/recipe";
 import {
   CODE_LANGUAGES,
-  TECHNOLOGY_IDS,
   type CodeLanguage,
   type Technology,
-  type TechnologyDefinition,
 } from "@/types/technology";
+import {
+  ContentValidationError,
+  readLiteral,
+  readRecord,
+  readString,
+  readTechnology,
+} from "@/lib/content/validation";
+import { loadSnippet, type SnippetSource } from "@/lib/content/snippets";
+
+export { ContentValidationError };
+export { validateTechnologies } from "@/lib/content/technology-schema";
 
 const RELATIONSHIPS = ["equivalent", "similar", "different"] as const;
 const KEBAB_CASE_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
-
-export class ContentValidationError extends Error {
-  constructor(path: string, message: string) {
-    super(`${path}: ${message}`);
-    this.name = "ContentValidationError";
-  }
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-function readRecord(value: unknown, path: string): Record<string, unknown> {
-  if (!isRecord(value)) {
-    throw new ContentValidationError(path, "expected an object");
-  }
-
-  return value;
-}
-
-function readString(value: unknown, path: string): string {
-  if (typeof value !== "string" || value.trim().length === 0) {
-    throw new ContentValidationError(path, "expected a non-empty string");
-  }
-
-  return value.trim();
-}
 
 function readKebabCase(value: unknown, path: string): string {
   const text = readString(value, path);
@@ -85,25 +67,6 @@ function readStringArray(value: unknown, path: string): readonly string[] {
   }
 
   return entries;
-}
-
-function readLiteral<const Values extends readonly string[]>(
-  value: unknown,
-  values: Values,
-  path: string,
-): Values[number] {
-  if (typeof value !== "string" || !values.includes(value)) {
-    throw new ContentValidationError(
-      path,
-      `expected one of: ${values.join(", ")}`,
-    );
-  }
-
-  return value;
-}
-
-function readTechnology(value: unknown, path: string): Technology {
-  return readLiteral(value, TECHNOLOGY_IDS, path);
 }
 
 function readCodeLanguage(value: unknown, path: string): CodeLanguage {
@@ -196,19 +159,54 @@ function validateReferences(
   });
 }
 
+function readImplementationCode(
+  implementation: Record<string, unknown>,
+  language: CodeLanguage,
+  path: string,
+  source: SnippetSource,
+  technology: Technology,
+): string {
+  if (implementation.code !== undefined) {
+    if (["tsx", "typescript", "kotlin"].includes(language)) {
+      throw new ContentValidationError(
+        `${path}.code`,
+        "inline code is not allowed; use a snippet file",
+      );
+    }
+    return readString(implementation.code, `${path}.code`);
+  }
+
+  const snippet =
+    implementation.snippet === undefined
+      ? undefined
+      : readString(implementation.snippet, `${path}.snippet`);
+  return loadSnippet(source, technology, language, snippet);
+}
+
 function validateImplementation(
   value: unknown,
   path: string,
+  source: SnippetSource,
+  technology: Technology,
 ): ConceptImplementation {
   const implementation = readRecord(value, path);
-  const code = implementation.code;
+  const language = readCodeLanguage(
+    implementation.language,
+    `${path}.language`,
+  );
   const filename = implementation.filename;
 
   return {
     name: readString(implementation.name, `${path}.name`),
     summary: readString(implementation.summary, `${path}.summary`),
-    language: readCodeLanguage(implementation.language, `${path}.language`),
-    ...(code === undefined ? {} : { code: readString(code, `${path}.code`) }),
+    language,
+    code: readImplementationCode(
+      implementation,
+      language,
+      path,
+      source,
+      technology,
+    ),
     ...(filename === undefined
       ? {}
       : { filename: readString(filename, `${path}.filename`) }),
@@ -218,6 +216,7 @@ function validateImplementation(
 function validateImplementations(
   value: unknown,
   path: string,
+  source: SnippetSource,
 ): Partial<Record<Technology, ConceptImplementation>> {
   const rawImplementations = readRecord(value, path);
   const implementations: Partial<Record<Technology, ConceptImplementation>> =
@@ -233,6 +232,8 @@ function validateImplementations(
     implementations[technology] = validateImplementation(
       implementation,
       `${path}.${technology}`,
+      source,
+      technology,
     );
   }
 
@@ -307,9 +308,17 @@ export function validateConcept(value: unknown, path = "concept"): Concept {
     throw new ContentValidationError(path, "id and slug must match");
   }
 
+  if (slug === "recipes") {
+    throw new ContentValidationError(
+      `${path}.slug`,
+      "recipes is a reserved slug",
+    );
+  }
+
   const implementations = validateImplementations(
     concept.implementations,
     `${path}.implementations`,
+    { kind: "concept", slug, stage: "basic" },
   );
 
   return {
@@ -376,40 +385,6 @@ export function validateConcepts(value: unknown): readonly Concept[] {
   );
 }
 
-export function validateTechnologies(
-  value: unknown,
-): readonly TechnologyDefinition[] {
-  if (!Array.isArray(value)) {
-    throw new ContentValidationError("technologies", "expected an array");
-  }
-
-  const technologies = value.map((entry, index) => {
-    const path = `technologies[${index}]`;
-    const technology = readRecord(entry, path);
-
-    return {
-      id: readTechnology(technology.id, `${path}.id`),
-      name: readString(technology.name, `${path}.name`),
-      shortName: readString(technology.shortName, `${path}.shortName`),
-      language: readCodeLanguage(technology.language, `${path}.language`),
-    };
-  });
-
-  if (
-    technologies.length !== TECHNOLOGY_IDS.length ||
-    technologies.some(
-      (technology, index) => technology.id !== TECHNOLOGY_IDS[index],
-    )
-  ) {
-    throw new ContentValidationError(
-      "technologies",
-      `expected canonical order: ${TECHNOLOGY_IDS.join(", ")}`,
-    );
-  }
-
-  return technologies;
-}
-
 function validateRoadmapLesson(
   value: unknown,
   path: string,
@@ -470,6 +445,7 @@ function validateRoadmapLesson(
                   const examples = validateImplementations(
                     record.examples,
                     `${path}.stages[${index}].examples`,
+                    { kind: "concept", slug: conceptSlug, stage: id },
                   );
 
                   for (const [technology, example] of Object.entries(
@@ -570,14 +546,26 @@ export function validateRoadmaps(
 function validateRecipeImplementation(
   value: unknown,
   path: string,
+  slug: string,
+  technology: Technology,
 ): RecipeImplementation {
   const implementation = readRecord(value, path);
   const filename = implementation.filename;
+  const language = readCodeLanguage(
+    implementation.language,
+    `${path}.language`,
+  );
 
   return {
     summary: readString(implementation.summary, `${path}.summary`),
-    language: readCodeLanguage(implementation.language, `${path}.language`),
-    code: readString(implementation.code, `${path}.code`),
+    language,
+    code: readImplementationCode(
+      implementation,
+      language,
+      path,
+      { kind: "recipe", slug },
+      technology,
+    ),
     ...(filename === undefined
       ? {}
       : { filename: readString(filename, `${path}.filename`) }),
@@ -586,6 +574,7 @@ function validateRecipeImplementation(
 
 export function validateRecipe(value: unknown, path = "recipe"): Recipe {
   const recipe = readRecord(value, path);
+  const slug = readKebabCase(recipe.slug, `${path}.slug`);
   const rawImplementations = readRecord(
     recipe.implementations,
     `${path}.implementations`,
@@ -602,6 +591,8 @@ export function validateRecipe(value: unknown, path = "recipe"): Recipe {
     implementations[technology] = validateRecipeImplementation(
       implementation,
       `${path}.implementations.${technology}`,
+      slug,
+      technology,
     );
   }
 
@@ -613,7 +604,7 @@ export function validateRecipe(value: unknown, path = "recipe"): Recipe {
   }
 
   return {
-    slug: readKebabCase(recipe.slug, `${path}.slug`),
+    slug,
     title: readString(recipe.title, `${path}.title`),
     description: readString(recipe.description, `${path}.description`),
     category: readString(recipe.category, `${path}.category`),

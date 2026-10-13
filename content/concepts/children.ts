@@ -14,23 +14,12 @@ export const childrenConcept = {
       summary: "The children prop lets callers provide nested React elements.",
       language: "tsx",
       filename: "Panel.tsx",
-      code: `function Panel({ children }: { children: ReactNode }) {
-  return <View style={styles.panel}>{children}</View>;
-}
-
-<Panel><Text>Profile</Text></Panel>`,
     },
     kotlin: {
       name: "Composable content lambda",
       summary: "A @Composable lambda lets callers fill a named content slot.",
       language: "kotlin",
       filename: "Panel.kt",
-      code: `@Composable
-fun Panel(content: @Composable () -> Unit) {
-    Surface(shape = RoundedCornerShape(12.dp)) { content() }
-}
-
-Panel { Text("Profile") }`,
     },
   },
   relationships: [

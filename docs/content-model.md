@@ -166,6 +166,26 @@ UI modules consume the normalized model and do not know the source file format.
 MDX metadata should use named exports because `@next/mdx` does not parse YAML
 frontmatter without an additional plugin.
 
+### File-backed code
+
+Implementation metadata omits `code` for `tsx`, `typescript`, and `kotlin`;
+the validator rejects inline code in these languages for concepts, lesson
+stages, and recipes. The server-only loader resolves omitted code from
+`content/snippets/<concept>/<technology>/<stage>.<ext>`; Compare uses `basic`.
+Recipe paths use `content/snippets/recipes/<recipe>/<technology>/main.<ext>`.
+
+Source metadata may set `snippet` to an explicit path relative to
+`content/snippets/`. Existing Learn basic examples with different code use
+`learn-basic.tsx` or `learn-basic.kt` so the migration preserves both displays.
+The normalized model exposes the loaded `code`, not the source reference.
+Missing files raise `ContentValidationError` with the failing path.
+
+Only code between `// #region show` and `// #endregion` is displayed when a
+region is present; files without a region display in full. Kotlin package
+declarations stay outside the region and are unique per file. See
+[`content/snippets/README.md`](../content/snippets/README.md) for extensions,
+package naming, and root-tool exclusions.
+
 ## Validation rules
 
 The Phase 2 validator must reject:

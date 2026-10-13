@@ -15,17 +15,6 @@ export const errorHandlingConcept = {
         "A recoverable error state supplies a retry action to the screen.",
       language: "typescript",
       filename: "profile-screen.tsx",
-      code: `type ProfileState =
-  | { status: "ready"; profile: Profile }
-  | { status: "error"; message: string };
-
-function ProfileScreen({ state, retry }: Props) {
-  if (state.status === "error") {
-    return <ErrorPanel message={state.message} onRetry={retry} />;
-  }
-
-  return <ProfileCard profile={state.profile} />;
-}`,
     },
     kotlin: {
       name: "Recoverable sealed UI state",
@@ -33,16 +22,6 @@ function ProfileScreen({ state, retry }: Props) {
         "The ViewModel maps expected failures to a displayable state and retry event.",
       language: "kotlin",
       filename: "ProfileScreen.kt",
-      code: `sealed interface ProfileUiState {
-  data class Ready(val profile: Profile) : ProfileUiState
-  data class Error(val message: String) : ProfileUiState
-}
-
-@Composable
-fun ProfileScreen(state: ProfileUiState, onRetry: () -> Unit) = when (state) {
-  is ProfileUiState.Error -> ErrorPanel(state.message, onRetry)
-  is ProfileUiState.Ready -> ProfileCard(state.profile)
-}`,
     },
   },
   relationships: [

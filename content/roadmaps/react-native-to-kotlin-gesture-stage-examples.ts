@@ -7,9 +7,7 @@ export const gestureStageExamples = {
           "Pressable provides a tap interaction without manual responder handling.",
         language: "tsx",
         filename: "ArchiveButton.tsx",
-        code: `<Pressable onPress={onArchive} accessibilityRole="button">
-  <Text>Archive</Text>
-</Pressable>`,
+        snippet: "gesture-abstractions/react-native/basic.tsx",
       },
       kotlin: {
         name: "Use a high-level action control",
@@ -17,9 +15,7 @@ export const gestureStageExamples = {
           "Button retains built-in click, focus, and accessibility behavior.",
         language: "kotlin",
         filename: "ArchiveButton.kt",
-        code: `Button(onClick = onArchive) {
-    Text("Archive")
-}`,
+        snippet: "gesture-abstractions/kotlin/basic.kt",
       },
     },
     applied: {
@@ -28,11 +24,7 @@ export const gestureStageExamples = {
         summary: "PanResponder converts move events into a UI-owned offset.",
         language: "tsx",
         filename: "SwipeRow.tsx",
-        code: `const panResponder = useMemo(() => PanResponder.create({
-  onMoveShouldSetPanResponder: (_, gesture) => Math.abs(gesture.dx) > 8,
-  onPanResponderMove: (_, gesture) => setOffset(gesture.dx),
-  onPanResponderRelease: () => setOffset(0),
-}), []);`,
+        snippet: "gesture-abstractions/react-native/applied.tsx",
       },
       kotlin: {
         name: "Track a horizontal drag",
@@ -40,12 +32,7 @@ export const gestureStageExamples = {
           "draggable reports deltas while the screen owns the resulting offset.",
         language: "kotlin",
         filename: "SwipeRow.kt",
-        code: `var offset by remember { mutableFloatStateOf(0f) }
-Box(
-    Modifier
-        .offset { IntOffset(offset.roundToInt(), 0) }
-        .draggable(orientation = Orientation.Horizontal) { delta -> offset += delta },
-) { SwipeRowContent() }`,
+        snippet: "gesture-abstractions/kotlin/applied.kt",
       },
     },
     production: {
@@ -55,11 +42,7 @@ Box(
           "The responder claims input only when the custom interaction begins.",
         language: "tsx",
         filename: "ReorderHandle.tsx",
-        code: `<View
-  onStartShouldSetResponder={() => true}
-  onResponderMove={(event) => onDrag(event.nativeEvent.locationY)}
-  onResponderRelease={onDrop}
-/>`,
+        snippet: "gesture-abstractions/react-native/production.tsx",
       },
       kotlin: {
         name: "Long-press drag behavior",
@@ -67,17 +50,7 @@ Box(
           "Use a specific detector when the interaction is not available as a standard modifier.",
         language: "kotlin",
         filename: "ReorderHandle.kt",
-        code: `Box(
-    Modifier.pointerInput(onDrag, onDrop) {
-        detectDragGesturesAfterLongPress(
-            onDrag = { change, dragAmount ->
-                change.consume()
-                onDrag(dragAmount)
-            },
-            onDragEnd = onDrop,
-        )
-    },
-)`,
+        snippet: "gesture-abstractions/kotlin/production.kt",
       },
     },
   },

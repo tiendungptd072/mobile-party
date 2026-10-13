@@ -14,25 +14,12 @@ export const snapshotStateConcept = {
       summary: "Return a new array so React receives an updated state value.",
       language: "tsx",
       filename: "Tags.tsx",
-      code: `function Tags() {
-  const [tags, setTags] = useState<string[]>([]);
-  return <Button title={String(tags.length)} onPress={() =>
-    setTags((current) => [...current, "new"])
-  } />;
-}`,
     },
     kotlin: {
       name: "Mutate an observable list",
       summary: "SnapshotStateList reports its changes to Compose readers.",
       language: "kotlin",
       filename: "Tags.kt",
-      code: `@Composable
-fun Tags() {
-    val tags = remember { mutableStateListOf<String>() }
-    Button(onClick = { tags.add("new") }) {
-        Text(tags.size.toString())
-    }
-}`,
     },
   },
   relationships: [

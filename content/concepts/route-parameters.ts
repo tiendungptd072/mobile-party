@@ -20,11 +20,6 @@ export const routeParametersConcept = {
         "The destination reads a serializable identifier from route.params.",
       language: "tsx",
       filename: "ProfileScreen.tsx",
-      code: `function ProfileScreen({ route }: Props) {
-  const { userId } = route.params;
-  const user = useUser(userId);
-  return <Profile user={user} />;
-}`,
     },
     kotlin: {
       name: "Typed route argument",
@@ -32,12 +27,6 @@ export const routeParametersConcept = {
         "The NavHost decodes a route argument before calling screen content.",
       language: "kotlin",
       filename: "ProfileDestination.kt",
-      code: `@Serializable
-data class Profile(val userId: String)
-
-composable<Profile> { entry ->
-    ProfileScreen(userId = entry.toRoute<Profile>().userId)
-}`,
     },
   },
   relationships: [

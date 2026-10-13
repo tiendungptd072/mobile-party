@@ -15,12 +15,6 @@ export const flowCompositionConcept = {
         "React reads current posts and favorites, then derives the visible list during render.",
       language: "tsx",
       filename: "SavedFeed.tsx",
-      code: `function SavedFeed() {
-  const posts = useSyncExternalStore(postStore.subscribe, postStore.getSnapshot);
-  const favoriteIds = useSyncExternalStore(favoriteStore.subscribe, favoriteStore.getSnapshot);
-  const visible = posts.filter((post) => favoriteIds.has(post.id));
-  return <FeedList posts={visible} />;
-}`,
     },
     kotlin: {
       name: "Combine two repository Flows",
@@ -28,9 +22,6 @@ export const flowCompositionConcept = {
         "A new list is produced when either upstream source emits after both have initial values.",
       language: "kotlin",
       filename: "SavedFeedRepository.kt",
-      code: `val savedPosts: Flow<List<Post>> = combine(
-    postDao.observePosts(), favoriteDao.observeIds(),
-) { posts, ids -> posts.filter { it.id in ids } }`,
     },
   },
   relationships: [

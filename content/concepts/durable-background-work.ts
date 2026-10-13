@@ -15,9 +15,6 @@ export const durableBackgroundWorkConcept = {
         "A native Android scheduler can start registered JavaScript work after the UI is gone.",
       language: "tsx",
       filename: "sync-task.ts",
-      code: `AppRegistry.registerHeadlessTask("SyncPending", () => async () => {
-  await syncRepository.syncPending();
-});`,
     },
     kotlin: {
       name: "CoroutineWorker",
@@ -25,14 +22,6 @@ export const durableBackgroundWorkConcept = {
         "WorkManager owns the request and invokes a suspending worker when constraints permit.",
       language: "kotlin",
       filename: "SyncWorker.kt",
-      code: `class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
-    override suspend fun doWork(): Result = try {
-        syncRepository.syncPending()
-        Result.success()
-    } catch (error: IOException) {
-        Result.retry()
-    }
-}`,
     },
   },
   relationships: [

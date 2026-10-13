@@ -15,11 +15,6 @@ export const themeConcept = {
         "A provider exposes semantic tokens selected from a persisted appearance preference.",
       language: "typescript",
       filename: "app-theme.tsx",
-      code: `const theme = scheme === "dark" ? darkTheme : lightTheme;
-
-<ThemeContext.Provider value={theme}>
-  <AppNavigator />
-</ThemeContext.Provider>`,
     },
     kotlin: {
       name: "MaterialTheme",
@@ -27,13 +22,6 @@ export const themeConcept = {
         "A root composable applies a ColorScheme and typography to its subtree.",
       language: "kotlin",
       filename: "AppTheme.kt",
-      code: `@Composable
-fun AppTheme(darkTheme: Boolean, content: @Composable () -> Unit) {
-  MaterialTheme(
-    colorScheme = if (darkTheme) darkColorScheme() else lightColorScheme(),
-    content = content,
-  )
-}`,
     },
   },
   relationships: [

@@ -7,10 +7,7 @@ export const offlineStageExamples = {
           "The local cache is updated atomically after one page arrives.",
         language: "typescript",
         filename: "feed-cache.ts",
-        code: `cache.transaction(() => {
-  cache.upsert(page.items);
-  cache.nextCursor = page.nextCursor;
-});`,
+        snippet: "offline-pagination/react-native/learn-basic.tsx",
       },
       kotlin: {
         name: "Read pages from Room",
@@ -18,11 +15,7 @@ export const offlineStageExamples = {
           "The Pager's PagingSource is the only source that supplies rows to UI.",
         language: "kotlin",
         filename: "PostDao.kt",
-        code: `@Dao
-interface PostDao {
-    @Query("SELECT * FROM posts ORDER BY publishedAt DESC")
-    fun pagingSource(): PagingSource<Int, PostEntity>
-}`,
+        snippet: "offline-pagination/kotlin/learn-basic.kt",
       },
     },
     applied: {
@@ -32,8 +25,7 @@ interface PostDao {
           "Visible content remains while only the failed cursor is retried.",
         language: "typescript",
         filename: "feed-state.ts",
-        code: `type FeedState = { items: Post[]; appendError?: Error; nextCursor: string | null };
-// Retry reads state.nextCursor; it does not replace state.items.`,
+        snippet: "offline-pagination/react-native/applied.tsx",
       },
       kotlin: {
         name: "Write RemoteMediator output to Room",
@@ -41,11 +33,7 @@ interface PostDao {
           "Network data is persisted before Room invalidates the PagingSource.",
         language: "kotlin",
         filename: "FeedRemoteMediator.kt",
-        code: `override suspend fun load(type: LoadType, state: PagingState<Int, PostEntity>) = try {
-    val page = api.getFeed(cursorFor(type, state))
-    database.withTransaction { dao.upsertAll(page.items.map(NetworkPost::toEntity)) }
-    MediatorResult.Success(endOfPaginationReached = page.nextCursor == null)
-} catch (error: IOException) { MediatorResult.Error(error) }`,
+        snippet: "offline-pagination/kotlin/applied.kt",
       },
     },
     production: {
@@ -55,18 +43,14 @@ interface PostDao {
           "Restarting the app keeps cursor ownership in the local data boundary.",
         language: "typescript",
         filename: "feed-cache.ts",
-        code: `await storage.setItem("feed-next-cursor", JSON.stringify(cache.nextCursor));`,
+        snippet: "offline-pagination/react-native/production.tsx",
       },
       kotlin: {
         name: "Persist remote keys transactionally",
         summary: "Keys and rows change together during refresh or append.",
         language: "kotlin",
         filename: "FeedRemoteMediator.kt",
-        code: `database.withTransaction {
-    if (type == LoadType.REFRESH) remoteKeyDao.clear()
-    remoteKeyDao.upsert(RemoteKey(query, page.nextCursor))
-    dao.upsertAll(page.items.map(NetworkPost::toEntity))
-}`,
+        snippet: "offline-pagination/kotlin/production.kt",
       },
     },
   },
@@ -78,25 +62,14 @@ interface PostDao {
           "Refresh changes the repository cache rather than screen state directly.",
         language: "typescript",
         filename: "feed-repository.ts",
-        code: `class FeedRepository {
-  private items: Post[] = [];
-  getSnapshot = () => this.items;
-  subscribe = (listener: () => void) => cache.onChange(listener);
-  async refresh() { this.items = await api.getFeed(); cache.save(this.items); }
-}`,
+        snippet: "offline-first-data/react-native/learn-basic.tsx",
       },
       kotlin: {
         name: "Define a Room entity and DAO",
         summary: "A DAO exposes local rows as a Flow.",
         language: "kotlin",
         filename: "PostDao.kt",
-        code: `@Entity data class PostEntity(@PrimaryKey val id: String, val title: String)
-
-@Dao
-interface PostDao {
-    @Query("SELECT * FROM PostEntity ORDER BY id") fun observeAll(): Flow<List<PostEntity>>
-    @Upsert suspend fun upsertAll(posts: List<PostEntity>)
-}`,
+        snippet: "offline-first-data/kotlin/learn-basic.kt",
       },
     },
     applied: {
@@ -106,23 +79,14 @@ interface PostDao {
           "Network data is mapped before becoming observable application data.",
         language: "typescript",
         filename: "feed-repository.ts",
-        code: `async refresh() {
-  const response = await api.getFeed();
-  this.items = response.items.map(toPost);
-  cache.save(this.items);
-}`,
+        snippet: "offline-first-data/react-native/applied.tsx",
       },
       kotlin: {
         name: "Refresh Room, observe Room",
         summary: "The repository never exposes the network DTO to the screen.",
         language: "kotlin",
         filename: "OfflineFirstFeedRepository.kt",
-        code: `class OfflineFirstFeedRepository(
-    private val api: FeedApi, private val dao: PostDao,
-) : FeedRepository {
-    override fun observeFeed(): Flow<List<Post>> = dao.observeAll().map { it.map(PostEntity::toDomain) }
-    override suspend fun refresh() { dao.upsertAll(api.getFeed().map(NetworkPost::toEntity)) }
-}`,
+        snippet: "offline-first-data/kotlin/applied.kt",
       },
     },
     production: {
@@ -132,9 +96,7 @@ interface PostDao {
           "A queued mutation has an idempotency key and a visible pending state.",
         language: "typescript",
         filename: "pending-actions.ts",
-        code: `await pendingActions.enqueue({
-  id: crypto.randomUUID(), type: "bookmark", postId, desiredValue: true,
-});`,
+        snippet: "offline-first-data/react-native/production.tsx",
       },
       kotlin: {
         name: "Separate durable local work",
@@ -142,10 +104,7 @@ interface PostDao {
           "A transaction updates local state before observers see a completed refresh.",
         language: "kotlin",
         filename: "OfflineFirstFeedRepository.kt",
-        code: `override suspend fun refresh() = database.withTransaction {
-    val entities = api.getFeed().map(NetworkPost::toEntity)
-    dao.upsertAll(entities)
-}`,
+        snippet: "offline-first-data/kotlin/production.kt",
       },
     },
   },

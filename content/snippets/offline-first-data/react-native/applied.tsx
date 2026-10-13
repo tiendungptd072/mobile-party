@@ -1,0 +1,7 @@
+// #region show
+async refresh() {
+  const response = await api.getFeed();
+  this.items = response.items.map(toPost);
+  cache.save(this.items);
+}
+// #endregion

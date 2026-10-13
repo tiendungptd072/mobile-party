@@ -14,9 +14,6 @@ export const collectionTransformsConcept = {
       summary: "Array methods filter and project immutable UI data.",
       language: "typescript",
       filename: "visible-users.ts",
-      code: `const names = users
-  .filter((user) => user.isActive)
-  .map((user) => user.displayName);`,
     },
     kotlin: {
       name: "Collection pipeline",
@@ -24,9 +21,6 @@ export const collectionTransformsConcept = {
         "Kotlin collection operators express the same filter and projection.",
       language: "kotlin",
       filename: "VisibleUsers.kt",
-      code: `val names = users
-    .filter(User::isActive)
-    .map(User::displayName)`,
     },
   },
   relationships: [

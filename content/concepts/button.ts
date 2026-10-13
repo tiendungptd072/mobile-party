@@ -14,11 +14,6 @@ export const buttonConcept = {
       summary: "A pressable control emits an event and exposes disabled state.",
       language: "typescript",
       filename: "save-button.tsx",
-      code: `function SaveButton({ saving, onSave }: Props) {
-  return <Pressable disabled={saving} onPress={onSave} accessibilityRole="button">
-    <Text>{saving ? "Saving…" : "Save"}</Text>
-  </Pressable>;
-}`,
     },
     kotlin: {
       name: "Button",
@@ -26,12 +21,6 @@ export const buttonConcept = {
         "A composable button receives an onClick lambda and explicit enabled state.",
       language: "kotlin",
       filename: "SaveButton.kt",
-      code: `@Composable
-fun SaveButton(saving: Boolean, onSave: () -> Unit) {
-  Button(onClick = onSave, enabled = !saving) {
-    Text(if (saving) "Saving…" else "Save")
-  }
-}`,
     },
   },
   relationships: [

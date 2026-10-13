@@ -14,23 +14,12 @@ export const deepLinkConcept = {
       summary: "React Navigation maps URL patterns to screen names and params.",
       language: "tsx",
       filename: "linking.ts",
-      code: `export const linking = {
-  prefixes: ["mobileparty://", "https://mobile.party"],
-  config: { screens: { Profile: "profiles/:userId" } },
-};`,
     },
     kotlin: {
       name: "Navigation deep link",
       summary: "A composable destination declares the URI pattern it accepts.",
       language: "kotlin",
       filename: "ProfileDestination.kt",
-      code: `composable<Profile>(
-    deepLinks = listOf(navDeepLink {
-        uriPattern = "mobileparty://profiles/{userId}"
-    }),
-) { entry ->
-    ProfileScreen(entry.toRoute<Profile>().userId)
-}`,
     },
   },
   relationships: [
