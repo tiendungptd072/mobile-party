@@ -236,13 +236,11 @@ function validateImplementations(
     );
   }
 
-  for (const requiredTechnology of ["react-native", "kotlin"] as const) {
-    if (!implementations[requiredTechnology]) {
-      throw new ContentValidationError(
-        path,
-        `missing required ${requiredTechnology} implementation`,
-      );
-    }
+  if (Object.keys(implementations).length < 2) {
+    throw new ContentValidationError(
+      path,
+      "expected at least two implementations",
+    );
   }
 
   return implementations;
@@ -277,11 +275,10 @@ function validateRelationships(
   path: string,
   implementations: Concept["implementations"],
 ): readonly ConceptRelationship[] {
-  if (!Array.isArray(value) || value.length === 0) {
-    throw new ContentValidationError(
-      path,
-      "expected at least one relationship",
-    );
+  if (value === undefined) return [];
+
+  if (!Array.isArray(value)) {
+    throw new ContentValidationError(path, "expected an array");
   }
 
   return value.map((entry, index) => {

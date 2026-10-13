@@ -232,7 +232,7 @@ describe("concept content", () => {
     );
   });
 
-  test("requires React Native and Kotlin implementations", () => {
+  test("requires at least two implementations", () => {
     const invalidConcept = {
       ...rawConcepts[0],
       implementations: {
@@ -241,8 +241,94 @@ describe("concept content", () => {
     };
 
     expect(() => validateConcept(invalidConcept)).toThrow(
-      /missing required react-native implementation/,
+      /expected at least two implementations/,
     );
+  });
+
+  describe("concepts for arbitrary technology pairs", () => {
+    const pairConcept = {
+      ...rawConcepts[0],
+      implementations: {
+        flutter: {
+          name: "Flutter fixture",
+          summary: "Implementation used only for schema validation.",
+          language: "dart",
+        },
+        swiftui: {
+          name: "SwiftUI fixture",
+          summary: "Implementation used only for schema validation.",
+          language: "swift",
+        },
+      },
+      relationships: [
+        {
+          from: "flutter",
+          to: "swiftui",
+          type: "similar",
+          explanation: "Relationship used only for schema validation.",
+        },
+      ],
+    } as const;
+
+    test("accepts Flutter and SwiftUI without React Native or Kotlin", () => {
+      const concept = validateConcept(pairConcept);
+
+      expect(concept.implementations).toEqual(pairConcept.implementations);
+      expect(concept.relationships).toEqual(pairConcept.relationships);
+    });
+
+    test("rejects an empty implementation map", () => {
+      expect(() =>
+        validateConcept({ ...pairConcept, implementations: {} }),
+      ).toThrow(/expected at least two implementations/);
+    });
+
+    test("normalizes omitted relationship overrides to an empty array", () => {
+      const source = { ...pairConcept, relationships: undefined };
+      delete source.relationships;
+      expect(validateConcept(source).relationships).toEqual([]);
+    });
+
+    test("allows an empty relationship override array", () => {
+      expect(
+        validateConcept({ ...pairConcept, relationships: [] }).relationships,
+      ).toEqual([]);
+    });
+
+    test("does not require overrides for every pair", () => {
+      const concept = validateConcept({
+        ...pairConcept,
+        implementations: {
+          ...pairConcept.implementations,
+          kotlin: rawConcepts[0].implementations.kotlin,
+        },
+      });
+
+      expect(Object.keys(concept.implementations)).toHaveLength(3);
+      expect(concept.relationships).toEqual(pairConcept.relationships);
+    });
+
+    test.each(["from", "to"] as const)(
+      "rejects a relationship whose %s implementation is absent",
+      (endpoint) => {
+        expect(() =>
+          validateConcept({
+            ...pairConcept,
+            relationships: [
+              { ...pairConcept.relationships[0], [endpoint]: "kotlin" },
+            ],
+          }),
+        ).toThrow(
+          /relationship references an implementation that is not present/,
+        );
+      },
+    );
+
+    test("rejects malformed relationship overrides", () => {
+      expect(() =>
+        validateConcept({ ...pairConcept, relationships: null }),
+      ).toThrow(/relationships: expected an array/);
+    });
   });
 
   test("rejects unverified or insecure external references", () => {

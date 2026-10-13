@@ -46,3 +46,22 @@ Unverified: Kotlin snippets were reviewed against official APIs but not compiled
 Gaps found: None beyond the snippet verification work already planned in P0.4–P0.5.
 
 Open questions: None.
+
+## P0.3 — Make the schema truly pair-agnostic — 2026-10-13 — Codex
+
+Changed: Replaced the required React Native/Kotlin pair in `src/lib/content/schema.ts` with a minimum of two supported implementations. The shared implementation validator also accepts other technology pairs in roadmap stage examples. Relationship overrides can be omitted or empty and are normalized to an empty array; declared relationships still require distinct, existing implementations. Added concise contract comments to `src/types/concept.ts` and updated `docs/content-model.md`. No content files, routes, UI copy, dependencies, or existing relationship data changed.
+
+Verification:
+
+- `bun test src/lib/content/content.test.ts`: 48 passed, 0 failed.
+- `bun lint` and `bun typecheck`: passed.
+- `bun test`: 85 passed, 0 failed, including existing English/Vietnamese content and roadmap coverage checks.
+- Updated the old test requiring React Native/Kotlin to assert the new minimum of two implementations. Added eight cases covering a Flutter/SwiftUI-only concept, zero implementations, omitted and empty relationship overrides, a three-technology concept without overrides for every pair, absent source/target implementations, and malformed relationship overrides. Together with the updated single-implementation rejection test, these cover the task's acceptance criteria.
+- `bun run build`: passed, generating 690 static pages in both locales. Used approved execution outside the sandbox because earlier tasks established that the sandbox blocks build workers with `spawn EPERM`.
+- Prettier checks and `git diff --check` for changed files: passed. `git diff --name-only -- content` was empty, confirming existing content files are unchanged.
+
+Unverified: None. This task changes local schema validation and adds no external framework API claims.
+
+Gaps found: None.
+
+Open questions: None.

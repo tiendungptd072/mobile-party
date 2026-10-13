@@ -62,12 +62,14 @@ export type Concept = {
   description: string;
   differences: readonly string[];
   id: string;
+  /** At least two supported technologies, enforced during content validation. */
   implementations: Partial<Record<Technology, ConceptImplementation>>;
   keywords: readonly string[];
   mentalModel: string;
   order: number;
   productionNotes: readonly string[];
   references: readonly ContentReference[];
+  /** Optional pair overrides, normalized to an empty array when omitted. */
   relationships: readonly ConceptRelationship[];
   slug: string;
   title: string;

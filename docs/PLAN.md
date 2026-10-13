@@ -82,7 +82,7 @@ Note: before P0.1, `bun build` needs network access to Google Fonts and fails of
   5. Roadmap: place Local State before Text Input (the Text Input exercise relies on state hoisting).
 - **Accept:** corrected code verified against official docs; relationship explanations and `architectureNotes` updated; `bun test` passes; any changed test is justified in the log.
 
-### P0.3 ☐ Make the schema truly pair-agnostic — Level 3
+### P0.3 ☑ Make the schema truly pair-agnostic — Level 3
 - **Files:** `src/lib/content/schema.ts`, `src/types/*.ts`, `src/lib/content/content.test.ts`, `docs/content-model.md`.
 - **Do:** remove the hard requirement that every concept has `react-native` and `kotlin` implementations. Require **at least two** implementations. Relationships must still reference existing implementations. Relationships stay optional overrides; do not add a rule that every pair must be described.
 - **Accept:** a test concept with only `flutter` + `swiftui` validates; a concept with one implementation is rejected; existing content unchanged; docs updated.

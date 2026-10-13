@@ -82,9 +82,16 @@ An implementation may be absent while content is being expanded. Rendering
 must distinguish missing content from a concept that intentionally has no
 direct equivalent.
 
-During the MVP, every concept must include React Native and Kotlin
-implementations. Flutter and SwiftUI remain optional until their content is
-verified.
+Every concept must include implementations for at least two supported
+technologies. No particular pair is required: a concept with only Flutter and
+SwiftUI implementations is valid. The validator enforces this minimum at
+runtime; the normalized TypeScript model uses a partial technology map.
+
+Relationships are optional pair overrides in source content. An omitted
+`relationships` field is normalized to `[]`; an explicit empty array is also
+valid. Every declared relationship must reference two distinct technologies
+with implementations in that concept. Concepts with three or more technologies
+do not need to describe every pair.
 
 ## Roadmap
 
@@ -169,6 +176,8 @@ The Phase 2 validator must reject:
 - slugs that are not `kebab-case`
 - a relationship whose source and target are identical
 - implementations with unsupported language identifiers
+- concepts with fewer than two implementations
+- relationships referencing implementations absent from the concept
 - roadmap lessons referencing unknown concept slugs
 - related content references that are not canonical
 - external references that are not HTTPS, contain duplicate URLs, or omit a
