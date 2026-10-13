@@ -422,9 +422,8 @@ fun PhotoTile(photo: Photo) {
   async: {
     basic: pair(
       "Await one operation",
-      `async function loadUser(id: string) {
-  const user = await repository.getUser(id);
-  setUser(user);
+      `async function loadUser(id: string, signal: AbortSignal): Promise<User> {
+  return repository.getUser(id, signal);
 }`,
       `suspend fun loadUser(id: String): User {
     return repository.getUser(id)
@@ -440,12 +439,18 @@ fun PhotoTile(photo: Photo) {
       if (!controller.signal.aborted) setUser(user);
     })
     .catch((error) => {
-      if (error.name !== "AbortError") reportError(error);
+      if (!controller.signal.aborted) reportError(error);
     });
   return () => controller.abort();
 }, [userId]);`,
       `LaunchedEffect(userId) {
-    user = repository.getUser(userId)
+    try {
+        user = repository.getUser(userId)
+    } catch (cancelled: CancellationException) {
+        throw cancelled
+    } catch (error: Exception) {
+        reportError(error)
+    }
 }
 // A changed key cancels the previous coroutine.`,
       ["ProfileScreen.tsx", "ProfileScreen.kt"],
@@ -461,8 +466,8 @@ fun PhotoTile(photo: Photo) {
       (profile) => {
         if (!controller.signal.aborted) setState({ status: "ready", profile });
       },
-      (error) => {
-        if (error.name !== "AbortError") setState({ status: "error" });
+      () => {
+        if (!controller.signal.aborted) setState({ status: "error" });
       },
     );
     return () => controller.abort();
@@ -576,8 +581,8 @@ PullToRefreshBox(isRefreshing = state.isRefreshing, onRefresh = onRefresh) {
   "api-request": {
     basic: pair(
       "Typed GET request",
-      `async function getUser(id: string): Promise<UserDto> {
-  const response = await fetch(API_URL + "/users/" + id);
+      `async function getUser(id: string, signal: AbortSignal): Promise<UserDto> {
+  const response = await fetch(API_URL + "/users/" + encodeURIComponent(id), { signal });
   if (!response.ok) throw new HttpError(response.status);
   return response.json();
 }`,
@@ -590,8 +595,8 @@ PullToRefreshBox(isRefreshing = state.isRefreshing, onRefresh = onRefresh) {
     applied: pair(
       "Repository mapping",
       `class UserRepository {
-  async getUser(id: string): Promise<User> {
-    const dto = await api.getUser(id);
+  async getUser(id: string, signal: AbortSignal): Promise<User> {
+    const dto = await api.getUser(id, signal);
     return { id: dto.id, displayName: dto.display_name };
   }
 }`,
@@ -604,9 +609,12 @@ PullToRefreshBox(isRefreshing = state.isRefreshing, onRefresh = onRefresh) {
     ),
     production: pair(
       "Result boundary",
-      `async function loadUser(id: string): Promise<Result<User, UserError>> {
-  try { return { ok: true, value: await repository.getUser(id) }; }
-  catch (error) { return { ok: false, error: mapUserError(error) }; }
+      `async function loadUser(id: string, signal: AbortSignal): Promise<Result<User, UserError>> {
+  try { return { ok: true, value: await repository.getUser(id, signal) }; }
+  catch (error) {
+    if (signal.aborted) throw error;
+    return { ok: false, error: mapUserError(error) };
+  }
 }`,
       `suspend fun loadUser(id: String): UserResult = try {
     UserResult.Success(repository.getUser(id))

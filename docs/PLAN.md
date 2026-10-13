@@ -72,7 +72,7 @@ Note: before P0.1, `bun build` needs network access to Google Fonts and fails of
 - **Do:** replace `next/font/google` (Geist, Geist Mono) with `next/font/local`. Obtain the font files from the official Geist release and commit them. Do not add the `geist` package as a runtime dependency.
 - **Accept:** `bun build` succeeds with no network; fonts render as before; license file for the fonts is included.
 
-### P0.2 ☐ Fix incorrect examples and ordering — Level 1–2
+### P0.2 ☑ Fix incorrect examples and ordering — Level 1–2
 - **Files:** `content/concepts/async.ts`, `content/concepts/api-request.ts`, `content/recipes/index.ts`, `content/roadmaps/react-native-to-kotlin.ts`, related tests.
 - **Do:**
   1. `async` (RN): `fetch("/users/...")` uses a relative URL, which does not work in React Native. Use a configured base URL.

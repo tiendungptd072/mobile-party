@@ -8,18 +8,23 @@ export const rawRecipes = [
     flow: ["Start request", "Show loading", "Handle response", "Render result"],
     implementations: {
       "react-native": {
-        summary: "Fetch and update a discriminated UI state.",
+        summary: "Forward the owner's AbortSignal and ignore canceled results.",
         language: "tsx",
         filename: "useProfile.ts",
-        code: `async function loadProfile() {
+        code: `const API_BASE_URL = "https://api.example.com";
+
+async function loadProfile(signal: AbortSignal) {
+  if (signal.aborted) return;
   setState({ status: "loading" });
   try {
-    const response = await fetch("/profile");
+    const response = await fetch(API_BASE_URL + "/profile", { signal });
     if (!response.ok) throw new Error("HTTP " + response.status);
     const profile = await response.json();
-    setState({ status: "success", profile });
+    if (!signal.aborted) setState({ status: "success", profile });
   } catch {
-    setState({ status: "error", message: "Could not load profile" });
+    if (!signal.aborted) {
+      setState({ status: "error", message: "Could not load profile" });
+    }
   }
 }`,
       },
@@ -42,6 +47,7 @@ export const rawRecipes = [
     architectureNotes: [
       "Keep transport details behind a repository boundary.",
       "Model loading, success, and failure explicitly; preserve coroutine cancellation and show safe user-facing error text.",
+      "The owning React effect passes its controller's signal and aborts on cleanup. viewModelScope cancels when its ViewModel is cleared, not on every recomposition or configuration change.",
     ],
   },
   {
@@ -54,34 +60,102 @@ export const rawRecipes = [
     flow: ["Send request", "Receive 401", "Refresh token", "Retry once"],
     implementations: {
       "react-native": {
-        summary: "Centralize retry policy around a fetch wrapper.",
+        summary:
+          "Share one refresh across concurrent GET requests and reuse a token already renewed by another request.",
         language: "tsx",
         filename: "authenticatedFetch.ts",
-        code: `async function authenticatedFetch(url: string) {
-  let response = await fetch(url, { headers: authHeaders() });
-  if (response.status === 401) {
-    await refreshAccessToken();
-    response = await fetch(url, { headers: authHeaders() });
-  }
-  return response;
+        code: `const API_BASE_URL = "https://api.example.com";
+
+function createAuthenticatedGet(
+  initialToken: string,
+  refreshAccessToken: () => Promise<string>,
+  onSignOut: () => void,
+) {
+  let accessToken: string | null = initialToken;
+  let refreshPromise: Promise<string | null> | null = null;
+
+  return async function authenticatedGet(path: string): Promise<Response> {
+    const sentToken = accessToken;
+    if (sentToken === null) throw new Error("Signed out");
+    const send = (token: string) => fetch(API_BASE_URL + path, {
+      headers: { Authorization: "Bearer " + token },
+    });
+    const response = await send(sentToken);
+    if (response.status !== 401) return response;
+
+    if (accessToken === sentToken) {
+      refreshPromise ??= Promise.resolve()
+        .then(refreshAccessToken)
+        .then((token) => {
+          if (!token.trim() || token === sentToken) throw new Error("Invalid refreshed token");
+          accessToken = token;
+          return token;
+        })
+        .catch(() => {
+          accessToken = null;
+          onSignOut();
+          return null;
+        })
+        .finally(() => { refreshPromise = null; });
+      await refreshPromise;
+    }
+
+    const nextToken = accessToken;
+    return nextToken === null ? response : send(nextToken);
+  };
 }`,
       },
       kotlin: {
-        summary: "Use an OkHttp authenticator to refresh and retry once.",
+        summary:
+          "Serialize refresh in one session authenticator, recheck the token under the lock, and retry GET once.",
         language: "kotlin",
         filename: "TokenAuthenticator.kt",
-        code: `override fun authenticate(route: Route?, response: Response): Request? {
-    if (responseCount(response) >= 2) return null
-    val token = tokenRepository.refresh() ?: return null
-    return response.request.newBuilder()
-        .header("Authorization", "Bearer $token")
-        .build()
+        code: `class TokenAuthenticator(
+    initialToken: String,
+    private val refreshAccessToken: () -> String,
+    private val onSignOut: () -> Unit,
+) : Authenticator {
+    // The request interceptor reads this token before sending a GET.
+    @Volatile var accessToken: String? = initialToken
+        private set
+
+    override fun authenticate(route: Route?, response: Response): Request? {
+        if (response.request.method != "GET") return null
+        val challenges = generateSequence(response) { it.priorResponse }
+            .count { it.code == 401 }
+        if (challenges >= 2) return null
+
+        val token = synchronized(this) {
+            val current = accessToken ?: return null
+            if (response.request.header("Authorization") != "Bearer $current") {
+                current
+            } else {
+                try {
+                    val renewed = refreshAccessToken()
+                    check(renewed.isNotBlank() && renewed != current)
+                    accessToken = renewed
+                    renewed
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (_: Exception) {
+                    accessToken = null
+                    onSignOut()
+                    return null
+                }
+            }
+        }
+        return response.request.newBuilder()
+            .header("Authorization", "Bearer $token")
+            .build()
+    }
 }`,
       },
     },
     architectureNotes: [
-      "Refresh only once to prevent retry loops.",
-      "Treat refresh failure as a sign-out transition.",
+      "Share one instance per signed-in session. Concurrent 401s share a Promise in React Native or a lock in Kotlin; a late 401 reuses the token already refreshed by another request.",
+      "Retry GET at most once. If refresh fails or returns an empty or unchanged token, clear this session's token, notify sign-out once, and return the original 401. Create a new instance for a new session.",
+      "The refresh callback uses a separate client without this retry policy, throws on HTTP or transport failure, and returns a fresh access token. OkHttp's authenticator is synchronous: use a blocking refresh call off the main thread with bounded timeouts.",
+      "These examples retry GET only. Replaying writes requires an explicit idempotency policy and a replayable request body; the sign-out callback clears stored credentials and publishes thread-safe session state for the UI.",
     ],
   },
   {

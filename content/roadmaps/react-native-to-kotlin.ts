@@ -1005,7 +1005,7 @@ export const reactNativeToKotlinRoadmap = {
         {
           conceptSlug: "text-input",
           title: "Text Input",
-          order: 5,
+          order: 15,
           exercise:
             "Convert a controlled React Native name field into a state-hoisted Compose TextField with validation owned by its parent.",
           checklist: [

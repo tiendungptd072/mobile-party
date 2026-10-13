@@ -20,3 +20,29 @@ Unverified: Browser visual inspection could not run because Browser initializati
 Gaps found: None in the implementation. The plan's verification command should use `bun run build` to avoid Bun's built-in bundler command.
 
 Open questions: None.
+
+## P0.2 — Fix incorrect examples and ordering — 2026-10-13 — Codex
+
+Changed: Updated `content/concepts/async.ts` and `api-request.ts` to use a configured absolute HTTPS endpoint, encoded user IDs, matching User results, and caller-owned cancellation. Updated relationship explanations and production guidance. Corrected the related Learn examples to return data consistently, propagate AbortSignal, preserve cancellation at error boundaries, and suppress obsolete UI updates. The API recipe now uses an absolute URL and ignores canceled results; its Kotlin CancellationException rethrow was already correct and was preserved. Replaced the refresh-token snippets with one instance per session: concurrent requests share a Promise or synchronized refresh, late 401s reuse the renewed token, refresh failure clears session credentials and notifies sign-out once, and GET retries are bounded to one. Updated the English and Vietnamese guidance together. Changed Text Input's lesson order from 5 to 15 so Local State (10) comes first.
+
+Verification:
+
+- `bun lint` and `bun typecheck`: passed.
+- `bun test`: 77 passed, 0 failed. The 17 new cases in `src/lib/content/request-examples.test.ts` execute the published TypeScript snippets with controlled dependencies. They cover endpoint construction, HTTP/transport failure propagation, cancellation forwarding, ignored late results, concurrent and late 401s, failed or invalid refresh credentials, sign-out, and bounded retries. No dependencies or network calls are needed for these tests.
+- The existing roadmap-order expectation in `src/lib/content/content.test.ts` changed only to reflect Local State before Text Input. A new test checks that dependency ordering in both locales. Existing localization tests confirm matching structure and unchanged shared code between locales.
+- `bun run build`: passed, generating 690 static pages. Used approved execution outside the sandbox because the previous task established that the sandbox blocks build workers with `spawn EPERM`. Verified updated cancellation guidance in generated English and Vietnamese dictionary pages and both refreshed implementations in the generated recipe pages.
+- Prettier checks for changed source files and `git diff --check`: passed.
+
+Official API review:
+
+- [React Native networking](https://reactnative.dev/docs/network) and [AbortController](https://reactnative.dev/docs/global-AbortController): absolute request URLs and explicit cancellation.
+- [Axios configuration](https://axios.rest/pages/advanced/config-defaults), [cancellation](https://axios.rest/pages/advanced/cancellation), and [error handling](https://axios.rest/pages/advanced/error-handling): configured instances, AbortSignal, and default non-2xx rejection.
+- [Retrofit 3.0.0 coroutine adapter source](https://github.com/square/retrofit/blob/3.0.0/retrofit/src/main/java/retrofit2/KotlinExtensions.kt): cancellation cancels the underlying Call; body-returning suspend calls propagate HTTP failures.
+- [OkHttp 5.1.0 Authenticator contract](https://github.com/square/okhttp/blob/parent-5.1.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/Authenticator.kt): synchronous authentication, follow-up requests, null on failure, and bounded retry policy.
+- [Android lifecycle coroutine scopes](https://developer.android.com/topic/libraries/architecture/coroutines) and [Kotlin exception handling](https://kotlinlang.org/docs/exception-handling.html): scope ownership and preserving CancellationException.
+
+Unverified: Kotlin snippets were reviewed against official APIs but not compiled or executed. Java is available; `kotlinc` and the planned Android snippet verification project are not. The TypeScript snippet tests transpile and execute controlled examples; they do not replace the complete snippet type-checking/Android compilation planned in P0.5. `docs/VERSIONS.md` does not exist yet; the source tags above are review baselines, not new project version pins.
+
+Gaps found: None beyond the snippet verification work already planned in P0.4–P0.5.
+
+Open questions: None.

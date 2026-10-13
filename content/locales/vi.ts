@@ -441,26 +441,28 @@ export const viConceptTranslations = {
     implementations: {
       "react-native": {
         name: "Promise + async/await",
-        summary: "Chờ Promise và xử lý lỗi bằng control flow thông thường.",
+        summary:
+          "Tải một user, từ chối HTTP response lỗi và truyền AbortSignal từ nơi sở hữu tác vụ.",
       },
       kotlin: {
         name: "Coroutine + suspend",
-        summary: "Chạy tác vụ suspend bên trong coroutine scope sở hữu nó.",
+        summary:
+          "Tải cùng user qua Retrofit, truyền lỗi HTTP và cancellation của coroutine gọi nó ra ngoài.",
       },
     },
     relationship:
-      "Cả hai đều biểu diễn công việc bất đồng bộ, nhưng coroutine bổ sung scope có cấu trúc, dispatcher và cơ chế hủy hợp tác.",
+      "Cả hai tải cùng user và truyền lỗi HTTP hoặc transport ra ngoài. Fetch cần AbortSignal tường minh; suspend call của Retrofit tuân theo cancellation của coroutine gọi nó. Promise tự nó không có structured scope.",
     mentalModel:
       "Suspend function giống async function tại call site, nhưng vòng đời của nó thuộc coroutine scope thay vì chỉ thuộc Promise.",
     differences: [
-      "Coroutine scope xác định quyền sở hữu và việc hủy tác vụ.",
+      "Truyền AbortSignal từ effect sở hữu tác vụ vào fetch; gọi suspend function từ LaunchedEffect hoặc viewModelScope để xác định nơi sở hữu vòng đời tác vụ.",
       "Kotlin dispatcher làm rõ execution context khi cần chuyển context.",
     ],
     commonMistakes: [
       "Khởi chạy coroutine không có scope như một cách thay thế trực tiếp cho việc tạo Promise.",
     ],
     productionNotes: [
-      "Khởi chạy công việc từ scope nhận biết lifecycle và giữ suspend function có thể hủy.",
+      "Dùng HTTPS base URL tuyệt đối được cấu hình trong React Native. Cả hai ví dụ giả định cùng User JSON contract hợp lệ; để nơi gọi xử lý lỗi, bỏ qua cập nhật UI sau khi hủy và ném lại CancellationException trong Kotlin.",
     ],
   },
   "api-request": {
@@ -471,26 +473,27 @@ export const viConceptTranslations = {
       "react-native": {
         name: "Axios",
         summary:
-          "HTTP client JavaScript trả về Promise chứa dữ liệu đã decode.",
+          "Axios client đã cấu hình trả về một user và truyền cancellation vào request.",
       },
       kotlin: {
         name: "Retrofit + OkHttp",
-        summary: "Service interface có type giao việc truyền tải cho OkHttp.",
+        summary:
+          "Suspend call của Retrofit trả về cùng user và kế thừa cancellation của coroutine gọi nó.",
       },
     },
     relationship:
-      "Cả hai đều bao bọc HTTP call, nhưng Retrofit mô hình hóa endpoint bằng interface còn Axios cung cấp request client tổng quát.",
+      "Cả hai GET cùng user và truyền lỗi HTTP ngoài 2xx cùng lỗi transport ra ngoài. Axios nhận AbortSignal; suspend call của Retrofit kế thừa coroutine cancellation. Retrofit khai báo endpoint bằng annotation thay vì request client tổng quát.",
     mentalModel:
       "Chuyển Axios instance đã cấu hình thành OkHttp client kết hợp Retrofit service interface, rồi giữ orchestration của request trong repository.",
     differences: [
       "Retrofit sinh implementation từ interface có annotation.",
-      "Serialization, interceptor và error body cần cấu hình Kotlin rõ ràng.",
+      "Type parameter User của Axios không kiểm tra JSON tại runtime; cấu hình JSON converter cho Retrofit và kiểm tra transport data tại ranh giới repository.",
     ],
     commonMistakes: [
       "Xem HTTP response không thành công và transport exception là cùng một loại lỗi.",
     ],
     productionNotes: [
-      "Giữ service definition gọn và ánh xạ transport model tại ranh giới repository.",
+      "Giữ service definition gọn và dùng cùng HTTPS base URL đã cấu hình cùng User JSON contract. Truyền AbortSignal từ nơi sở hữu tác vụ trong React Native; gọi Retrofit từ coroutine có nơi sở hữu theo lifecycle và giữ cancellation khi ánh xạ lỗi.",
     ],
   },
   navigation: {
@@ -1149,12 +1152,13 @@ export const viRecipeTranslations = {
     ],
     implementationSummaries: {
       "react-native":
-        "Fetch dữ liệu và cập nhật UI state dạng discriminated union.",
+        "Truyền AbortSignal từ nơi sở hữu tác vụ và bỏ qua kết quả đã bị hủy.",
       kotlin: "Khởi chạy tác vụ từ ViewModel và cung cấp UI state bất biến.",
     },
     architectureNotes: [
       "Ẩn chi tiết transport sau ranh giới repository.",
       "Mô hình hóa rõ loading, success và failure; giữ nguyên coroutine cancellation và hiển thị thông báo lỗi an toàn cho người dùng.",
+      "React effect sở hữu tác vụ truyền signal của controller và hủy khi cleanup. viewModelScope bị hủy khi ViewModel được clear, không phải mỗi lần recomposition hoặc thay đổi cấu hình.",
     ],
   },
   "refresh-token": {
@@ -1164,12 +1168,16 @@ export const viRecipeTranslations = {
     category: "xác thực",
     flow: ["Gửi request", "Nhận mã 401", "Làm mới token", "Thử lại một lần"],
     implementationSummaries: {
-      "react-native": "Tập trung retry policy quanh một fetch wrapper.",
-      kotlin: "Dùng OkHttp authenticator để làm mới token và thử lại một lần.",
+      "react-native":
+        "Chia sẻ một lần refresh giữa các GET request đồng thời và dùng lại token đã được request khác làm mới.",
+      kotlin:
+        "Tuần tự hóa refresh trong một authenticator của session, kiểm tra lại token trong lock và thử lại GET một lần.",
     },
     architectureNotes: [
-      "Chỉ làm mới một lần để tránh vòng lặp retry.",
-      "Xem refresh thất bại là một chuyển đổi sang trạng thái đăng xuất.",
+      "Chia sẻ một instance trong mỗi session đã đăng nhập. Các request đồng thời nhận 401 dùng chung Promise trong React Native hoặc lock trong Kotlin; 401 đến muộn dùng lại token đã được request khác làm mới.",
+      "Thử lại GET tối đa một lần. Nếu refresh thất bại hoặc trả về token rỗng hay không đổi, xóa token của session này, báo đăng xuất một lần và trả lại 401 ban đầu. Tạo instance mới cho session mới.",
+      "Refresh callback dùng client riêng không áp dụng retry policy này, ném lỗi khi HTTP hoặc transport thất bại và trả về access token mới. Authenticator của OkHttp chạy đồng bộ: dùng blocking refresh call ngoài main thread với timeout giới hạn.",
+      "Các ví dụ chỉ thử lại GET. Gửi lại thao tác ghi cần idempotency policy tường minh và request body có thể gửi lại; callback đăng xuất xóa credential đã lưu và cung cấp session state an toàn giữa các thread cho UI.",
     ],
   },
   pagination: {
