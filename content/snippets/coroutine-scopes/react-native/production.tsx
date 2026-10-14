@@ -1,3 +1,12 @@
+declare const repository: {
+  search(query: string, signal: AbortSignal): Promise<Post[]>;
+  loadUser(id: string, signal: AbortSignal): Promise<User>;
+  load(signal: AbortSignal): Promise<Profile>;
+};
+declare function setState(
+  state: { kind: "ready"; profile: Profile } | { kind: "error" },
+): void;
+
 // #region show
 const current = useRef<AbortController | null>(null);
 function reload() {

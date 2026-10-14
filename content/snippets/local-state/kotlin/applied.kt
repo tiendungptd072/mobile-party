@@ -1,5 +1,9 @@
 package snippets.local_state.applied
 
+import verification.support.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 // #region show
 @Composable
 fun Counter(count: Int, onIncrement: () -> Unit) {

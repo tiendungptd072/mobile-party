@@ -1,5 +1,9 @@
 package snippets.android_notifications.basic
 
+import verification.support.*
+import androidx.core.app.*
+import party.mobile.verification.R
+fun verificationSnippet() {
 // #region show
 val notification = NotificationCompat.Builder(context, REMINDER_CHANNEL_ID)
     .setSmallIcon(R.drawable.ic_notification)
@@ -8,3 +12,5 @@ val notification = NotificationCompat.Builder(context, REMINDER_CHANNEL_ID)
     .build()
 NotificationManagerCompat.from(context).notify(post.id.hashCode(), notification)
 // #endregion
+
+}

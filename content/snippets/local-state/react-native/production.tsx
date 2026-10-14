@@ -1,3 +1,5 @@
+type Props = { count: number; onIncrement(): void };
+
 // #region show
 function useCounterScreen() {
   const [count, setCount] = useState(0);

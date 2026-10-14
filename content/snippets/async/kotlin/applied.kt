@@ -1,5 +1,10 @@
 package snippets.async.applied
 
+import verification.support.*
+import androidx.compose.runtime.*
+import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.*
+@Composable fun VerificationSnippet() {
 // #region show
 LaunchedEffect(userId) {
     try {
@@ -12,3 +17,5 @@ LaunchedEffect(userId) {
 }
 // A changed key cancels the previous coroutine.
 // #endregion
+
+}

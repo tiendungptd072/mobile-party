@@ -1,3 +1,5 @@
+type Props = { count: number; onIncrement(): void };
+
 // #region show
 function Counter({ count, onIncrement }: Props) {
   return <Button title={`Count: ${count}`} onPress={onIncrement} />;

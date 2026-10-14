@@ -1,3 +1,5 @@
+declare function migrateSettings(value: unknown): { version: 2; theme: Theme };
+
 // #region show
 const themeKey = "theme";
 

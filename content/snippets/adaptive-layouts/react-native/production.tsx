@@ -1,3 +1,5 @@
+type Props = { selectedId: string | null };
+
 // #region show
 function MailRoute() {
   const [selectedId, setSelectedId] = useState<string | null>(null);

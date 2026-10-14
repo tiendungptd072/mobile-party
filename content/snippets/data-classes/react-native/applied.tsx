@@ -1,3 +1,5 @@
+declare const state: { users: (User & { selected: boolean })[] };
+
 // #region show
 const updated = {
   ...state,

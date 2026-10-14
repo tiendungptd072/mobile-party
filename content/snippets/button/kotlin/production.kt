@@ -1,5 +1,10 @@
 package snippets.button.production
 
+import verification.support.*
+import androidx.lifecycle.*
+import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.*
+class VerificationViewModel : ViewModel() {
 // #region show
 private var saveJob: Job? = null
 
@@ -19,3 +24,5 @@ fun save() {
     }
 }
 // #endregion
+
+}

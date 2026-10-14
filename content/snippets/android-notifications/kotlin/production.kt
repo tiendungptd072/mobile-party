@@ -1,5 +1,11 @@
 package snippets.android_notifications.production
 
+import verification.support.*
+import android.app.*
+import android.content.*
+import androidx.core.app.*
+import party.mobile.verification.R
+fun verificationSnippet() {
 // #region show
 val intent = Intent(context, MainActivity::class.java)
     .putExtra("postId", post.id)
@@ -12,3 +18,5 @@ val notification = NotificationCompat.Builder(context, REMINDER_CHANNEL_ID)
     .setContentTitle(context.getString(R.string.saved_post_title))
     .setContentIntent(tap).setAutoCancel(true).build()
 // #endregion
+
+}

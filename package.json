@@ -10,7 +10,10 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "typecheck": "tsc --noEmit",
-    "test": "bun test"
+    "test": "bun test",
+    "verify:rn": "bun run --cwd verify/rn check",
+    "verify:android": "bun run verify/android/check.ts",
+    "verify": "bun run verify:rn && bun run verify:android"
   },
   "dependencies": {
     "@mdx-js/loader": "^3.1.1",

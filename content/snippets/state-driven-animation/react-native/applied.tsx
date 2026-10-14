@@ -1,3 +1,4 @@
+function VerificationComponent() {
 // #region show
 const opacity = useRef(new Animated.Value(0)).current;
 useEffect(() => {
@@ -6,3 +7,4 @@ useEffect(() => {
 
 return showFilters ? <Animated.View style={{ opacity }}><Filters /></Animated.View> : null;
 // #endregion
+}

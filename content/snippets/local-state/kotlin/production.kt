@@ -1,5 +1,11 @@
 package snippets.local_state.production
 
+import verification.support.*
+import androidx.compose.runtime.*
+import androidx.lifecycle.*
+import androidx.lifecycle.compose.*
+import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.flow.*
 // #region show
 class CounterViewModel : ViewModel() {
     private val _count = MutableStateFlow(0)

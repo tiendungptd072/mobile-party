@@ -1,5 +1,10 @@
 package snippets.android_resources.production
 
+import verification.support.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.res.*
+import party.mobile.verification.R
 // #region show
 // res/values/strings.xml:
 // <plurals name="message_count">

@@ -1,5 +1,11 @@
 package snippets.coroutine_scopes.production
 
+import verification.support.*
+import androidx.lifecycle.*
+import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.*
+private val _state = MutableStateFlow<ProfileState>(ProfileState.Loading)
+class VerificationViewModel : ViewModel() {
 // #region show
 private var loadJob: Job? = null
 
@@ -17,3 +23,5 @@ fun reload() {
     }
 }
 // #endregion
+
+}

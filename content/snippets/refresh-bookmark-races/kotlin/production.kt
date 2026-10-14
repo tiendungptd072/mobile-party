@@ -1,5 +1,12 @@
 package snippets.refresh_bookmark_races.production
 
+import verification.support.*
+import kotlinx.coroutines.*
+import kotlinx.coroutines.test.*
+import org.junit.Test
+import org.junit.Assert.*
+import snippets.refresh_bookmark_races.applied.FeedEvent
+import snippets.refresh_bookmark_races.applied.reduceFeed
 // #region show
 @Test fun bookmarkSurvivesLateRefresh() = runTest {
     val pending = CompletableDeferred<List<Post>>()

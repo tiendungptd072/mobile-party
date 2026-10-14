@@ -1,5 +1,12 @@
 package snippets.android_intents.production
 
+import verification.support.*
+import android.content.*
+import android.net.Uri
+import android.os.*
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.*
+class VerificationActivity : ComponentActivity() {
 // #region show
 private val navigator = AppNavigator()
 
@@ -20,3 +27,5 @@ private fun openExternalUri(uri: Uri?) {
     navigator.open(parseDestination(uri) ?: Destination.InvalidLink)
 }
 // #endregion
+
+}

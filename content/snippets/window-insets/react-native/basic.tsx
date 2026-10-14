@@ -1,3 +1,5 @@
+declare const Profile: import("react").ComponentType;
+
 // #region show
 function ProfileScreen() {
   const insets = useSafeAreaInsets();

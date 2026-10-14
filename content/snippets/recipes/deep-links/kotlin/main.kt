@@ -1,5 +1,9 @@
 package snippets.recipes.deep_links
 
+import verification.support.*
+import androidx.navigation.*
+import androidx.navigation.compose.*
+fun NavGraphBuilder.verificationNavigation() {
 // #region show
 composable(
     route = "profile/{profileId}",
@@ -14,3 +18,5 @@ composable(
     else ProfileScreen(profileId)
 }
 // #endregion
+
+}

@@ -1,3 +1,4 @@
+declare const repository: { loadUser(): Promise<AppResult<User>> };
 // #region show
 type AppResult<T> =
   | { ok: true; value: T }

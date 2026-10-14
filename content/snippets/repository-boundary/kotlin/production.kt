@@ -1,5 +1,6 @@
 package snippets.repository_boundary.production
 
+import verification.support.*
 // #region show
 class FakeProfileRepository(
     private val result: Profile,

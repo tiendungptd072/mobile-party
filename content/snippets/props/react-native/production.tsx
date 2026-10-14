@@ -1,3 +1,5 @@
+type Props = { user: User; onSelect(id: string): void };
+
 // #region show
 type ProfileHeaderProps = {
   displayName: string;

@@ -758,7 +758,10 @@ describe("roadmap content", () => {
     )?.lesson;
 
     expect(lesson?.stages[1].examples?.kotlin?.code).toContain(
-      ".draggable(orientation = Orientation.Horizontal)",
+      "state = rememberDraggableState",
+    );
+    expect(lesson?.stages[1].examples?.kotlin?.code).toContain(
+      "orientation = Orientation.Horizontal",
     );
     expect(lesson?.stages[2].examples?.kotlin?.code).toContain(
       "detectDragGesturesAfterLongPress",

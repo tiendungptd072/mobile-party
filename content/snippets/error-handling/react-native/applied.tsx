@@ -1,3 +1,6 @@
+type Props = { state: ProfileState; retry(): void };
+declare const repository: { load(signal: AbortSignal): Promise<Profile> };
+
 // #region show
 function toProfileError(error: unknown): ProfileError {
   if (error instanceof OfflineError) return { type: "offline" };

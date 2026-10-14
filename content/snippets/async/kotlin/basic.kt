@@ -1,5 +1,8 @@
 package snippets.async.basic
 
+import verification.support.*
+import retrofit2.http.GET
+import retrofit2.http.Path
 // #region show
 // userApi uses https://api.example.com/ and a JSON converter for User.
 interface UserApi {

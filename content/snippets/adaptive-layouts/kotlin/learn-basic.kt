@@ -1,5 +1,9 @@
 package snippets.adaptive_layouts.learn_basic
 
+import verification.support.*
+import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
+import androidx.compose.runtime.*
+import androidx.window.core.layout.WindowSizeClass
 // #region show
 @Composable
 fun SettingsScreen() {

@@ -1,3 +1,9 @@
+declare const ProfileScreen: import("react").ComponentType<{
+  state?: { kind: "error" };
+  onRetry?: () => void;
+  onSave?: () => Promise<void>;
+}>;
+
 // #region show
 let finishSave!: () => void;
 const onSave = jest.fn(() => new Promise<void>((resolve) => {

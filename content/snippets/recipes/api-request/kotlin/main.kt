@@ -1,5 +1,10 @@
 package snippets.recipes.api_request
 
+import verification.support.*
+import androidx.lifecycle.*
+import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.*
+class VerificationViewModel : ViewModel() {
 // #region show
 fun loadProfile() = viewModelScope.launch {
     uiState.value = ProfileState.Loading
@@ -12,3 +17,5 @@ fun loadProfile() = viewModelScope.launch {
     }
 }
 // #endregion
+
+}

@@ -1,5 +1,11 @@
 package snippets.dependency_injection.basic
 
+import verification.support.*
+import androidx.compose.runtime.*
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.*
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 // #region show
 @HiltViewModel
 class ProfileViewModel @Inject constructor(

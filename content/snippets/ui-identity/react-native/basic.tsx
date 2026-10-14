@@ -1,3 +1,5 @@
+type Props = { selected: Post };
+
 // #region show
 <FlatList
   data={posts}

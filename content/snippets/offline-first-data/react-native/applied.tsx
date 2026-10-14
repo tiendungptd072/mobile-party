@@ -1,3 +1,8 @@
+declare const api: { getFeed(): Promise<{ items: Post[] }> };
+declare const cache: { save(posts: Post[]): void };
+class VerificationRepository {
+  items: Post[] = [];
+
 // #region show
 async refresh() {
   const response = await api.getFeed();
@@ -5,3 +10,4 @@ async refresh() {
   cache.save(this.items);
 }
 // #endregion
+}

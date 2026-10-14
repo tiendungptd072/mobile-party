@@ -1,5 +1,6 @@
 package snippets.generics.applied
 
+import verification.support.*
 // #region show
 interface Identifiable { val id: String }
 

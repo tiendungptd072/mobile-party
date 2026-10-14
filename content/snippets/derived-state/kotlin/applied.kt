@@ -1,5 +1,9 @@
 package snippets.derived_state.applied
 
+import verification.support.*
+import androidx.compose.foundation.lazy.*
+import androidx.compose.runtime.*
+import kotlinx.coroutines.flow.*
 // #region show
 @Composable
 fun ProductList(products: List<Product>, query: String) {

@@ -1,3 +1,9 @@
+declare const ProfileScreen: import("react").ComponentType<{
+  state?: { kind: "error" };
+  onRetry?: () => void;
+  onSave?: () => Promise<void>;
+}>;
+
 // #region show
 render(<Counter />);
 fireEvent.press(screen.getByRole("button", { name: "Add" }));

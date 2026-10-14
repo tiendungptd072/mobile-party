@@ -1,5 +1,10 @@
 package snippets.flow_composition.production
 
+import verification.support.*
+import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.test.*
+import org.junit.Test
+import org.junit.Assert.*
 // #region show
 @Test fun combinesPostsAndFavorites() = runTest {
     val posts = MutableStateFlow(listOf(post))

@@ -1,0 +1,12 @@
+<resources>
+    <string name="welcome">Welcome</string>
+    <string name="greeting">Hello, %1$s</string>
+    <string name="app_name">Mobile Party</string>
+    <string name="saved_post_title">Saved post</string>
+    <string name="reminder_channel">Reminders</string>
+    <string name="enable_reminders">Enable reminders</string>
+    <plurals name="message_count">
+        <item quantity="one">%d message</item>
+        <item quantity="other">%d messages</item>
+    </plurals>
+</resources>

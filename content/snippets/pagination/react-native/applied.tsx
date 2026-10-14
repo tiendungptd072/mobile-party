@@ -1,3 +1,15 @@
+declare const repository: {
+  getPage(
+    cursor: string,
+  ): Promise<{ items: Post[]; nextCursor: string | null }>;
+};
+declare const api: {
+  getFeed(
+    cursor: string | null,
+    signal: AbortSignal,
+  ): Promise<{ items: Post[]; nextCursor: string | null }>;
+};
+declare const state: FeedState;
 // #region show
 type FeedState = {
   items: Post[];

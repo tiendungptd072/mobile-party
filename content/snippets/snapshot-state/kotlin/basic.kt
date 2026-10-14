@@ -1,5 +1,9 @@
 package snippets.snapshot_state.basic
 
+import verification.support.*
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 // #region show
 @Composable
 fun Tags() {

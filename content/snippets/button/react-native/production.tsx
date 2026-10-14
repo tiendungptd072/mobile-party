@@ -1,3 +1,10 @@
+type Props = {
+  saving: boolean;
+  isSaving: boolean;
+  canSave: boolean;
+  onSave(): void;
+};
+
 // #region show
 const saveInFlight = useRef(false);
 

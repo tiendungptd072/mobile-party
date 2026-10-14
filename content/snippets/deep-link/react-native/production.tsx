@@ -1,3 +1,5 @@
+type Props = { route: { params: { userId: unknown } } };
+
 // #region show
 async function handleIncomingUrl(url: string) {
   const destination = parseAndValidateLink(url);

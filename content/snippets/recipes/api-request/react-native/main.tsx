@@ -1,3 +1,9 @@
+declare function setState(
+  state:
+    | { status: "loading" }
+    | { status: "success"; profile: unknown }
+    | { status: "error"; message: string },
+): void;
 // #region show
 const API_BASE_URL = "https://api.example.com";
 

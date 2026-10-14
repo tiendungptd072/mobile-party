@@ -1,5 +1,12 @@
 package snippets.pagination.learn_basic
 
+import verification.support.*
+import androidx.lifecycle.*
+import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.*
+import snippets.pagination.learn_basic.AppendState.Loading
+import snippets.pagination.learn_basic.AppendState.Error
+class VerificationViewModel : ViewModel() {
 // #region show
 private var appendJob: Job? = null
 
@@ -19,3 +26,5 @@ fun loadMore() {
     }
 }
 // #endregion
+
+}

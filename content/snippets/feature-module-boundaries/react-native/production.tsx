@@ -1,3 +1,7 @@
+declare const ProfileScreen: import("react").ComponentType<{
+  reader: import("@app/profile-contract").ProfileReader;
+}>;
+
 // #region show
 import { ProfileRoute } from "@app/profile-feature";
 import { HttpProfileReader } from "@app/profile-data";

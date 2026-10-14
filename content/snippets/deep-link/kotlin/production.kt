@@ -1,5 +1,7 @@
 package snippets.deep_link.production
 
+import verification.support.*
+import android.net.Uri
 // #region show
 suspend fun handleDeepLink(uri: Uri) {
     val destination = parser.parseAndValidate(uri) ?: return

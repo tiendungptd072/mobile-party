@@ -1,5 +1,8 @@
 package snippets.recipes.biometric_login
 
+import verification.support.*
+import androidx.biometric.BiometricPrompt
+fun verificationSnippet() {
 // #region show
 val prompt = BiometricPrompt(
     activity,
@@ -17,3 +20,5 @@ val prompt = BiometricPrompt(
 )
 prompt.authenticate(promptInfo)
 // #endregion
+
+}

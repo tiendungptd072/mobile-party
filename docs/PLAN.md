@@ -34,12 +34,12 @@ Flutter and SwiftUI are **out of scope** until Phase 6 passes. Phase 0 only make
 
 | ID | Decision | Default | Confirmed |
 |---|---|---|---|
-| D1 | RN runtime | Expo (managed) + TypeScript. Mark bare-RN-only content explicitly. | ☐ |
-| D2 | Compose stack | Material 3, Navigation Compose, Hilt, Retrofit + kotlinx.serialization, Coil, DataStore | ☐ |
+| D1 | RN runtime | Expo (managed) + TypeScript. Mark bare-RN-only content explicitly. | ☑ |
+| D2 | Compose stack | Material 3, Navigation Compose, Hilt, Retrofit + kotlinx.serialization, Coil, DataStore | ☑ |
 | D3 | RN-side libraries | React state + Context in basic concepts. Zustand / TanStack Query only in dedicated concepts. | ☐ |
 | D4 | Reference app location | Separate repository, linked from the site. Keeps this repo dependency-light. | ☐ |
 | D5 | Localization | `en` is source of truth. `vi` is an overlay. A `vi sync` task closes each phase. Missing `vi` falls back to `en` with a visible notice. | ☐ |
-| D6 | Version pinning | One `docs/VERSIONS.md`; verification projects pin the same versions. | ☐ |
+| D6 | Version pinning | One `docs/VERSIONS.md`; verification projects pin the same versions. | ☑ |
 | D7 | `AGENTS.md` Task Gate names GPT models. Add a model-agnostic note? | Do not change `AGENTS.md`; non-GPT agents report the level and continue. | ☐ |
 
 ## 3. Working agreements
@@ -111,6 +111,7 @@ Note: before P0.1, `bun build` needs network access to Google Fonts and fails of
   - Root scripts: `verify:rn`, `verify:android`, `verify`.
   - CI jobs: `site` (frozen install, lint, typecheck, test, build), `snippets-rn`, `snippets-android` (Java 17, Gradle cache).
 - **Accept:** CI green on a clean checkout; deliberately breaking one RN snippet fails `snippets-rn` and breaking one Kotlin snippet fails `snippets-android` (do this once, record it in the log, revert it).
+- **Status (2026-10-14):** ☐ (blocked: needs human run). Implementation and local verification are ready. Both negative checks fail as expected and restore their files. GitHub Actions still needs a run after an authorized push. This plan does not authorize pushing, so P0.5 remains unchecked until all three remote jobs are green.
 
 ### P0.6 ☐ Per-stage code and the coverage report — Level 2 (depends on P0.4)
 - **Files:** `src/types/roadmap.ts`, `src/lib/content/schema.ts`, Learn lesson page and components, new `scripts/content-status.ts`, tests.

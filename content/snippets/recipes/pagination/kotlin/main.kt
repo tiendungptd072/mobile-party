@@ -1,5 +1,12 @@
 package snippets.recipes.pagination
 
+import verification.support.*
+import androidx.compose.foundation.lazy.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.paging.*
+import androidx.paging.compose.*
+@Composable fun VerificationSnippet() {
 // #region show
 val posts = viewModel.posts.collectAsLazyPagingItems()
 LazyColumn {
@@ -13,3 +20,5 @@ LazyColumn {
     }
 }
 // #endregion
+
+}

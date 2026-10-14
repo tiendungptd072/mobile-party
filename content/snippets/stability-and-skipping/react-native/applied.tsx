@@ -1,3 +1,5 @@
+type Props = { id: string; name: string; onOpen(): void };
+
 // #region show
 <FlatList
   data={users}

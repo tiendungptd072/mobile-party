@@ -1,3 +1,5 @@
+declare const Profile: import("react").ComponentType;
+
 // #region show
 <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
   <MessageList />

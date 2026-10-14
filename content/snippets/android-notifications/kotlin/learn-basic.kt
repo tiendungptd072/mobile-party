@@ -1,5 +1,10 @@
 package snippets.android_notifications.learn_basic
 
+import verification.support.*
+import android.app.*
+import android.os.*
+import party.mobile.verification.R
+fun verificationSnippet() {
 // #region show
 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
     val channel = NotificationChannel(
@@ -10,3 +15,5 @@ if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
         .createNotificationChannel(channel)
 }
 // #endregion
+
+}

@@ -1,5 +1,6 @@
 package snippets.feature_module_boundaries.production
 
+import verification.support.*
 // #region show
 class ProfileEntry(private val database: AppDatabase) {
     fun createViewModel(): ProfileViewModel {

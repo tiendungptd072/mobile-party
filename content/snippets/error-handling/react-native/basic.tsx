@@ -1,3 +1,6 @@
+type Props = { state: ProfileState; retry(): void };
+declare const repository: { load(signal: AbortSignal): Promise<Profile> };
+
 // #region show
 type ProfileState =
   | { status: "ready"; profile: Profile }

@@ -1,5 +1,6 @@
 package snippets.secure_storage.basic
 
+import verification.support.*
 // #region show
 interface SessionStore {
   suspend fun saveRefreshToken(token: String)

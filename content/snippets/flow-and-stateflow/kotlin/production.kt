@@ -1,5 +1,10 @@
 package snippets.flow_and_stateflow.production
 
+import verification.support.*
+import androidx.lifecycle.*
+import kotlinx.coroutines.flow.*
+import java.io.IOException
+class VerificationViewModel : ViewModel() {
 // #region show
 val uiState: StateFlow<FeedUiState> = repository.posts
     .map<List<Post>, FeedUiState> { posts -> FeedUiState.Ready(posts) }
@@ -13,3 +18,5 @@ val uiState: StateFlow<FeedUiState> = repository.posts
         FeedUiState.Loading,
     )
 // #endregion
+
+}

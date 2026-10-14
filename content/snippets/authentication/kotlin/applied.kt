@@ -1,5 +1,6 @@
 package snippets.authentication.applied
 
+import verification.support.*
 // #region show
 suspend fun restoreSession() {
     val token = credentialStore.readRefreshToken()

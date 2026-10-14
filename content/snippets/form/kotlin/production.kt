@@ -1,5 +1,10 @@
 package snippets.form.production
 
+import verification.support.*
+import androidx.lifecycle.*
+import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.*
+class VerificationViewModel : ViewModel() {
 // #region show
 fun submit() {
     val current = state.value
@@ -19,3 +24,5 @@ fun submit() {
     }
 }
 // #endregion
+
+}

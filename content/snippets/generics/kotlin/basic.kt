@@ -1,5 +1,6 @@
 package snippets.generics.basic
 
+import verification.support.*
 // #region show
 sealed interface AppResult<out T> {
     data class Success<T>(val value: T) : AppResult<T>

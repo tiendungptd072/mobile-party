@@ -1,3 +1,5 @@
+type Props = { selected: Post };
+
 // #region show
 const sorted = [...posts].sort(byNewest);
 <FlatList

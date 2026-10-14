@@ -1,5 +1,10 @@
 package snippets.coroutine_scopes.basic
 
+import verification.support.*
+import androidx.compose.runtime.*
+import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.*
+@Composable fun VerificationSnippet() {
 // #region show
 var user by remember(userId) { mutableStateOf<User?>(null) }
 var hasError by remember(userId) { mutableStateOf(false) }
@@ -14,3 +19,5 @@ LaunchedEffect(userId) {
     }
 }
 // #endregion
+
+}

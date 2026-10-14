@@ -1,3 +1,4 @@
+declare const api: { loadPosts(): Promise<Post[]> };
 // #region show
 const [feed, setFeed] = useState<FeedState>(initialFeed);
 

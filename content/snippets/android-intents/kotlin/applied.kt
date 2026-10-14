@@ -1,5 +1,8 @@
 package snippets.android_intents.applied
 
+import verification.support.*
+import android.content.*
+fun verificationSnippet() {
 // #region show
 val send = Intent(Intent.ACTION_SEND).apply {
     type = "text/plain"
@@ -7,3 +10,5 @@ val send = Intent(Intent.ACTION_SEND).apply {
 }
 context.startActivity(Intent.createChooser(send, null))
 // #endregion
+
+}

@@ -1,3 +1,8 @@
+type Props = {
+  posts: Post[];
+  renderPost(post: Post, index: number): import("react").ReactElement;
+};
+
 // #region show
 function FeedList({ posts, renderPost }: Props) {
   return <FlatList

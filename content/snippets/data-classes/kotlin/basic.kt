@@ -1,5 +1,7 @@
 package snippets.data_classes.basic
 
+import verification.support.*
+val user = User("ada", "Ada")
 // #region show
 data class User(val id: String, val name: String)
 

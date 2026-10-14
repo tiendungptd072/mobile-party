@@ -1,5 +1,6 @@
 package snippets.extension_functions.learn_basic
 
+import verification.support.*
 // #region show
 fun User.displayName(): String =
     nickname?.trim()?.takeIf(String::isNotEmpty) ?: name

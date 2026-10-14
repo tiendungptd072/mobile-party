@@ -1,3 +1,8 @@
+declare const api: { getFeed(): Promise<Post[]> };
+declare const cache: {
+  save(posts: Post[]): void;
+  onChange(listener: () => void): () => void;
+};
 // #region show
 class FeedRepository {
   private items: Post[] = [];

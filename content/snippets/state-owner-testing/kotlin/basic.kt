@@ -1,5 +1,12 @@
 package snippets.state_owner_testing.basic
 
+import verification.support.*
+import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.test.*
+import org.junit.Test
+import org.junit.Rule
+import org.junit.Assert.*
 // #region show
 @get:Rule val mainDispatcherRule = MainDispatcherRule()
 

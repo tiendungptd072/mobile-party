@@ -1,5 +1,6 @@
 package snippets.sealed_types.basic
 
+import verification.support.*
 // #region show
 sealed interface ProfileUiState {
     data object Loading : ProfileUiState

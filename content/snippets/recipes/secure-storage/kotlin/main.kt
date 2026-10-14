@@ -1,5 +1,6 @@
 package snippets.recipes.secure_storage
 
+import verification.support.*
 // #region show
 interface CredentialStore {
     suspend fun saveToken(token: String)

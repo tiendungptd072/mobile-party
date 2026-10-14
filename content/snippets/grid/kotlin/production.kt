@@ -1,5 +1,11 @@
 package snippets.grid.production
 
+import verification.support.*
+import androidx.compose.foundation.layout.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
+import coil3.compose.AsyncImage
 // #region show
 @Composable
 fun PhotoTile(photo: Photo) {

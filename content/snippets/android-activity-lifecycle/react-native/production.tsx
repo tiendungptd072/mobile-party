@@ -1,3 +1,10 @@
+declare const sessionStore: {
+  subscribe(listener: () => void): () => void;
+  getSnapshot(): Session;
+};
+declare const repository: {
+  watchItems(listener: (items: Post[]) => void): () => void;
+};
 // #region show
 useEffect(() => {
   let stop: (() => void) | undefined;

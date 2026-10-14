@@ -1,3 +1,5 @@
+type Props = { count: number; onIncrement(): void };
+
 // #region show
 function Counter() {
   const [count, setCount] = useState(0);

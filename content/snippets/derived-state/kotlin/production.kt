@@ -1,5 +1,9 @@
 package snippets.derived_state.production
 
+import verification.support.*
+import androidx.compose.animation.*
+import androidx.compose.foundation.lazy.*
+import androidx.compose.runtime.*
 // #region show
 @Composable
 fun Feed(posts: List<Post>) {

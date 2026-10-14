@@ -27,4 +27,4 @@ Files without markers display in full. Shell examples use this full-file form. E
 
 Every Kotlin file has a unique package: `snippets.<slug_with_underscores>.<stage>`, or `snippets.<slug_with_underscores>.learn_basic` for a distinct Learn basic example. Recipe packages use `snippets.recipes.<slug_with_underscores>`. Package declarations stay outside the display region.
 
-The root TypeScript, ESLint, and Prettier configurations exclude this directory and `verify/`. Snippet compilation belongs to the separate verification projects planned in P0.5; moving a fragment into a file does not establish that it compiles yet.
+The root TypeScript, ESLint, and Prettier configurations exclude this directory and `verify/`. `bun run verify:rn` checks every React Native TSX file with the pinned package types; `bun run verify:android` compiles every Kotlin file against the pinned Android libraries. Install and context instructions are in `verify/README.md`; versions and check limitations are in `docs/VERSIONS.md`. Application fixtures and enclosing scopes outside the display region are required for fragments that omit their host application context.

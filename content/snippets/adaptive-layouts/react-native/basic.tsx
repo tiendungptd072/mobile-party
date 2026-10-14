@@ -1,3 +1,5 @@
+type Props = { selectedId: string | null };
+
 // #region show
 function MailScreen() {
   const { width } = useWindowDimensions();

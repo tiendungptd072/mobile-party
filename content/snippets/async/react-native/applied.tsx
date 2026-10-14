@@ -1,3 +1,8 @@
+declare const repository: {
+  getUser(id: string, signal: AbortSignal): Promise<User>;
+  load(id: string, signal: AbortSignal): Promise<Profile>;
+};
+
 // #region show
 useEffect(() => {
   const controller = new AbortController();

@@ -1,3 +1,9 @@
+type Props = {
+  value: string;
+  error: string | null;
+  onChange(value: string): void;
+};
+
 // #region show
 function EmailField({ value, error, onChange }: Props) {
   return <View>

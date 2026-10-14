@@ -1,5 +1,8 @@
 package snippets.flow_composition.applied
 
+import verification.support.*
+import kotlinx.coroutines.flow.*
+import java.io.IOException
 // #region show
 val uiState = repository.visiblePosts
     .map<List<Post>, FeedUiState> { FeedUiState.Ready(it) }

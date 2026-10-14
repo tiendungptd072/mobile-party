@@ -1,5 +1,9 @@
 package snippets.theme.production
 
+import verification.support.*
+import androidx.compose.foundation.*
+import androidx.compose.material3.*
+import androidx.compose.ui.graphics.Color
 // #region show
 private val DarkColors = darkColorScheme(
     background = Color(0xFF101114),

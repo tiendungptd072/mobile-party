@@ -1,5 +1,10 @@
 package snippets.offline_pagination.production
 
+import verification.support.*
+import androidx.paging.*
+import androidx.room.*
+import kotlinx.coroutines.flow.*
+suspend fun verificationSnippet() {
 // #region show
 database.withTransaction {
     if (type == LoadType.REFRESH) remoteKeyDao.clear()
@@ -7,3 +12,5 @@ database.withTransaction {
     dao.upsertAll(page.items.map(NetworkPost::toEntity))
 }
 // #endregion
+
+}

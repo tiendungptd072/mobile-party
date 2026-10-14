@@ -1,3 +1,5 @@
+type Props = { products: { name: string }[]; query: string };
+
 // #region show
 function ProductList({ products, query }: Props) {
   const visibleProducts = products.filter((product) =>

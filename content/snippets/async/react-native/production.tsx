@@ -1,3 +1,8 @@
+declare const repository: {
+  getUser(id: string, signal: AbortSignal): Promise<User>;
+  load(id: string, signal: AbortSignal): Promise<Profile>;
+};
+
 // #region show
 function useProfile(id: string) {
   const [state, setState] = useState<ProfileState>({ status: "loading" });

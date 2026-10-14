@@ -1,5 +1,6 @@
 package snippets.sealed_types.applied
 
+import verification.support.*
 // #region show
 sealed interface SubmitState {
     data object Idle : SubmitState

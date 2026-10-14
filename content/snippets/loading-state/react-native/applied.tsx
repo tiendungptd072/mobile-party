@@ -1,3 +1,6 @@
+declare const state:
+  { status: "loading" | "empty" } | { status: "ready"; items: Profile[] };
+function VerificationComponent() {
 // #region show
 switch (state.status) {
   case "loading": return <LoadingView />;
@@ -5,3 +8,4 @@ switch (state.status) {
   case "ready": return <ProfileList profiles={state.items} />;
 }
 // #endregion
+}
