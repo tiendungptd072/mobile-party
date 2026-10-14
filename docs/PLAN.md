@@ -113,7 +113,7 @@ Note: before P0.1, `bun build` needs network access to Google Fonts and fails of
 - **Accept:** CI green on a clean checkout; deliberately breaking one RN snippet fails `snippets-rn` and breaking one Kotlin snippet fails `snippets-android` (do this once, record it in the log, revert it).
 - **Status (2026-10-14):** ☐ (blocked: needs human run). Implementation and local verification are ready. Both negative checks fail as expected and restore their files. GitHub Actions still needs a run after an authorized push. This plan does not authorize pushing, so P0.5 remains unchecked until all three remote jobs are green.
 
-### P0.6 ☐ Per-stage code and the coverage report — Level 2 (depends on P0.4)
+### P0.6 ☑ Per-stage code and the coverage report — Level 2 (depends on P0.4)
 - **Files:** `src/types/roadmap.ts`, `src/lib/content/schema.ts`, Learn lesson page and components, new `scripts/content-status.ts`, tests.
 - **Do:** let the loader attach stage examples by convention: for each roadmap lesson stage, if `content/snippets/<concept>/<tech>/<stage>.<ext>` exists, expose it as that stage's example for the pair's source and target. Render source and target stage code in the Learn lesson using the existing `CodeComparison`; show an explicit "not yet written" state when absent. Add `bun run content:status`, which prints a matrix of concept × technology × stage × locale and exits non-zero when run with `--strict` and any required cell is missing.
 - **Accept:** existing lessons still render; a lesson with all three stages shows code per stage; `content:status` output is correct on the current content; tests cover resolution and the missing state.

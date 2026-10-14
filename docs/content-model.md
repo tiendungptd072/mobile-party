@@ -129,6 +129,31 @@ export type Roadmap = {
 Roadmaps reference canonical concept slugs. Lesson explanations remain in the
 concept content rather than being duplicated in roadmap data.
 
+Stage examples are optional on each side. Explicit metadata and `snippet`
+references take precedence, including distinct Learn basic files. For a missing
+side, the loader checks `content/snippets/<concept>/<technology>/<stage>.<ext>`
+for the roadmap's source and target technologies. It uses the concept's
+implementation language when available, otherwise the technology's default
+language. This also supports shell examples such as Android build variants.
+It never substitutes basic code for an absent applied or production snippet.
+Missing convention files remain absent; invalid files and broken explicit
+references fail validation. Concepts still require at least two implementations;
+stage examples may have zero, one, or more sides.
+
+Learn uses the existing server-highlighted code comparison when both sides
+exist. Otherwise it keeps available code visible and labels each missing side
+as not yet written, in the current locale.
+
+`bun run content:status` prints required concept/technology/stage rows with `en`
+and `vi` columns. Required cells come from published roadmap source/target pairs;
+unpublished technology tracks are excluded. Duplicate cells across roadmaps
+must be complete in every occurrence. Each cell reports `ready`, `missing-code`,
+`missing-translation`, or both missing conditions. Code is shared across locales;
+Vietnamese requires the concept overlay and stage prose/title, so English
+fallback does not count as translated. `bun run content:status --strict` exits
+with code 1 when any required cell is incomplete. The command uses the same
+validated content pipeline as the site, so malformed authored content also fails.
+
 ## Recipe
 
 ```ts
@@ -178,7 +203,9 @@ Source metadata may set `snippet` to an explicit path relative to
 `content/snippets/`. Existing Learn basic examples with different code use
 `learn-basic.tsx` or `learn-basic.kt` so the migration preserves both displays.
 The normalized model exposes the loaded `code`, not the source reference.
-Missing files raise `ContentValidationError` with the failing path.
+Missing required implementation files or explicit references raise
+`ContentValidationError` with the failing path. Missing convention-based stage
+files remain absent, as described in the Roadmap section.
 
 Only code between `// #region show` and `// #endregion` is displayed when a
 region is present; files without a region display in full. Kotlin package

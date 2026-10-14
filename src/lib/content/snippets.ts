@@ -49,19 +49,54 @@ export function extractSnippetCode(source: string, path: string): string {
   return code;
 }
 
-/** Reads a snippet relative to content/snippets; explicit paths preserve distinct Learn examples. */
+function getSnippetPath(
+  source: SnippetSource,
+  technology: Technology,
+  language: CodeLanguage,
+  snippet?: string,
+): string {
+  const directory =
+    source.kind === "recipe" ? `recipes/${source.slug}` : source.slug;
+  const stage = source.kind === "recipe" ? "main" : source.stage;
+  return (
+    snippet ?? `${directory}/${technology}/${stage}.${EXTENSIONS[language]}`
+  );
+}
+
+/** Returns undefined only for an absent file; invalid regions and filesystem errors still fail. */
+export function loadOptionalSnippet(
+  source: SnippetSource,
+  technology: Technology,
+  language: CodeLanguage,
+): string | undefined {
+  return readSnippet(source, technology, language);
+}
+
+/** Reads a required snippet; explicit paths preserve distinct Learn examples. */
 export function loadSnippet(
   source: SnippetSource,
   technology: Technology,
   language: CodeLanguage,
   snippet?: string,
 ): string {
+  const code = readSnippet(source, technology, language, snippet);
+  if (code === undefined) {
+    throw new ContentValidationError(
+      `content/snippets/${getSnippetPath(source, technology, language, snippet)}`,
+      "snippet file is missing",
+    );
+  }
+  return code;
+}
+
+function readSnippet(
+  source: SnippetSource,
+  technology: Technology,
+  language: CodeLanguage,
+  snippet?: string,
+): string | undefined {
   const root = resolve(process.cwd(), "content/snippets");
-  const directory =
-    source.kind === "recipe" ? `recipes/${source.slug}` : source.slug;
-  const stage = source.kind === "recipe" ? "main" : source.stage;
-  const path =
-    snippet ?? `${directory}/${technology}/${stage}.${EXTENSIONS[language]}`;
+  const path = getSnippetPath(source, technology, language, snippet);
   const absolutePath = resolve(root, path);
   const relativePath = relative(root, absolutePath);
 
@@ -81,10 +116,7 @@ export function loadSnippet(
     contents = readFileSync(absolutePath, "utf8");
   } catch (error) {
     if (error instanceof Error && "code" in error && error.code === "ENOENT") {
-      throw new ContentValidationError(
-        `content/snippets/${path}`,
-        "snippet file is missing",
-      );
+      return undefined;
     }
     throw error;
   }

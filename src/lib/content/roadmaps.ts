@@ -6,8 +6,7 @@ import type { Technology } from "@/types/technology";
 import { DEFAULT_LOCALE, type Locale } from "@/lib/i18n/locale";
 import { localizeRoadmap } from "@/lib/i18n/content";
 
-const conceptSlugs = new Set(getConcepts().map((concept) => concept.slug));
-const roadmaps = validateRoadmaps(rawRoadmaps, conceptSlugs);
+const roadmaps = validateRoadmaps(rawRoadmaps, getConcepts());
 
 export function getRoadmaps(locale: Locale = DEFAULT_LOCALE) {
   return roadmaps.map((roadmap) => localizeRoadmap(roadmap, locale));

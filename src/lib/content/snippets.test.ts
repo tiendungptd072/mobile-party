@@ -199,12 +199,9 @@ describe("file-backed content validation", () => {
         },
       ],
     };
-    expect(() =>
-      validateRoadmaps(
-        [invalid],
-        new Set(getConcepts().map((concept) => concept.slug)),
-      ),
-    ).toThrow(/inline code is not allowed; use a snippet file/);
+    expect(() => validateRoadmaps([invalid], getConcepts())).toThrow(
+      /inline code is not allowed; use a snippet file/,
+    );
   });
 
   test("reserves the recipes slug for recipe snippet paths", () => {

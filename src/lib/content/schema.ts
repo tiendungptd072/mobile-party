@@ -9,7 +9,12 @@ import {
   type ConceptRelationship,
   type Relationship,
 } from "@/types/concept";
-import type { Roadmap, RoadmapLesson, RoadmapSection } from "@/types/roadmap";
+import {
+  LESSON_STAGE_IDS,
+  type Roadmap,
+  type RoadmapLesson,
+  type RoadmapSection,
+} from "@/types/roadmap";
 import type { Recipe, RecipeImplementation } from "@/types/recipe";
 import {
   CODE_LANGUAGES,
@@ -23,7 +28,12 @@ import {
   readString,
   readTechnology,
 } from "@/lib/content/validation";
-import { loadSnippet, type SnippetSource } from "@/lib/content/snippets";
+import {
+  loadOptionalSnippet,
+  loadSnippet,
+  type SnippetSource,
+} from "@/lib/content/snippets";
+import { getTechnologyById } from "@/lib/content/technologies";
 
 export { ContentValidationError };
 export { validateTechnologies } from "@/lib/content/technology-schema";
@@ -217,6 +227,7 @@ function validateImplementations(
   value: unknown,
   path: string,
   source: SnippetSource,
+  minimumCount: 0 | 2 = 2,
 ): Partial<Record<Technology, ConceptImplementation>> {
   const rawImplementations = readRecord(value, path);
   const implementations: Partial<Record<Technology, ConceptImplementation>> =
@@ -237,7 +248,7 @@ function validateImplementations(
     );
   }
 
-  if (Object.keys(implementations).length < 2) {
+  if (Object.keys(implementations).length < minimumCount) {
     throw new ContentValidationError(
       path,
       "expected at least two implementations",
@@ -388,12 +399,14 @@ export function validateConcepts(value: unknown): readonly Concept[] {
 function validateRoadmapLesson(
   value: unknown,
   path: string,
-  conceptSlugs: ReadonlySet<string>,
+  concepts: ReadonlyMap<string, Concept>,
+  technologies: readonly Technology[],
 ): RoadmapLesson {
   const lesson = readRecord(value, path);
   const conceptSlug = readKebabCase(lesson.conceptSlug, `${path}.conceptSlug`);
 
-  if (!conceptSlugs.has(conceptSlug)) {
+  const concept = concepts.get(conceptSlug);
+  if (!concept) {
     throw new ContentValidationError(
       `${path}.conceptSlug`,
       `unknown concept: ${conceptSlug}`,
@@ -414,7 +427,7 @@ function validateRoadmapLesson(
         );
       }
 
-      const stageIds = ["basic", "applied", "production"] as const;
+      const stageIds = LESSON_STAGE_IDS;
 
       return lesson.stages.map((stage, index) => {
         const record = readRecord(stage, `${path}.stages[${index}]`);
@@ -431,37 +444,51 @@ function validateRoadmapLesson(
           );
         }
 
+        const title = readString(
+          record.title,
+          `${path}.stages[${index}].title`,
+        );
+        const description = readString(
+          record.description,
+          `${path}.stages[${index}].description`,
+        );
+        const source = {
+          kind: "concept",
+          slug: conceptSlug,
+          stage: id,
+        } as const;
+        const examples = validateImplementations(
+          record.examples === undefined ? {} : record.examples,
+          `${path}.stages[${index}].examples`,
+          source,
+          0,
+        );
+        for (const technology of technologies) {
+          if (examples[technology]) continue;
+          const language =
+            concept.implementations[technology]?.language ??
+            getTechnologyById(technology)?.language;
+          if (!language) {
+            throw new ContentValidationError(
+              path,
+              `missing technology definition: ${technology}`,
+            );
+          }
+          const code = loadOptionalSnippet(source, technology, language);
+          if (code !== undefined) {
+            examples[technology] = {
+              name: title,
+              summary: description,
+              language,
+              code,
+            };
+          }
+        }
         return {
           id,
-          title: readString(record.title, `${path}.stages[${index}].title`),
-          description: readString(
-            record.description,
-            `${path}.stages[${index}].description`,
-          ),
-          ...(record.examples === undefined
-            ? {}
-            : {
-                examples: (() => {
-                  const examples = validateImplementations(
-                    record.examples,
-                    `${path}.stages[${index}].examples`,
-                    { kind: "concept", slug: conceptSlug, stage: id },
-                  );
-
-                  for (const [technology, example] of Object.entries(
-                    examples,
-                  )) {
-                    if (!example.code) {
-                      throw new ContentValidationError(
-                        `${path}.stages[${index}].examples.${technology}.code`,
-                        "expected stage examples to include code",
-                      );
-                    }
-                  }
-
-                  return examples;
-                })(),
-              }),
+          title,
+          description,
+          ...(Object.keys(examples).length > 0 ? { examples } : {}),
         };
       });
     })(),
@@ -471,7 +498,8 @@ function validateRoadmapLesson(
 function validateRoadmapSection(
   value: unknown,
   path: string,
-  conceptSlugs: ReadonlySet<string>,
+  concepts: ReadonlyMap<string, Concept>,
+  technologies: readonly Technology[],
 ): RoadmapSection {
   const section = readRecord(value, path);
 
@@ -488,7 +516,8 @@ function validateRoadmapSection(
         validateRoadmapLesson(
           lesson,
           `${path}.lessons[${index}]`,
-          conceptSlugs,
+          concepts,
+          technologies,
         ),
       )
       .sort((left, right) => left.order - right.order),
@@ -497,13 +526,16 @@ function validateRoadmapSection(
 
 export function validateRoadmaps(
   value: unknown,
-  conceptSlugs: ReadonlySet<string>,
+  concepts: readonly Concept[],
 ): readonly Roadmap[] {
   if (!Array.isArray(value)) {
     throw new ContentValidationError("roadmaps", "expected an array");
   }
 
   const pairs = new Set<string>();
+  const conceptsBySlug = new Map(
+    concepts.map((concept) => [concept.slug, concept]),
+  );
 
   return value.map((entry, index) => {
     const path = `roadmaps[${index}]`;
@@ -535,7 +567,8 @@ export function validateRoadmaps(
           validateRoadmapSection(
             section,
             `${path}.sections[${sectionIndex}]`,
-            conceptSlugs,
+            conceptsBySlug,
+            [source, target],
           ),
         )
         .sort((left, right) => left.order - right.order),

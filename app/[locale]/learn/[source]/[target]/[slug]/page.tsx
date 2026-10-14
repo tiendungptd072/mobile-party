@@ -186,6 +186,7 @@ export default async function LocaleLessonPage({
               </h2>
             </div>
             <LessonStages
+              missingCode={messages.learn.stageCodeMissing}
               sourceTechnology={sourceTechnology}
               stageLabel={messages.learn.stage}
               stages={lessonLocation.lesson.stages}

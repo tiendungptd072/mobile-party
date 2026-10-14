@@ -13,7 +13,8 @@
     "test": "bun test",
     "verify:rn": "bun run --cwd verify/rn check",
     "verify:android": "bun run verify/android/check.ts",
-    "verify": "bun run verify:rn && bun run verify:android"
+    "verify": "bun run verify:rn && bun run verify:android",
+    "content:status": "bun run scripts/content-status.ts"
   },
   "dependencies": {
     "@mdx-js/loader": "^3.1.1",

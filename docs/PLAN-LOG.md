@@ -120,3 +120,24 @@ Unverified: GitHub Actions has not run on this branch. These commands compile fi
 Gaps found: P0.5 acceptance remains open until all three GitHub jobs are green after an authorized push. No additional content backlog was added.
 
 Open questions: None for implementation. The owner must arrange the remote CI run before marking P0.5 complete.
+
+## P0.6 — Per-stage code and the coverage report — 2026-10-14 — Codex
+
+Changed: The roadmap validator now receives validated concepts so missing stage examples can inherit the implementation language, including shell examples, and discover source/target files by convention. Explicit examples and distinct Learn basic references retain priority. Stage example maps may be partial or empty; concepts still require at least two implementations. Added shared stage IDs and an optional snippet reader that returns undefined only for ENOENT. Malformed snippets, filesystem errors, and broken explicit references still fail validation. The loader never substitutes basic code for a missing later stage.
+
+Learn retains the existing server-highlighted `CodeComparison` when both sides exist. When either side is absent, it renders available code with the existing server `CodeBlock` and identifies each missing technology with a localized message. Both localized and legacy lesson routes supply the message. Added `bun run content:status`, its reusable report functions, and documentation of required cells and exit behavior. Required coverage comes from published roadmap source/target pairs, with canonical technology/stage ordering and English/Vietnamese columns. English fallback does not count as a Vietnamese translation. Duplicate cells across roadmap directions remain incomplete if any required occurrence is missing. The Bun CLI registers the server-only marker as an empty runtime module because Next.js normally resolves that compiler boundary; no dependency or client boundary was added.
+
+Verification:
+
+- `bun test`: 122 passed, 0 failed; 3,392 assertions. Fifteen new cases cover convention discovery for every stage, explicit Learn precedence, partial examples, non-default shell languages, missing files without basic-code substitution, broken references, unrelated technology pairs, coverage and translation gaps, duplicate roadmap directions, and server rendering of complete/partial/missing stage comparisons in English and Vietnamese. Rendering tests use the real Next pathname context and shared Shiki highlighter. Two existing validation tests changed only to pass concepts instead of a slug set.
+- `bun run content:status --strict`: passed with 864 required cells, 864 ready, 0 missing (72 concepts × 2 roadmap technologies × 3 stages × 2 locales). The matrix contains 432 data rows, one header, and a summary.
+- Temporarily replaced the roadmap input with one convention-only lesson and moved its RN applied snippet to a workspace backup. The real CLI printed 12 required cells, 10 ready, 2 missing; normal mode returned 0 and `--strict` returned 1. Restored the metadata and snippet in a finally block and verified both SHA-256 hashes matched their originals. The restored strict command passed again. `git diff -- content` is empty: no educational code or metadata changes remain.
+- `bun lint`, `bun typecheck`, and `bun run verify`: passed. RN still checks 274 snippets; Android still compiles 280 Kotlin snippets with the existing JDK 17/SDK setup. The snippet verification projects and their dependency pins are unchanged.
+- `bun run build`: passed, generating 690 static pages. The generated English and Vietnamese Component lesson pages each contain three stage headings and 12 highlighted stage code blocks across the existing desktop/mobile layouts, with no missing-code message. All four Compare output traces still include 560 snippet assets plus their README.
+- Prettier checks for changed supported source/configuration/documentation files and `git diff --check`: passed. Preserved the existing formatting of PLAN and the user's unrelated AGENTS/prompt changes.
+
+Unverified: No task acceptance item remains. Browser interaction was not retested because this change adds no client behavior; server-rendering tests and generated HTML cover the new states. P0.5's separate GitHub Actions acceptance remains pending and its checkbox is unchanged.
+
+Gaps found: None. Current required roadmap coverage is complete; unpublished Flutter/SwiftUI tracks are outside the report's required cells.
+
+Open questions: None.

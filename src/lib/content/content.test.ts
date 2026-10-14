@@ -1056,7 +1056,7 @@ describe("roadmap content", () => {
     };
 
     expect(() =>
-      validateRoadmaps([invalidRoadmap], new Set(["component"])),
+      validateRoadmaps([invalidRoadmap], [getConceptBySlug("component")!]),
     ).toThrow(/unknown concept: missing-concept/);
   });
 });

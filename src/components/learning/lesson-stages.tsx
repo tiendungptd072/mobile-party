@@ -1,16 +1,20 @@
 import { CodeComparison } from "@/components/compare/code-comparison";
+import { CodeBlock } from "@/components/code/code-block";
+import { Callout } from "@/components/ui/callout";
 import type { LessonStage } from "@/types/roadmap";
 import type { TechnologyDefinition } from "@/types/technology";
 
 type LessonStagesProps = {
+  missingCode: string;
   sourceTechnology: TechnologyDefinition;
   stageLabel: string;
   stages: readonly LessonStage[];
   targetTechnology: TechnologyDefinition;
 };
 
-/** Renders progressive lesson stages and optional server-highlighted examples. */
+/** Renders stage code and identifies each missing side without hiding available examples. */
 export function LessonStages({
+  missingCode,
   sourceTechnology,
   stageLabel,
   stages,
@@ -51,7 +55,29 @@ export function LessonStages({
                   }}
                 />
               </div>
-            ) : null}
+            ) : (
+              <div className="mt-5 grid gap-4 md:grid-cols-2">
+                {[
+                  { technology: sourceTechnology, example: sourceExample },
+                  { technology: targetTechnology, example: targetExample },
+                ].map(({ technology, example }) =>
+                  example?.code ? (
+                    <div key={technology.id} className="space-y-3">
+                      <p className="text-sm font-medium">{technology.name}</p>
+                      <CodeBlock
+                        code={example.code}
+                        filename={example.filename ?? example.name}
+                        language={example.language}
+                      />
+                    </div>
+                  ) : (
+                    <Callout key={technology.id} title={technology.name}>
+                      {missingCode}
+                    </Callout>
+                  ),
+                )}
+              </div>
+            )}
           </li>
         );
       })}

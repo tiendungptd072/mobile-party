@@ -6,6 +6,7 @@ import { MentalModel } from "@/components/compare/mental-model";
 import { CompleteLessonButton } from "@/components/learning/complete-lesson-button.client";
 import { LearningSidebar } from "@/components/learning/learning-sidebar.client";
 import { LessonStages } from "@/components/learning/lesson-stages";
+import { getMessages } from "@/lib/i18n/messages";
 import { Badge } from "@/components/ui/badge";
 import { Callout } from "@/components/ui/callout";
 import { Container } from "@/components/ui/container";
@@ -169,6 +170,7 @@ export default async function LessonPage({ params }: LessonPageProps) {
               </h2>
             </div>
             <LessonStages
+              missingCode={getMessages("en").learn.stageCodeMissing}
               sourceTechnology={sourceTechnology}
               stageLabel="Stage {count}"
               stages={lessonLocation.lesson.stages}

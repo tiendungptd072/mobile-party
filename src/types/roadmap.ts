@@ -1,6 +1,8 @@
 import type { ConceptImplementation } from "@/types/concept";
 import type { Technology } from "@/types/technology";
 
+export const LESSON_STAGE_IDS = ["basic", "applied", "production"] as const;
+
 export type RoadmapLesson = {
   checklist: readonly string[];
   conceptSlug: string;
@@ -12,8 +14,9 @@ export type RoadmapLesson = {
 
 export type LessonStage = {
   description: string;
+  /** Explicit examples take precedence over convention files; missing sides remain absent. */
   examples?: Partial<Record<Technology, ConceptImplementation>>;
-  id: "basic" | "applied" | "production";
+  id: (typeof LESSON_STAGE_IDS)[number];
   title: string;
 };
 
