@@ -33,6 +33,40 @@ expected to remove these values.
 - Recipes presents real-world flows and framework implementations.
 - Bookmarks lists locally saved lessons and concepts.
 
+### Foundations extension (specified; implementation pending)
+
+Foundations adds detailed knowledge articles about mobile runtimes, lifecycle,
+state, concurrency, networking, storage, platform integration, security, quality,
+and delivery. It complements the comparison modules with explanations of
+mechanisms, constraints, failure cases, and tradeoffs.
+
+Articles contain technical diagrams or illustrations, explanatory scenarios,
+contextual source citations, and a reference list. Code is included where it
+helps explain the mechanism. Readers do not select a framework pair or complete
+exercises, quizzes, assignments, or progress requirements to read Foundations.
+
+The initial scope is 48 articles organized into ten topics, as recorded in
+[FOUNDATIONS-INVENTORY.md](FOUNDATIONS-INVENTORY.md). Specialist features are
+separate editorial backlog items. The budget does not imply that articles have
+already been written or that existing concepts cover every platform.
+
+The index groups published articles by topic. The reader provides breadcrumbs,
+a generated table of contents, figures with accessible explanations, citations,
+references, and relevant links to articles and existing comparisons. Metadata
+drives localized search and navigation. English and Vietnamese versions publish
+together; drafts appear in neither public routes nor discovery. Locale switching
+preserves the article slug and drops a locale-specific heading fragment.
+
+This remains repository-backed, statically generated, and server-rendered. No
+backend, account, CMS, native runtime, or browser diagram engine is required.
+See the [content contract](content-model.md#foundations-articles-f02-contract) and
+[editorial rules](CONTENT-GUIDE.md#53-foundations-articles). F03-F07 implement this
+specification; no Foundations page is currently promised by this document.
+
+F03 supplies the server-side content pipeline. The public registry remains empty;
+the reader and discovery interfaces are still pending. Test fixtures are not
+published knowledge articles.
+
 ## Primary flow
 
 The first complete path is React Native to Jetpack Compose:
@@ -67,6 +101,21 @@ first complete content.
 
 Shareable state belongs in the URL when practical. Local preferences that do
 not define a public resource belong in browser storage.
+
+Planned Foundations routes use the existing canonical locale convention:
+
+```text
+/en/foundations
+/vi/foundations
+/en/foundations/[slug]
+/vi/foundations/[slug]
+```
+
+The shared slug identifies an article, independently of platform or technology
+pair. Unknown, draft, or unavailable article routes resolve as not found. Only
+published paired-locale articles enter the sitemap, canonical/language-alternate
+metadata, public topic index, and article search. Existing legacy routes and their
+redirect behavior are outside this extension's scope.
 
 ## Experience requirements
 

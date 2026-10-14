@@ -1,6 +1,5 @@
-export const LOCALES = ["en", "vi"] as const;
-
-export type Locale = (typeof LOCALES)[number];
+import { LOCALES, type Locale } from "@/types/locale";
+export { LOCALES, type Locale } from "@/types/locale";
 
 export const DEFAULT_LOCALE: Locale = "en";
 

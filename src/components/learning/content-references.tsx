@@ -6,6 +6,7 @@ type ContentReferencesProps = {
   kindLabels: Readonly<Record<ContentReferenceKind, string>>;
   opensInNewTab: string;
   references: readonly ContentReference[];
+  referenceIds?: readonly string[];
   technologyNames: Readonly<Partial<Record<Technology, string>>>;
   title: string;
   verifiedLabel: string;
@@ -18,6 +19,7 @@ export function ContentReferences({
   kindLabels,
   opensInNewTab,
   references,
+  referenceIds,
   technologyNames,
   title,
   verifiedLabel,
@@ -32,8 +34,9 @@ export function ContentReferences({
       </h2>
       <p className="mt-2 text-sm leading-6 text-muted">{description}</p>
       <ul className="mt-5 grid gap-3 sm:grid-cols-2">
-        {references.map((reference) => (
+        {references.map((reference, index) => (
           <li
+            id={referenceIds?.[index]}
             key={reference.url}
             className="rounded-xl border border-subtle bg-surface p-5"
           >

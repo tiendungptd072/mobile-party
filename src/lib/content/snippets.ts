@@ -89,14 +89,37 @@ export function loadSnippet(
   return code;
 }
 
+/** Reads an explicit article path without assigning a synthetic concept or stage. */
+export function loadSnippetPath(path: string, language: CodeLanguage): string {
+  const extension = EXTENSIONS[language];
+  if (!path.endsWith("." + extension)) {
+    throw new ContentValidationError(
+      path,
+      "snippet extension does not match language",
+    );
+  }
+  const code = readSnippetPath(path);
+  if (code === undefined) {
+    throw new ContentValidationError(
+      "content/snippets/" + path,
+      "snippet file is missing",
+    );
+  }
+  return code;
+}
+
 function readSnippet(
   source: SnippetSource,
   technology: Technology,
   language: CodeLanguage,
   snippet?: string,
 ): string | undefined {
-  const root = resolve(process.cwd(), "content/snippets");
   const path = getSnippetPath(source, technology, language, snippet);
+  return readSnippetPath(path);
+}
+
+function readSnippetPath(path: string): string | undefined {
+  const root = resolve(process.cwd(), "content/snippets");
   const absolutePath = resolve(root, path);
   const relativePath = relative(root, absolutePath);
 

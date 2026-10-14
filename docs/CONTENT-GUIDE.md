@@ -2,6 +2,8 @@
 
 This document defines how educational content should be written for this project.
 
+Foundations is the long-form knowledge library specified in [section 53](#53-foundations-articles). Its detailed explanations, source citations, and illustrations follow that section. The comparison-first structure and short introductions below describe concept comparisons; they do not impose a length limit or paired-implementation requirement on Foundations articles.
+
 The website helps developers transfer knowledge between:
 
 - React Native
@@ -1282,3 +1284,46 @@ What is the equivalent mental model and implementation in framework B?
 ```
 
 If the article does not make that comparison easier, simplify or restructure it.
+
+---
+
+# 53. Foundations Articles
+
+Foundations explains how mobile applications work. Readers should understand the mechanism, its constraints, and the consequences of alternative choices. This is reference material for developers who already understand programming, with no exercises, quizzes, challenges, assignments, or completion requirements.
+
+Use the [Foundations contract](content-model.md#foundations-articles-f02-contract), [pilot specification](FOUNDATIONS-ARTICLE-SPEC.md), and [inventory](FOUNDATIONS-INVENTORY.md). F03 implements the registry/metadata validation, generated body data, and server component bindings. Reader pages, real articles, comprehensive quality reporting, and discovery remain F04-F07 work.
+
+## Explanation and depth
+
+- Define the problem and terminology before introducing APIs. Explain who owns the work or data, where it executes, how long it lives, and what happens when its owner disappears.
+- Walk through the mechanism step by step. Cover guarantees, conditions, unknown outcomes, interruption, and recovery. Distinguish system behavior from application policy.
+- Explain alternatives and tradeoffs with concrete selection criteria. Include misconceptions and explain the incorrect assumption rather than only warning against an API.
+- Describe general principles first, Android/iOS behavior next, and relevant framework approaches in canonical order. Scope each claim to its platform and version. Do not fill four framework sections with weak analogies or empty placeholders.
+- Use explanatory scenarios and minimal code where they clarify behavior. An article may explain a complete workflow without asking the reader to implement it. Testing topics explain verification mechanisms without assigning tests to readers.
+- Do not set a fixed word count or compress an advanced topic to match a basic comparison. Split independent mechanisms into linked articles; avoid duplicating explanations across neighboring articles.
+
+## Citations and verification
+
+Use primary sources: official platform/framework documentation, specifications, language proposals, and official samples; use applicable OWASP material for security. Read the exact linked section before using it to support a claim. Record the actual review date and relevant version in the source metadata. Preserve the publisher's original source title where that identifies the document accurately; localize surrounding reference labels and article prose.
+
+Place a `Citation` near the statement it supports. A reference list alone is insufficient. Figures may also cite their mechanism sources. Separate documented guarantees, simplified conceptual models, and author recommendations in the prose. A source documenting Android cannot establish iOS behavior, and a compiler check cannot establish an OS scheduling guarantee.
+
+Foundation MDX bodies use static Markdown and the registered `Citation`, `Figure`, and `Snippet` components. Imports, exports, expressions, arbitrary JSX, Markdown image syntax, reference-style links, and GFM footnotes are rejected by the compiler. Use inline Markdown links, `Citation` for sources, and standalone `Figure`/`Snippet` blocks. Metadata and body imports belong to the server registry. Markdown tables are supported through the shared build configuration.
+
+Keep unverified research outside registered citation records. Drafts may omit unfinished bodies or source entries; any source actually cited by an authored body must resolve. Do not invent verification dates, copy an old date as a new review, or describe unchecked pages as verified. Respect quotation limits and image reuse licenses.
+
+## Illustrations and examples
+
+Each published article needs a meaningful technical figure: for example, a lifecycle state diagram, an asynchronous sequence, an ownership graph, or a race timeline. Explain the diagram in adjacent prose. Give figures stable IDs, localized captions and alternative text, and an explanation of any simplification. Color must not be the only way to distinguish behavior.
+
+Start with repository-owned static SVGs in the article's illustration directory. Keep labels legible on a narrow screen and in both themes. Localize prose labels when needed; preserve API names. A shared technical diagram is acceptable only when both locale bodies explain all meaningful relationships. External figures require explicit attribution and reuse rights; self-authored diagrams cite sources for their mechanisms. Do not add decorative images to satisfy the figure requirement.
+
+Executable examples use file-backed `Snippet` references and shared server-side Shiki highlighting. Explain omitted setup and whether a shown adapter is implemented elsewhere or only a contract. Declare pseudocode as such. Record compilation, documentation review, and device/runtime validation as separate kinds of evidence; never present one as proof of another. No three-stage progression or pair of implementations is required for an article.
+
+## Localization and editorial review
+
+English is the technical source of truth. Vietnamese is a complete article body, not a string overlay or silent English fallback. Both locales share scope, examples, source IDs, figure IDs, and relevant failure cases. Translate prose, title, summary, search keywords, captions, and alternative text naturally; preserve code, identifiers, API names, and canonical slugs.
+
+Before publishing, review source applicability, technical accuracy, translation parity, illustration meaning, code limitations, and reading quality in both locales. Record each locale's actual `reviewedAt` date. Meaningful changes invalidate the affected review; changes to shared technical claims require review of both locales. This is editorial review evidence, not a claim that an independent human or a device test participated.
+
+Automated checks validate structure, paths, IDs, and readiness. They cannot prove correctness of a claim, fidelity of a translation, usefulness of a diagram, or adequacy of a source. The publication checks in the contract and the manual review described here are both required.
