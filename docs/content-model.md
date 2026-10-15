@@ -154,6 +154,9 @@ fallback does not count as translated. `bun run content:status --strict` exits
 with code 1 when any required cell is incomplete. The command uses the same
 validated content pipeline as the site, so malformed authored content also fails.
 
+F06 appends a separate Foundations registry report; the concept/stage rows and
+their completeness rules are unchanged. See [Foundations quality reporting](#foundations-quality-reporting-f06).
+
 ## Recipe
 
 ```ts
@@ -244,7 +247,7 @@ needed by the client and never duplicates full lesson bodies.
 
 This is the F02 contract, with the registry/content pipeline implemented in F03
 and static reader routes in F04. F05 supplies the reviewed bilingual A03 draft;
-quality reporting and public discovery/publication remain F06-F07 work. Existing Concept/Roadmap/Recipe schemas remain
+F06 adds structural reporting and link checks; public discovery/publication remains F07 work. Existing Concept/Roadmap/Recipe schemas remain
 unchanged. Foundations has its own article model and does not require two implementations, exercises,
 checklists, or three snippet stages.
 
@@ -484,9 +487,55 @@ never MDX functions, full prose, figures, or snippet code.
 F03 enforces registry metadata, supplied body structure, source resolution, local
 fragment anchors, asset/snippet paths, publication locale readiness, and source/
 figure/snippet parity. F04 implements reader behavior and page metadata. F05 supplies
-reviewed real content. F06 adds comprehensive cross-page/internal-link auditing
-and the quality report/CI integration before F07 exposes discovery. Neither F03
-nor a compiler check proves the editorial truth of the content.
+reviewed real content. F06 adds the quality report, internal-link auditing, and CI
+integration before F07 exposes discovery. Neither a structural report nor a
+compiler check proves the editorial truth of the content.
+
+### Foundations quality reporting (F06)
+
+`bun run content:status` retains the existing concept/stage table and appends a
+Foundations table with slug, topic, publication status, EN/VI structural readiness,
+and publication-readiness input status. The summary counts registered articles,
+published/draft entries, structurally ready entries, and nonempty locale bodies.
+It does not count the 48-article editorial budget as existing content or claim
+that unregistered catalog entries are complete.
+
+The report reuses schema, source/figure/snippet, and publication checks. Invalid
+supplied content is an error in either status. Missing publication inputs in an
+unfinished draft are `pending`; requesting `published` makes them errors. A
+review date is a checked metadata field, not proof that review happened. The
+report can return the first structural error per entry/collection and aggregates
+link diagnostics for structurally valid entries.
+
+Internal destinations come from existing concept, recipe, roadmap, and locale
+routes plus registered Foundations bodies. Links must use the article locale;
+unknown paths/fragments and missing local assets are errors. Self-fragments use
+generated heading/source/figure anchors plus actual reader section targets.
+Percent-encoded fragments are decoded; a bare `#` is a valid top-of-page link.
+Direct links to another registered draft block publication: they are pending in
+draft source articles and errors in published sources. Metadata related lists
+may still contain registered drafts because the reader filters those entries.
+
+After a fresh build, `bun run content:status --strict --built` reads literal DOM
+IDs from generated `.next/server/app` HTML. It checks published article anchors
+even when the body has no self-links, and checks cross-page fragments against
+their target pages. A missing build artifact is reported as a `build` issue,
+separate from an unknown fragment. Runtime-only destinations without generated
+HTML cannot have their fragments certified by this offline check. Without
+`--built`, a cross-page fragment requiring rendered evidence reports that the
+build check is needed. Local SVG link fragments are checked directly against
+their asset IDs.
+
+`--strict` exits 1 for incomplete required concept/stage cells or any Foundations
+error. Pending drafts alone do not fail it. CI runs strict structural checks before
+tests and the built-anchor check after the site build. This configures CI; it does
+not claim that a remote job ran successfully. All checks are offline; external
+HTTP availability, technical/source truth, and translation fidelity remain
+separate checks rather than being inferred from URL syntax or a network outage.
+
+Entry points: [report and link audit](../src/lib/content/foundation-status.ts),
+[shared publication/anchor contracts](../src/lib/content/foundation-schema.ts),
+[CLI](../scripts/content-status.ts), and [shared Bun MDX loader](../scripts/mdx-loader.ts).
 
 ### F03 implementation entry points
 

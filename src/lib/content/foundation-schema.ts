@@ -8,6 +8,7 @@ import {
   FOUNDATION_TOPICS,
   MOBILE_PLATFORMS,
   type FoundationArticleMetadata,
+  type FoundationBodyData,
   type FoundationBodyModule,
   type FoundationDefinition,
   type FoundationLocaleMetadata,
@@ -335,26 +336,47 @@ function body(
   const links = array(data.links, path + ".links").map((entry) =>
     readString(entry, path + ".links"),
   );
-  const anchors = new Set([
-    ...headings.map((entry) => entry.id),
-    ...article.references.map((entry) => "source-" + entry.id),
-    ...figures.map((entry) => "figure-" + entry.id),
-  ]);
+  const foundation: FoundationBodyData = {
+    headings,
+    citations,
+    figures,
+    snippets,
+    links,
+    hasContent: data.hasContent,
+  };
+  const anchors = getFoundationAnchors(article, foundation);
   for (const link of links) {
-    if (link.startsWith("#") && !anchors.has(link.slice(1)))
+    if (!link.startsWith("#") || link === "#") continue;
+    let fragment: string;
+    try {
+      fragment = decodeURIComponent(link.slice(1));
+    } catch {
+      fail(path + ".links", "invalid fragment encoding: " + link);
+    }
+    if (!anchors.has(fragment))
       fail(path + ".links", "unknown fragment: " + link);
   }
   return {
     default: bodyModule.default as MDXContent,
-    foundation: {
-      headings,
-      citations,
-      figures,
-      snippets,
-      links,
-      hasContent: data.hasContent,
-    },
+    foundation,
   };
+}
+
+/** Reader-owned targets supplement the anchors emitted by the MDX compiler. */
+export function getFoundationAnchors(
+  article: FoundationArticleMetadata,
+  data: FoundationBodyData,
+  hasRelatedArticles = article.relatedArticles.length > 0,
+): ReadonlySet<string> {
+  return new Set([
+    "main-content",
+    ...data.headings.map((entry) => entry.id),
+    ...article.references.map((entry) => "source-" + entry.id),
+    ...data.figures.map((entry) => "figure-" + entry.id),
+    ...(article.references.length ? ["references-title"] : []),
+    ...(article.relatedConcepts.length ? ["related-concepts-title"] : []),
+    ...(hasRelatedArticles ? ["related-articles-title"] : []),
+  ]);
 }
 
 function sameSet(left: readonly string[], right: readonly string[]) {
@@ -363,11 +385,75 @@ function sameSet(left: readonly string[], right: readonly string[]) {
   return a.size === b.size && [...a].every((value) => b.has(value));
 }
 
-/** Validates registry inputs and supplied bodies; published entries require both locales. */
+export type FoundationPublicationIssue = {
+  locale?: (typeof LOCALES)[number];
+  message: string;
+};
+
+/** Structural publication requirements; presence of review dates is not evidence of editorial truth. */
+export function getFoundationPublicationIssues({
+  metadata: article,
+  bodies,
+}: FoundationDefinition): readonly FoundationPublicationIssue[] {
+  const issues: FoundationPublicationIssue[] = [];
+  for (const locale of LOCALES) {
+    const current = bodies[locale]?.foundation;
+    if (!article.locales[locale]?.reviewedAt)
+      issues.push({
+        locale,
+        message: "published locale needs an editorial review date",
+      });
+    if (!current?.hasContent)
+      issues.push({
+        locale,
+        message: "published locale needs a nonempty MDX body",
+      });
+    if (!current) continue;
+    if (!current.figures.length)
+      issues.push({ locale, message: "published locale needs a figure" });
+    if (
+      !sameSet(
+        [
+          ...current.citations,
+          ...current.figures.flatMap((entry) => entry.sources),
+        ],
+        article.references.map((entry) => entry.id),
+      )
+    )
+      issues.push({
+        locale,
+        message: "published source set contains unused references",
+      });
+  }
+  if (!article.references.some((entry) => entry.kind !== "further-reading"))
+    issues.push({ message: "published article needs a primary source" });
+  const en = bodies.en?.foundation;
+  const vi = bodies.vi?.foundation;
+  if (en && vi) {
+    if (
+      !sameSet(
+        en.figures.map((entry) => entry.id),
+        vi.figures.map((entry) => entry.id),
+      )
+    )
+      issues.push({ message: "locale figure IDs differ" });
+    if (
+      !sameSet(
+        en.snippets.map((entry) => entry.path + ":" + entry.language),
+        vi.snippets.map((entry) => entry.path + ":" + entry.language),
+      )
+    )
+      issues.push({ message: "locale snippet references differ" });
+  }
+  return issues;
+}
+
+/** Validates supplied bodies and metadata. Isolated audits may supply the enclosing registry's article IDs. */
 export function validateFoundationDefinitions(
   value: unknown,
   conceptSlugs: ReadonlySet<string>,
   publicRoot = resolve(process.cwd(), "public"),
+  articleSlugs?: ReadonlySet<string>,
 ): readonly FoundationDefinition[] {
   const seen = new Set<string>();
   const definitions = array(value, "foundations").map((value, index) => {
@@ -388,53 +474,26 @@ export function validateFoundationDefinitions(
           fail(localePath, "body has no localized metadata");
         bodies[locale] = body(bodyMap[locale], article, publicRoot, localePath);
       }
-      if (article.status === "published") {
-        if (!article.locales[locale]?.reviewedAt)
-          fail(localePath, "published locale needs an editorial review date");
-        const current = bodies[locale]?.foundation;
-        if (!current?.hasContent)
-          fail(localePath, "published locale needs a nonempty MDX body");
-        if (!current.figures.length)
-          fail(localePath, "published locale needs a figure");
-        const used = [
-          ...current.citations,
-          ...current.figures.flatMap((entry) => entry.sources),
-        ];
-        if (
-          !sameSet(
-            used,
-            article.references.map((entry) => entry.id),
-          )
-        )
-          fail(localePath, "published source set contains unused references");
-      }
     }
     if (article.status === "published") {
-      if (!article.references.some((entry) => entry.kind !== "further-reading"))
-        fail(path, "published article needs a primary source");
-      const en = bodies.en!.foundation;
-      const vi = bodies.vi!.foundation;
-      if (
-        !sameSet(
-          en.figures.map((entry) => entry.id),
-          vi.figures.map((entry) => entry.id),
-        )
-      )
-        fail(path, "locale figure IDs differ");
-      if (
-        !sameSet(
-          en.snippets.map((entry) => entry.path + ":" + entry.language),
-          vi.snippets.map((entry) => entry.path + ":" + entry.language),
-        )
-      )
-        fail(path, "locale snippet references differ");
+      const issue = getFoundationPublicationIssues({
+        metadata: article,
+        bodies,
+      })[0];
+      if (issue)
+        fail(
+          issue.locale
+            ? path + "." + article.slug + ".bodies." + issue.locale
+            : path,
+          issue.message,
+        );
     }
     return { metadata: article, bodies };
   });
   for (const { metadata: article } of definitions) {
     const path = "foundations." + article.slug;
     for (const slug of article.relatedArticles) {
-      if (slug === article.slug || !seen.has(slug))
+      if (slug === article.slug || !(articleSlugs ?? seen).has(slug))
         fail(path, "unknown or self-related article: " + slug);
     }
     for (const slug of article.relatedConcepts) {

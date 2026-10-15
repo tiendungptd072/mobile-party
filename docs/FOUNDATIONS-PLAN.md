@@ -1,6 +1,6 @@
 # Mobile Foundations: implementation and editorial plan
 
-Status: in progress; F01-F05 are complete. Created: 2026-10-14. Next task: F06.
+Status: in progress; F01-F06 are complete. Created: 2026-10-14. Next task: F07.
 
 Inventory and scope decisions: [FOUNDATIONS-INVENTORY.md](FOUNDATIONS-INVENTORY.md). Execution evidence: [FOUNDATIONS-LOG.md](FOUNDATIONS-LOG.md).
 
@@ -162,13 +162,15 @@ Acceptance: the full article standard passes; sources were actually checked; dia
 
 Evidence (2026-10-15): [English](../content/foundations/en/process-death-and-state-restoration.mdx) and [Vietnamese](../content/foundations/vi/process-death-and-state-restoration.mdx) bodies cover ownership/storage, capture timing, process reconstruction, platform/framework boundaries, failure policies, tradeoffs, and misconceptions. Thirteen primary sources were reviewed; two diagrams have localized SVGs and prose equivalents. Chrome reviewed the actual pilot through temporary published preview routes in eight locale/theme/viewport combinations. Real-body readiness/rendering tests pass; lint/typecheck pass; the full suite has 175 passes and one previously established Windows-path failure on macOS. Final Webpack build passes with 692 static pages and the reviewed pilot restored to `draft` for F07 publication. Shared template/editorial corrections and source/translation review are recorded in the [F05 log](FOUNDATIONS-LOG.md#f05--pilot-authoring-and-editorial-review--2026-10-15). A03 is authored once here; F06 is next.
 
-### F06 [ ] Add Foundations quality reporting and CI checks
+### F06 [x] Add Foundations quality reporting and CI checks
 
 Dependencies: F05.
 
 Extend the existing content-report approach with article coverage, locale readiness, missing assets, unresolved citations, invalid related links, and publication status. Preserve existing concept/stage reporting. Check internal anchors and local asset references with the smallest suitable build/test integration.
 
 Acceptance: controlled invalid fixtures fail the relevant checks, then are removed/restored; valid articles pass. Do not describe automated checks as proof of technical truth or translation quality. External link availability may be checked separately; network outages must be distinguishable from invalid content.
+
+Evidence (2026-10-15): [content:status](../scripts/content-status.ts) preserves the concept/stage table and appends [Foundations coverage/readiness diagnostics](../src/lib/content/foundation-status.ts). Shared schema checks cover supplied content and publication inputs; link auditing checks canonical locale destinations, reader/asset fragments, and generated HTML anchors with `--built`. Twenty-four new tests pass, including real EN/VI reader HTML and invalid isolated fixtures. A temporary real article link to a valid generated dictionary anchor passes; changing it to a nonexistent anchor exits 1; the link was removed and the article restored byte-for-byte. Final strict/built report: 864/864 concept/stage cells ready; one draft, 2/2 bodies, zero errors/pending issues. Lint/typecheck and the 692-page Webpack build pass; full tests report 199 passes and the unchanged Windows-path failure on macOS. CI is configured with both checks; no remote job success is asserted. Runtime-only fragment targets report missing build evidence rather than being mislabeled as broken content. See the [F06 log](FOUNDATIONS-LOG.md#f06--quality-reporting-and-ci-checks--2026-10-15). A03 remains draft; F07 is next.
 
 ### F07 [ ] Integrate discovery and publish the pilot in the site build
 

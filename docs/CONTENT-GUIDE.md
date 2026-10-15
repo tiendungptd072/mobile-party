@@ -1291,7 +1291,7 @@ If the article does not make that comparison easier, simplify or restructure it.
 
 Foundations explains how mobile applications work. Readers should understand the mechanism, its constraints, and the consequences of alternative choices. This is reference material for developers who already understand programming, with no exercises, quizzes, challenges, assignments, or completion requirements.
 
-Use the [Foundations contract](content-model.md#foundations-articles-f02-contract), [pilot specification](FOUNDATIONS-ARTICLE-SPEC.md), and [inventory](FOUNDATIONS-INVENTORY.md). F03 implements the registry/metadata validation, generated body data, and server component bindings; F04 adds the static index and reader. F05 supplies the reviewed bilingual pilot draft. Quality reporting and public discovery/publication remain F06-F07 work.
+Use the [Foundations contract](content-model.md#foundations-articles-f02-contract), [pilot specification](FOUNDATIONS-ARTICLE-SPEC.md), and [inventory](FOUNDATIONS-INVENTORY.md). F03 implements the registry/metadata validation, generated body data, and server component bindings; F04 adds the static index and reader. F05 supplies the reviewed bilingual pilot draft; F06 adds structural reporting and CI checks. Public discovery/publication remains F07 work.
 
 ## Explanation and depth
 
@@ -1331,3 +1331,5 @@ English is the technical source of truth. Vietnamese is a complete article body,
 Before publishing, review source applicability, technical accuracy, translation parity, illustration meaning, code limitations, and reading quality in both locales. Record each locale's actual `reviewedAt` date. Meaningful changes invalidate the affected review; changes to shared technical claims require review of both locales. This is editorial review evidence, not a claim that an independent human or a device test participated.
 
 Automated checks validate structure, paths, IDs, and readiness. They cannot prove correctness of a claim, fidelity of a translation, usefulness of a diagram, or adequacy of a source. The publication checks in the contract and the manual review described here are both required.
+
+Run `bun run content:status --strict` while authoring. After a fresh site build, run `bun run content:status --strict --built` for rendered article anchors and cross-page fragments. Resolve `error` diagnostics; unfinished drafts may retain `pending` publication inputs. Missing build evidence is distinct from a broken fragment. Neither command contacts external sources or updates source verification/review dates. See the [F06 reporting contract](content-model.md#foundations-quality-reporting-f06).

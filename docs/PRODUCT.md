@@ -65,7 +65,7 @@ See the [content contract](content-model.md#foundations-articles-f02-contract) a
 F03 supplies the server-side content pipeline; F04 supplies the static locale index
 and article reader, including localized metadata. F05 authors the A03 pilot in
 English and Vietnamese with reviewed sources and localized diagrams. It remains a
-draft until F07, after F06 adds quality reporting. Public indexes still show a
+draft until F07. F06 supplies offline structural reporting and CI link/anchor checks. Public indexes still show a
 localized empty state and unpublished article slugs return 404. F07 publishes the
 pilot and adds navigation, search, and sitemap discovery. Test fixtures are not
 published knowledge articles.
