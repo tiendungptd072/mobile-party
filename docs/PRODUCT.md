@@ -60,12 +60,12 @@ preserves the article slug and drops a locale-specific heading fragment.
 This remains repository-backed, statically generated, and server-rendered. No
 backend, account, CMS, native runtime, or browser diagram engine is required.
 See the [content contract](content-model.md#foundations-articles-f02-contract) and
-[editorial rules](CONTENT-GUIDE.md#53-foundations-articles). F03-F07 implement this
-specification; no Foundations page is currently promised by this document.
+[editorial rules](CONTENT-GUIDE.md#53-foundations-articles).
 
-F03 supplies the server-side content pipeline. The public registry remains empty;
-the reader and discovery interfaces are still pending. Test fixtures are not
-published knowledge articles.
+F03 supplies the server-side content pipeline; F04 supplies the static locale index
+and article reader, including localized metadata. The public registry remains
+empty, so the index shows a localized empty state and unknown article slugs return 404. F05 authors the pilot, F06 adds quality reporting, and F07 adds navigation,
+search, and sitemap discovery. Test fixtures are not published knowledge articles.
 
 ## Primary flow
 

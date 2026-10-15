@@ -22,6 +22,16 @@ import type { Locale } from "@/types/locale";
 import { fixtureMetadata } from "@/test/fixtures/foundations/metadata";
 import { getMessages } from "@/lib/i18n/messages";
 import { getTechnologyById } from "@/lib/content/technologies";
+import { FoundationIndex } from "@/components/foundations/foundation-index";
+import { FoundationReader } from "@/components/foundations/foundation-reader";
+import { getConceptBySlug } from "@/lib/content/concepts";
+import FoundationsPage, {
+  generateMetadata as indexMetadata,
+} from "../../../app/[locale]/foundations/page";
+import FoundationPage, {
+  generateStaticParams,
+  generateMetadata as articleMetadata,
+} from "../../../app/[locale]/foundations/[slug]/page";
 
 const fixtureRoot = resolve("src/test/fixtures/foundations");
 const concepts = new Set(["state-restoration"]);
@@ -59,6 +69,116 @@ beforeAll(async () => {
     "vi",
   );
   [valid] = validate([{ metadata: fixtureMetadata, bodies: { en, vi } }]);
+});
+
+describe("Foundations reader", () => {
+  test.each(["en", "vi"] as const)(
+    "renders %s navigation, resolved anchors, callouts, figures and related links",
+    async (locale) => {
+      const article = createFoundationCollection([fixture()]).getArticle(
+        "pipeline-fixture",
+        locale,
+      )!;
+      const related = {
+        ...article,
+        metadata: { ...article.metadata, slug: "related-fixture" },
+      };
+      const concept = getConceptBySlug("state-restoration", locale)!;
+      const html = await new Response(
+        await renderToReadableStream(
+          <FoundationReader
+            article={article}
+            relatedArticles={[related]}
+            relatedConcepts={[concept]}
+          />,
+        ),
+      ).text();
+      const messages = getMessages(locale).foundations;
+      expect(html.match(/<h1[ >]/g)).toHaveLength(1);
+      expect(html).toContain(`aria-label="${messages.breadcrumbs}"`);
+      expect(html).toContain(`aria-label="${messages.contents}"`);
+      expect(html).toContain(`aria-label="${messages.table}"`);
+      expect(html).toContain('tabindex="0"');
+      expect(html).toContain(messages.note);
+      expect(html).toContain(`href="/${locale}/foundations/related-fixture"`);
+      expect(html).toContain(`href="/${locale}/compare/state-restoration"`);
+      expect(html).toContain(concept.title);
+      expect(html).toContain(article.body.foundation.figures[0].alt);
+      const ids = [...html.matchAll(/\sid="([^"]+)"/g)].map(
+        (match) => match[1],
+      );
+      expect(new Set(ids).size).toBe(ids.length);
+      for (const match of html.matchAll(/href="#([^"]+)"/g))
+        expect(ids).toContain(match[1]);
+      const withoutRelated = await new Response(
+        await renderToReadableStream(
+          <FoundationReader
+            article={article}
+            relatedArticles={[]}
+            relatedConcepts={[]}
+          />,
+        ),
+      ).text();
+      expect(withoutRelated).not.toContain('id="related-articles-title"');
+      expect(withoutRelated).not.toContain('id="related-concepts-title"');
+    },
+  );
+
+  test.each(["en", "vi"] as const)(
+    "groups %s entries by topic and editorial order; localizes empty state and metadata",
+    async (locale) => {
+      const article = createFoundationCollection([fixture()]).getArticle(
+        "pipeline-fixture",
+        locale,
+      )!;
+      const earlier = {
+        ...article,
+        metadata: { ...article.metadata, slug: "earlier-fixture", order: -1 },
+      };
+      const html = await new Response(
+        await renderToReadableStream(
+          <FoundationIndex articles={[article, earlier]} locale={locale} />,
+        ),
+      ).text();
+      expect(html).toContain(
+        getMessages(locale).foundations.topics[article.metadata.topic],
+      );
+      expect(
+        html.indexOf(`/${locale}/foundations/earlier-fixture`),
+      ).toBeLessThan(html.indexOf(`/${locale}/foundations/pipeline-fixture`));
+      expect(html).not.toContain('id="topic-concurrency"');
+      const empty = await new Response(
+        await renderToReadableStream(
+          await FoundationsPage({ params: Promise.resolve({ locale }) }),
+        ),
+      ).text();
+      expect(empty).toContain(getMessages(locale).foundations.empty);
+      expect(empty).not.toContain("pipeline-fixture");
+      expect(
+        (await indexMetadata({ params: Promise.resolve({ locale }) }))
+          .alternates,
+      ).toEqual({
+        canonical: `/${locale}/foundations`,
+        languages: { en: "/en/foundations", vi: "/vi/foundations" },
+      });
+    },
+  );
+
+  test("does not generate fixture paths and rejects unknown articles/locales", async () => {
+    expect(generateStaticParams()).toEqual([]);
+    for (const locale of ["en", "vi", "fr"]) {
+      const props = {
+        params: Promise.resolve({ locale, slug: "pipeline-fixture" }),
+      };
+      await expect(FoundationPage(props)).rejects.toThrow(
+        "NEXT_HTTP_ERROR_FALLBACK;404",
+      );
+      expect(await articleMetadata(props)).toEqual({});
+    }
+    await expect(
+      FoundationsPage({ params: Promise.resolve({ locale: "fr" }) }),
+    ).rejects.toThrow("NEXT_HTTP_ERROR_FALLBACK;404");
+  });
 });
 
 describe("Foundations MDX pipeline", () => {

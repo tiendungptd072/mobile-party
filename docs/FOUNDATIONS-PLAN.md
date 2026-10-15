@@ -1,6 +1,6 @@
 # Mobile Foundations: implementation and editorial plan
 
-Status: in progress; F01-F03 are complete. Created: 2026-10-14. Next task: F04.
+Status: in progress; F01-F04 are complete. Created: 2026-10-14. Next task: F05.
 
 Inventory and scope decisions: [FOUNDATIONS-INVENTORY.md](FOUNDATIONS-INVENTORY.md). Execution evidence: [FOUNDATIONS-LOG.md](FOUNDATIONS-LOG.md).
 
@@ -142,13 +142,15 @@ Acceptance: fixture articles render from local MDX in both locales; invalid refe
 
 Evidence (2026-10-14): the [server pipeline](../src/lib/content/foundations.ts), [schema](../src/lib/content/foundation-schema.ts), [MDX transform](../scripts/remark-foundations.mjs), and [server bindings](../src/components/foundations/foundation-body.tsx) are implemented. Real local MDX fixtures render EN/VI with generated headings, tables, source anchors, figures, and shared Shiki snippets. Negative tests cover duplicate slugs, unresolved sources, invalid metadata, missing locale/asset/snippet inputs, traversal, and publication parity; drafts are hidden from lists, lookup, and related discovery. A temporary Next.js smoke route built both locale fixtures and was removed; client chunk inspection found no MDX/Shiki processing. The normal build still generates 690 pages. The real registry is empty and all article checkboxes remain unchecked. See [F03 log](FOUNDATIONS-LOG.md#f03--mdx-content-pipeline--2026-10-14).
 
-### F04 [ ] Implement static article pages
+### F04 [x] Implement static article pages
 
 Dependencies: F03.
 
 Build the index and reader with existing UI patterns. Add breadcrumbs, generated table of contents, code, callouts, figures, citations, references, and related links. Set localized metadata, canonical URLs, language alternates, and not-found behavior.
 
 Acceptance: desktop/mobile and light/dark views are readable; anchors and keyboard links work; diagrams have accessible explanations; both locales render correctly; pages are statically generated. Review representative browser views.
+
+Evidence (2026-10-15): the [index](../app/[locale]/foundations/page.tsx) and [reader](../app/[locale]/foundations/[slug]/page.tsx) render localized topic groups, breadcrumbs, generated TOC, server MDX/Shiki content, callouts, scrollable tables, figures, citations, references, related links, canonical URLs, and language alternates. A temporary registry exercised both real routes with published EN/VI MDX fixtures and a hidden draft; Chrome checked eight locale/theme/viewport combinations, keyboard anchors/table scrolling, locale switching, and 404 responses. Fixtures and public test assets were then removed; the final Webpack build generates 692 static pages with an empty real registry. Lint/typecheck pass; tests report 173 passed and one independently reproduced pre-existing Windows-path assertion failure on macOS. Turbopack's worker port remains blocked by the environment; the supported Webpack build passes without configuration changes. See [F04 log](FOUNDATIONS-LOG.md#f04--static-index-and-reader--2026-10-15).
 
 ### F05 [ ] Author and review the pilot article
 

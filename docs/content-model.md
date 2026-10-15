@@ -242,10 +242,10 @@ needed by the client and never duplicates full lesson bodies.
 
 ## Foundations articles (F02 contract)
 
-This is the F02 contract, with the registry/content pipeline implemented in F03.
-Reader routes, real articles, comprehensive reporting, and discovery remain
-F04-F07 work. Existing Concept/Roadmap/Recipe schemas remain unchanged. Foundations
-has its own article model and does not require two implementations, exercises,
+This is the F02 contract, with the registry/content pipeline implemented in F03
+and static reader routes in F04. Real articles, comprehensive reporting, and
+discovery remain F05-F07 work. Existing Concept/Roadmap/Recipe schemas remain
+unchanged. Foundations has its own article model and does not require two implementations, exercises,
 checklists, or three snippet stages.
 
 ### Files and registry
@@ -495,6 +495,7 @@ nor a compiler check proves the editorial truth of the content.
 - [schema](../src/lib/content/foundation-schema.ts): `validateFoundationDefinitions` normalizes unknown inputs and checks supplied compiled bodies; its optional public-root argument supports isolated fixture validation.
 - [MDX plugin](../scripts/remark-foundations.mjs): assigns heading IDs and exports `foundation` data containing headings, citation IDs, figures, snippets, links, and a nonempty-body flag. H2/H3 headings form the TOC projection.
 - [server bindings](../src/components/foundations/foundation-body.tsx): `FoundationBody` resolves article-specific components and shared Shiki highlighting; `FoundationReferences` reuses the reference list with source anchors.
+- [index route](../app/[locale]/foundations/page.tsx) and [reader route](../app/[locale]/foundations/[slug]/page.tsx): localized metadata, published-only static article parameters, and not-found handling. The index groups articles by topic and order. The reader composes generated H2/H3 navigation, the body, references, and localized related links; Markdown blockquotes use the existing informational callout and tables use a labeled keyboard-scroll region.
 - [snippet loader](../src/lib/content/snippets.ts): `loadSnippetPath(path, language)` reuses root containment and display-region extraction without a synthetic concept/stage.
 
 The compiler and GFM plugin are build/test dependencies. They do not process

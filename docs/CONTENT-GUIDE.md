@@ -1291,7 +1291,7 @@ If the article does not make that comparison easier, simplify or restructure it.
 
 Foundations explains how mobile applications work. Readers should understand the mechanism, its constraints, and the consequences of alternative choices. This is reference material for developers who already understand programming, with no exercises, quizzes, challenges, assignments, or completion requirements.
 
-Use the [Foundations contract](content-model.md#foundations-articles-f02-contract), [pilot specification](FOUNDATIONS-ARTICLE-SPEC.md), and [inventory](FOUNDATIONS-INVENTORY.md). F03 implements the registry/metadata validation, generated body data, and server component bindings. Reader pages, real articles, comprehensive quality reporting, and discovery remain F04-F07 work.
+Use the [Foundations contract](content-model.md#foundations-articles-f02-contract), [pilot specification](FOUNDATIONS-ARTICLE-SPEC.md), and [inventory](FOUNDATIONS-INVENTORY.md). F03 implements the registry/metadata validation, generated body data, and server component bindings; F04 adds the static index and reader. Real articles, comprehensive quality reporting, and discovery remain F05-F07 work.
 
 ## Explanation and depth
 
@@ -1309,6 +1309,8 @@ Use primary sources: official platform/framework documentation, specifications, 
 Place a `Citation` near the statement it supports. A reference list alone is insufficient. Figures may also cite their mechanism sources. Separate documented guarantees, simplified conceptual models, and author recommendations in the prose. A source documenting Android cannot establish iOS behavior, and a compiler check cannot establish an OS scheduling guarantee.
 
 Foundation MDX bodies use static Markdown and the registered `Citation`, `Figure`, and `Snippet` components. Imports, exports, expressions, arbitrary JSX, Markdown image syntax, reference-style links, and GFM footnotes are rejected by the compiler. Use inline Markdown links, `Citation` for sources, and standalone `Figure`/`Snippet` blocks. Metadata and body imports belong to the server registry. Markdown tables are supported through the shared build configuration.
+
+The reader renders Markdown blockquotes as informational callouts with a localized note label. Use them for short notes; use ordinary paragraphs for long explanations. Tables have a labeled, keyboard-focusable horizontal scroll region. Figure and code components keep their own presentation inside the article typography. The table of contents uses generated H2/H3 anchors; do not duplicate it in the body or add an authored H1.
 
 Keep unverified research outside registered citation records. Drafts may omit unfinished bodies or source entries; any source actually cited by an authored body must resolve. Do not invent verification dates, copy an old date as a new review, or describe unchecked pages as verified. Respect quotation limits and image reuse licenses.
 

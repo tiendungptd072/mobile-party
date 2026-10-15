@@ -2,6 +2,7 @@ import "server-only";
 import { isValidElement, type ComponentProps } from "react";
 import type { MDXComponents } from "mdx/types";
 import { CodeBlock } from "@/components/code/code-block";
+import { Callout } from "@/components/ui/callout";
 import { ContentReferences } from "@/components/learning/content-references";
 import { loadSnippetPath } from "@/lib/content/snippets";
 import { ContentValidationError } from "@/lib/content/validation";
@@ -41,7 +42,10 @@ export function FoundationBody({ article }: { article: FoundationArticle }) {
     if (!figure)
       throw new ContentValidationError(path, "unknown figure: " + id);
     return (
-      <figure id={"figure-" + figure.id} className="my-6">
+      <figure
+        id={"figure-" + figure.id}
+        className="not-prose my-6 scroll-mt-24"
+      >
         {/* Static, authored diagrams are served directly, without image optimization. */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
@@ -73,11 +77,13 @@ export function FoundationBody({ article }: { article: FoundationArticle }) {
         "unknown snippet reference: " + source,
       );
     return (
-      <CodeBlock
-        code={loadSnippetPath(snippet.path, snippet.language)}
-        filename={snippet.path.split("/").at(-1)}
-        language={snippet.language}
-      />
+      <div className="not-prose my-6">
+        <CodeBlock
+          code={loadSnippetPath(snippet.path, snippet.language)}
+          filename={snippet.path.split("/").at(-1)}
+          language={snippet.language}
+        />
+      </div>
     );
   }
   async function Pre({ children, ...props }: ComponentProps<"pre">) {
@@ -91,18 +97,25 @@ export function FoundationBody({ article }: { article: FoundationArticle }) {
       );
     }
     const language = children.props.className?.replace(/^language-/, "");
-    if (!language) return <pre {...props}>{children}</pre>;
+    if (!language)
+      return (
+        <pre {...props} className="overflow-x-auto">
+          {children}
+        </pre>
+      );
     if (!isCodeLanguage(language))
       throw new ContentValidationError(
         path,
         "unsupported fenced code language: " + language,
       );
     return (
-      <CodeBlock
-        code={children.props.children}
-        language={language}
-        filename={getMessages(locale).codeExample}
-      />
+      <div className="not-prose my-6">
+        <CodeBlock
+          code={children.props.children}
+          language={language}
+          filename={getMessages(locale).codeExample}
+        />
+      </div>
     );
   }
   const components = {
@@ -110,6 +123,24 @@ export function FoundationBody({ article }: { article: FoundationArticle }) {
     Figure,
     Snippet,
     pre: Pre,
+    blockquote: ({ children }) => (
+      <Callout
+        className="not-prose my-6"
+        title={getMessages(locale).foundations.note}
+      >
+        {children}
+      </Callout>
+    ),
+    table: ({ children, ...props }) => (
+      <div
+        className="my-6 overflow-x-auto rounded-lg border border-subtle px-4"
+        role="region"
+        aria-label={getMessages(locale).foundations.table}
+        tabIndex={0}
+      >
+        <table {...props}>{children}</table>
+      </div>
+    ),
   } satisfies MDXComponents;
   const Body = body.default;
   return <Body components={components} />;

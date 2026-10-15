@@ -84,3 +84,39 @@ Source review: inspected the installed Next.js 16.3.5 MDX guide, MDX type declar
 Limits and follow-ups: reader routes and browser presentation belong to F04; real prose, illustrations, sources, and translation review to F05. F06 adds comprehensive cross-page/internal-link auditing and coverage/CI reporting. Existing RN/Kotlin compilation was not rerun because executable snippets and verification inputs did not change; shared display-loader regression tests and stage coverage passed. No native runtime behavior is claimed from these checks.
 
 Next eligible task: F04 — Implement static article pages.
+
+## F04 — Static index and reader — 2026-10-15
+
+Changed:
+
+- Added `/[locale]/foundations` and `/[locale]/foundations/[slug]` using the existing server collection and localized metadata helper. The index groups published articles by topic and editorial order, hides empty topics, and provides an EN/VI empty state. The reader generates static parameters only for published entries; `dynamicParams = false` rejects unlisted slugs.
+- Added server-rendered index/reader presentation: breadcrumbs, localized topic/title/summary, H2/H3 navigation from compiled headings, MDX, figures/captions, contextual citations, references, and related published articles/localized comparisons. Empty related sections are omitted. Existing locale switching already preserves arbitrary route slugs and drops fragments; no selector rewrite was needed.
+- Reused the existing Callout for Markdown blockquotes. Added a labeled, keyboard-focusable table scroll region and scoped article typography using existing theme tokens. Figure/code presentation is isolated from prose styles; heading, figure, and source targets have scroll offsets. No client boundary, dependency, educational article, navigation entry, search index, or sitemap entry was added.
+- Added five reader/route integration cases alongside the existing compiled EN/VI fixtures. Their synthetic blockquotes exercise localized callouts. Updated the editorial guide, product implementation status, and content contract; marked F04 complete while F05-F07 and every article remain unchecked.
+
+Automated verification:
+
+- `bun install --frozen-lockfile`: passed after approved installation; package manifests and lockfile are unchanged. Used the already installed Node 22.22.1 for Next.js because the default shell Node is 18.20.8.
+- `bun lint` and `bun typecheck`: passed. The final Next.js build also passed TypeScript checking.
+- Focused Foundations suite: 51 passed, one pre-existing failure. Full `bun test`: 173 passed, one failed, 3,541 assertions across 11 files. All five new reader cases passed, covering EN/VI rendering, unique/resolved anchors, localized notes/table labels, related links, topic ordering/empty states, index canonical/alternate metadata, fixture exclusion, and invalid locale/slug behavior.
+- Confirmed the failing Windows-path test exists unchanged in HEAD and reproduced it from a temporary copy of that original test, then removed the copy. On macOS, `loadSnippetPath("C:\\outside.kt", "kotlin")` reports `snippet file is missing` instead of the expected `must stay inside`. The loader and original assertion were left unchanged; this is not a passing suite claim or a new F04 regression.
+- `bun run content:status --strict`: 864 required cells, 864 ready, zero missing. Existing concept/stage coverage is unchanged; this is not Foundations quality reporting, which belongs to F06.
+- Production smoke build with `bun run build --webpack`: passed, generating 696 static pages with temporary published primary/related EN/VI fixtures and an unpublished draft in the real registry. The first Webpack smoke attempt correctly rejected the related fixture's borrowed illustration path; giving that temporary fixture its own asset resolved the validation error.
+- Removed all temporary registry entries/public assets and restored the exact original empty registry. Final `bun run build --webpack`: passed, generating 692 static pages, including both localized empty indexes and no fixture article routes. No build configuration change was required. Client JavaScript inspection of the smoke build found no displayed fixture snippet/source strings, MDX compiler, or highlighter initialization.
+- Prettier checks passed for changed supported files, and final diff/whitespace review passed. The existing Content Guide formatter ignore rule was preserved. No commit, push, or deployment was performed.
+
+Browser and manual review:
+
+- Used Chrome 155 headless against the production smoke build, through local DevTools, for all eight combinations of EN/VI, light/dark, and 390/1440px viewport width. Checked one H1, canonical and language-alternate links, resolved local fragments, loaded SVG assets/alternative text, correct locale, and no document overflow or browser runtime exceptions.
+- Visually inspected representative full-page desktop EN light/dark and mobile VI light/dark screenshots, plus the VI topic index. The fixture diagram, captions, code, callouts, references, and related sections were readable. This validates reader presentation using synthetic content, not the technical accuracy or accessibility of future pilot diagrams.
+- Activated TOC/citation links with Enter, confirmed visible keyboard focus, and verified horizontal keyboard scrolling with ArrowRight after widening a table in the browser DOM. The widened table did not cause document overflow. Switched VI to EN through the existing selector: article slug retained, fragment cleared.
+- Confirmed draft and unknown article requests return HTTP 404 in both locales and an unsupported locale returns 404. Next.js logged `Internal: NoFallbackError` for the unlisted article requests while returning the expected 404 responses; no browser runtime error occurred.
+- Temporary screenshots, review script/results, and build logs are local artifacts under `/private/tmp/mobile-party-f04-*`, outside the repository. The temporary production server and dedicated headless Chrome were stopped after review.
+
+Environment and limits:
+
+- Default Turbopack builds failed because loader workers could not bind a port (`Operation not permitted`), including the approved retry. Used Next.js's supported `--webpack` build option for production/rendering verification. This remains an environment limitation; no tooling replacement or permission bypass was introduced.
+- Read the installed Next.js MDX, `generateStaticParams`, `dynamicParams`, and metadata guides before implementation. No new mobile technical claims, source verification dates, native compilation, or device restoration behavior are asserted by F04. Snippet files/verification inputs are unchanged.
+- The real registry remains empty. F05 must author and review A03 in both locales and check its real diagrams/prose in this reader. Comprehensive link/report/CI work and public discovery remain F06/F07.
+
+Next eligible task: F05 — Author and review the pilot article.
