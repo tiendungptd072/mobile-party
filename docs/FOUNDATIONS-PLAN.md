@@ -1,6 +1,6 @@
 # Mobile Foundations: implementation and editorial plan
 
-Status: in progress; F01-F04 are complete. Created: 2026-10-14. Next task: F05.
+Status: in progress; F01-F05 are complete. Created: 2026-10-14. Next task: F06.
 
 Inventory and scope decisions: [FOUNDATIONS-INVENTORY.md](FOUNDATIONS-INVENTORY.md). Execution evidence: [FOUNDATIONS-LOG.md](FOUNDATIONS-LOG.md).
 
@@ -152,13 +152,15 @@ Acceptance: desktop/mobile and light/dark views are readable; anchors and keyboa
 
 Evidence (2026-10-15): the [index](../app/[locale]/foundations/page.tsx) and [reader](../app/[locale]/foundations/[slug]/page.tsx) render localized topic groups, breadcrumbs, generated TOC, server MDX/Shiki content, callouts, scrollable tables, figures, citations, references, related links, canonical URLs, and language alternates. A temporary registry exercised both real routes with published EN/VI MDX fixtures and a hidden draft; Chrome checked eight locale/theme/viewport combinations, keyboard anchors/table scrolling, locale switching, and 404 responses. Fixtures and public test assets were then removed; the final Webpack build generates 692 static pages with an empty real registry. Lint/typecheck pass; tests report 173 passed and one independently reproduced pre-existing Windows-path assertion failure on macOS. Turbopack's worker port remains blocked by the environment; the supported Webpack build passes without configuration changes. See [F04 log](FOUNDATIONS-LOG.md#f04--static-index-and-reader--2026-10-15).
 
-### F05 [ ] Author and review the pilot article
+### F05 [x] Author and review the pilot article
 
 Dependencies: F04.
 
 Write A03, `process-death-and-state-restoration`, in English and Vietnamese. Include a state-ownership/storage comparison, a process-recreation sequence, failure cases, contextual citations, and links to relevant existing concepts. Explicitly distinguish process death, configuration change, force-stop, and unmount.
 
 Acceptance: the full article standard passes; sources were actually checked; diagram labels and prose agree; the article works in the reader. Record editorial corrections to the shared template before scaling. This completes A03 once; do not author it again in Wave 1.
+
+Evidence (2026-10-15): [English](../content/foundations/en/process-death-and-state-restoration.mdx) and [Vietnamese](../content/foundations/vi/process-death-and-state-restoration.mdx) bodies cover ownership/storage, capture timing, process reconstruction, platform/framework boundaries, failure policies, tradeoffs, and misconceptions. Thirteen primary sources were reviewed; two diagrams have localized SVGs and prose equivalents. Chrome reviewed the actual pilot through temporary published preview routes in eight locale/theme/viewport combinations. Real-body readiness/rendering tests pass; lint/typecheck pass; the full suite has 175 passes and one previously established Windows-path failure on macOS. Final Webpack build passes with 692 static pages and the reviewed pilot restored to `draft` for F07 publication. Shared template/editorial corrections and source/translation review are recorded in the [F05 log](FOUNDATIONS-LOG.md#f05--pilot-authoring-and-editorial-review--2026-10-15). A03 is authored once here; F06 is next.
 
 ### F06 [ ] Add Foundations quality reporting and CI checks
 
@@ -184,17 +186,17 @@ Every article is one authoring task covering both locales, sources, illustration
 
 ### Wave 1: runtime, lifecycle, state, and rendering
 
-| ID      | Article slug                          | Core coverage                                                                             |
-| ------- | ------------------------------------- | ----------------------------------------------------------------------------------------- |
-| A01 [ ] | `mobile-runtime-and-sandbox`          | OS/process/thread roles, app runtime, sandbox, resource ownership                         |
-| A02 [ ] | `application-and-screen-lifecycle`    | Process, Activity/scene, screen and component lifetimes; foreground/background/suspension |
-| A03 [ ] | `process-death-and-state-restoration` | State loss, configuration change, saved state versus durable storage; pilot F05           |
-| A04 [ ] | `startup-and-session-restoration`     | Cold/warm start, initialization dependencies, session/draft recovery and reconciliation   |
-| A05 [ ] | `state-ownership-and-data-flow`       | UI/server/navigation/persistent state, derived state, UDF, state machines and effects     |
-| A06 [ ] | `rendering-and-frame-scheduling`      | Render/layout/mount, invalidation, frame deadlines, framework-specific models             |
-| A07 [ ] | `input-gestures-focus-and-keyboard`   | Event delivery, hit testing, gesture conflicts, focus, IME and keyboard interaction       |
-| A08 [ ] | `memory-and-resource-lifetimes`       | GC, ARC, ownership, retain cycles, listeners and native resources                         |
-| A09 [ ] | `time-money-and-data-representation`  | Wall/monotonic clocks, timestamps, timezone/DST, decimal precision, Unicode               |
+| ID      | Article slug                          | Core coverage                                                                                           |
+| ------- | ------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| A01 [ ] | `mobile-runtime-and-sandbox`          | OS/process/thread roles, app runtime, sandbox, resource ownership                                       |
+| A02 [ ] | `application-and-screen-lifecycle`    | Process, Activity/scene, screen and component lifetimes; foreground/background/suspension               |
+| A03 [x] | `process-death-and-state-restoration` | State loss, configuration change, saved state versus durable storage; completed in F05; publication F07 |
+| A04 [ ] | `startup-and-session-restoration`     | Cold/warm start, initialization dependencies, session/draft recovery and reconciliation                 |
+| A05 [ ] | `state-ownership-and-data-flow`       | UI/server/navigation/persistent state, derived state, UDF, state machines and effects                   |
+| A06 [ ] | `rendering-and-frame-scheduling`      | Render/layout/mount, invalidation, frame deadlines, framework-specific models                           |
+| A07 [ ] | `input-gestures-focus-and-keyboard`   | Event delivery, hit testing, gesture conflicts, focus, IME and keyboard interaction                     |
+| A08 [ ] | `memory-and-resource-lifetimes`       | GC, ARC, ownership, retain cycles, listeners and native resources                                       |
+| A09 [ ] | `time-money-and-data-representation`  | Wall/monotonic clocks, timestamps, timezone/DST, decimal precision, Unicode                             |
 
 ### Wave 2: concurrency, networking, and persistence
 

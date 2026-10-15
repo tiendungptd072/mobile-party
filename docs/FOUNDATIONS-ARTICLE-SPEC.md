@@ -1,6 +1,6 @@
 # Foundations pilot article specification
 
-Task: F02. Status: editorial blueprint, not a published article or an implementation fixture. F05 writes and reviews the real article after F03/F04 implement the pipeline and reader. No review dates, external source verification, diagram creation, or native runtime results are asserted here.
+Task: F02 blueprint, calibrated by F05. The real EN/VI pilot is now authored and registered as a reviewed draft; F07 controls publication after F06 quality reporting. This document retains the original blueprint and placeholder example as historical design context. Actual source dates and body imports live in the [registry](../content/foundations/index.ts); execution evidence belongs to the [F05 log](FOUNDATIONS-LOG.md#f05--pilot-authoring-and-editorial-review--2026-10-15).
 
 Use the [article contract](content-model.md#foundations-articles-f02-contract) and [editorial rules](CONTENT-GUIDE.md#53-foundations-articles). This blueprint demonstrates a knowledge article with long prose, contextual citations, accessible figures, and paired locales, without exercises or paired implementation requirements.
 
@@ -21,7 +21,7 @@ The reader should understand which state belongs to which owner, which restorati
 
 ## Draft metadata example
 
-The type names refer to the F02 contract and do not yet exist as production exports. Placeholder text is allowed here only to describe the future localized fields; it is not an approved translation. No MDX body imports are supplied by this blueprint. The empty reference array means that no source has been newly verified in F02. This entry cannot publish.
+The original example below described the F02 contract; its types now exist as production exports. Placeholder text is retained only to explain the original proposed fields; it is not an approved translation. No MDX body imports are supplied by this historical example. Its empty reference array records that no source was newly verified in F02. This example cannot publish; the real pilot entry is separate.
 
 ```ts
 const pilotMetadata: FoundationArticleMetadata = {
@@ -143,4 +143,17 @@ The following is an author/reviewer checklist, not reader-facing article content
 - Review the actual reader in both locales, mobile/desktop, and light/dark themes after F04 exists.
 - Set `published` only when both bodies and locale reviews are complete and all relevant checks pass. Draft metadata and this blueprint alone cannot satisfy that requirement.
 
-F02 acceptance is this complete blueprint and the shared contract/editorial/product documents. A03/F05 stays unchecked until the real article, sources, illustrations, and reader verification exist.
+F02 acceptance covered this blueprint and the shared contract/editorial/product documents. Actual A03/F05 acceptance is recorded separately in the plan and execution log; this placeholder example remains outside the registry.
+
+## F05 pilot calibration
+
+The real pilot uses [English](../content/foundations/en/process-death-and-state-restoration.mdx) and [Vietnamese](../content/foundations/vi/process-death-and-state-restoration.mdx) bodies with the same technical scope, figure IDs, source IDs, and framework order. It replaces the proposed source set with thirteen actually reviewed primary sources and uses locale-specific SVG labels. These corrections guide later article specifications:
+
+- Separate live memory, an eligible restoration checkpoint, a committed local record, and remote accepted data. The diagram must show reconstruction inputs, not a serialized heap or an unconditional chain of durable copies.
+- Explain when a mechanism captures changes and what happens when no checkpoint is supplied. Do not promise a final callback or the newest character after arbitrary termination.
+- Keep Android task dismissal, configuration change, process death, and component unmount distinct. Scope the Apple sample's force-quit warning to its debugging procedure; do not infer a universal iOS archive-deletion rule from it.
+- Label authentication readiness, account isolation, missing/read-failed data, offline behavior, conflicting revisions, and unknown side effects as application recovery policies. Platform state APIs do not implement them for the author.
+- Preserve the distinction between UIKit view-controller archives and SwiftUI scene storage. Keep sensitive credentials out of restoration examples; an account or record ID is not authorization.
+- A concrete scenario can replace executable snippets. The pilot intentionally displays no code because the existing snippets do not implement the complete recovery policy; no new native compilation or runtime guarantee is claimed.
+- Review publication readiness with both bodies, but retain `draft` until F07. A03 is authored once in F05; Wave 1 must not duplicate this task. Future technical changes require renewed locale/source review.
+- Use the reader's horizontal table region for prose-heavy comparisons instead of compressing columns to viewport width. Keep shared reference `version` values to actual version identifiers; put source applicability and unpinned review scope in editorial evidence, not English sentences displayed in both locales.

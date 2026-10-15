@@ -1,0 +1,146 @@
+## Màn hình trở lại; process cũ thì không
+
+Một lập trình viên đang sửa báo cáo hiện trường `D42` bằng tài khoản `A`. Họ chuyển sang ứng dụng camera rồi quay lại trình soạn thảo. Đích điều hướng cũ vẫn có thể hiện ra dù hệ điều hành đã kết thúc process của ứng dụng. Process mới không có heap cũ: state của component, repository trong bộ nhớ, callback đang chờ và các object thông thường đều phải được tạo lại. Android cho phép kết thúc cached process và không bảo đảm gọi `onDestroy()` trước đó. <Citation source="android-process-lifecycle" />
+
+**Khôi phục state** là dựng lại giao diện hữu ích từ những đầu vào còn tồn tại. Nó không tiếp tục instruction pointer cũ, hồi sinh object hay hoàn tất request bị gián đoạn. Trình soạn thảo báo cáo trong bài là thiết kế minh họa, không phải ứng dụng hoàn chỉnh hoặc mẫu code đã được compiler kiểm chứng. Hợp đồng nền tảng có trích dẫn; chính sách phục hồi đề xuất được ghi rõ là lựa chọn của ứng dụng.
+
+## Năm sự kiện, những vòng đời khác nhau
+
+Từ “khởi động lại” che khuất chủ sở hữu thực sự đã biến mất. Chuyển nền, mất component, tạo lại Activity và thay process cần cách suy luận khác nhau.
+
+| Sự kiện                                 | Điều gì thay đổi?                                                                                                               | Điều gì có thể còn?                                                                                      |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| Chuyển nền thông thường                 | Giao diện không còn hoạt động; process có thể vẫn tồn tại.                                                                      | Bộ nhớ hiện có khi process còn sống; không có cam kết process sẽ được giữ lại.                           |
+| Component unmount hoặc bị loại khỏi cây | Một chủ sở hữu UI rời khỏi cây giao diện.                                                                                       | State được chủ động giữ ở cấp cao hơn; bộ nhớ process không liên quan vẫn còn.                           |
+| Configuration change trên Android       | Mặc định, Activity được tạo lại khi có thay đổi như xoay màn hình.                                                              | `ViewModel` có scope phù hợp, saved state nhỏ và dữ liệu đã lưu.                                         |
+| Process bị hệ thống kết thúc            | Mọi chủ sở hữu trong process đều mất.                                                                                           | Saved UI state đủ điều kiện phục hồi và dữ liệu bền vững đã commit; cả hai đều không hồi sinh object cũ. |
+| Người dùng chủ động đóng                | Force-stop, xóa task hoặc `finish()` trên Android kết thúc vòng đời phục hồi tương ứng; force-quit trên iOS là hành động riêng. | Dữ liệu ứng dụng bền vững theo chính sách lưu giữ riêng; không được mặc định UI sẽ khôi phục.            |
+
+Android phân biệt hệ thống tạo lại với người dùng chủ động đóng: saved state gắn với task không phải database dùng cho mọi lần khởi động lại. `ViewModel` có thể vượt qua configuration change nhưng không tồn tại qua process death. Đây là hợp đồng của Android, không phải mô tả hành vi cửa sổ trên iOS. <Citation source="android-state-saving" /> <Citation source="android-saved-state-handle" />
+
+React gắn state với danh tính component và vị trí trong render tree. Loại component khỏi cây sẽ bỏ local state của nó dù process vẫn chạy. Đưa state lên component cha có thể kéo dài vòng đời sở hữu; bộ nhớ của component cha vẫn không sống qua process death. <Citation source="react-state-identity" />
+
+Trên iOS, vòng đời scene khác vòng đời process. Nhiều scene có thể ở các trạng thái hoạt động khác nhau; UIKit có thể ngắt kết nối scene đang ở nền hoặc bị suspend để thu hồi tài nguyên. Xem mọi chuyển đổi scene như tạo lại Activity của Android sẽ bỏ qua khác biệt đó. Sample restoration của Apple cũng cảnh báo force-quit khi debug sẽ xóa preserved state, nên thao tác này không tương đương cách kiểm thử restoration mà sample mô tả. <Citation source="ios-lifecycle" /> <Citation source="ios-restoration-sample" />
+
+## Giao mỗi giá trị cho chủ sở hữu giữ được cam kết
+
+Trình soạn thảo có nhiều loại state. Con trỏ nhấp nháy có thể bỏ; báo cáo mà sản phẩm đã thông báo lưu thành công thì không. Phân loại theo vòng đời cần thiết và hành vi phục hồi trước khi chọn API.
+
+| State và chủ sở hữu                                                     | Nơi lưu                               | Sau process death                             | Chi phí và giới hạn                                                                   |
+| ----------------------------------------------------------------------- | ------------------------------------- | --------------------------------------------- | ------------------------------------------------------------------------------------- |
+| State hiện tại của widget/component                                     | Bộ nhớ process                        | Mất                                           | Nhanh; gắn với chủ sở hữu UI còn sống.                                                |
+| Screen model, chẳng hạn `ViewModel` của Android                         | Bộ nhớ process                        | Mất                                           | Tránh tải lại khi chủ sở hữu được tạo lại theo cơ chế hỗ trợ; không phải persistence. |
+| Đầu vào phục hồi nhỏ, như `draftId` hoặc tab đã chọn                    | Saved UI state của nền tảng/framework | Có thể được cung cấp khi đủ điều kiện tạo lại | Serialization gọn; vòng đời và thời điểm chụp do cơ chế đó quyết định.                |
+| Nội dung báo cáo và metadata tệp đính kèm do repository ứng dụng sở hữu | Database/file ứng dụng đã commit      | Có thể tải lại khi dữ liệu vẫn truy cập được  | Cần xử lý I/O, migration, tách tài khoản và lỗi lưu.                                  |
+| Báo cáo đã đồng bộ do dịch vụ từ xa sở hữu                              | Lưu trữ server                        | Có thể request lại                            | Phụ thuộc quyền hiện tại, kết nối và chính sách lưu giữ trên server.                  |
+
+Đây là so sánh mô hình sở hữu, không phải bảo đảm độ bền cho mọi hệ thống. Android khuyến nghị đầu vào phục hồi nhỏ đi cùng dữ liệu ứng dụng đã lưu bền vững. UIKit cũng cho phép bỏ UI archive và yêu cầu ứng dụng giữ dữ liệu thực trong persistent storage. <Citation source="android-state-saving" /> <Citation source="ios-ui-restoration" />
+
+<Figure
+  id="state-ownership"
+  src="/illustrations/foundations/process-death-and-state-restoration/state-ownership-vi.svg"
+  alt="Bốn ranh giới lưu trữ: bộ nhớ process bị mất; UI restoration đủ điều kiện có thể cấp draft ID; dữ liệu local đã commit có thể tải lại draft; request từ xa có quyền hợp lệ có thể cập nhật nó. Màn hình mới dựng state từ các đầu vào riêng biệt này."
+  caption="Ranh giới sở hữu, không phải bốn kho có thể thay thế nhau. Sơ đồ khái niệm tự vẽ; mỗi đầu vào còn tồn tại đều có điều kiện."
+  sources={["android-state-saving", "ios-ui-restoration"]}
+/>
+
+Đọc sơ đồ từ trên xuống. Ô đầu chứa những chủ sở hữu biến mất cùng process. Ba ô tiếp theo là đầu vào có thể dùng để dựng lại, không phải bản sao heap đó. `draftId` đã lưu chọn một record; repository local cung cấp nội dung; dịch vụ từ xa có thể cập nhật các thay đổi đã được chấp nhận. Các đường nối không có nghĩa draft đã upload hoặc người đang đọc hiện có quyền truy cập.
+
+Với `D42`, chính sách của bài là commit các chỉnh sửa báo cáo quan trọng xuống local, rồi chỉ giữ gợi ý UI nhỏ trong restoration storage. Một câu tìm kiếm chưa lưu có thể chỉ cần saved UI state; báo cáo dài với cam kết “đã lưu” không nên phụ thuộc lớp tiện ích đó. Lưu mọi thay đổi sau từng phím tốn I/O; debounce giảm số lần ghi nhưng tạo khoảng thời gian chỉnh sửa có thể mất và cần được mô tả rõ.
+
+Credential là loại khác. Route hoặc account ID đã lưu không chứng minh người dùng đã xác thực. Không đặt token trong restoration payload. Apple cấm lưu dữ liệu nhạy cảm trong `SceneStorage`; ví dụ này giao việc quản lý session cho cơ chế authentication sẵn có của ứng dụng. Xem [so sánh authentication](/vi/compare/authentication). <Citation source="swiftui-scene-storage" />
+
+## Chụp state là checkpoint, không phải cơ hội lưu cuối cùng
+
+Saved UI state không đồng nghĩa chỉ một loại nơi lưu. Hướng dẫn Android mô tả state do hệ thống giữ bên ngoài process ứng dụng; chi tiết serialization có thể khác theo phiên bản API. UIKit lưu state view/controller đã cấu hình trong archive mã hóa trên đĩa. SwiftUI chủ động ẩn backing store của `SceneStorage`. Nằm ngoài heap cũ không cho các cơ chế này vòng đời của database ứng dụng. <Citation source="android-state-saving" /> <Citation source="ios-ui-restoration" /> <Citation source="swiftui-scene-storage" />
+
+Có hai thời điểm cần phân biệt: cập nhật giá trị đang sống và cơ chế restoration chụp giá trị có thể cấp lại sau này. Hai thời điểm không nhất thiết trùng nhau. Tài liệu `SavedStateHandle` của Android cảnh báo các lần ghi khi Activity chủ đã stopped sẽ không được chụp, trừ khi Activity đi qua `onStart` rồi `onStop` lần nữa. Vì vậy, “setter đã chạy” không chứng minh “process tiếp theo sẽ nhận giá trị này”. <Citation source="android-saved-state-handle" />
+
+Không dùng callback thoát làm đường lưu báo cáo duy nhất. Android có thể kết thúc cached process mà không gọi `onDestroy()`. Trên iOS, `applicationWillTerminate(_:)` không phải callback cuối có mặt trong mọi trường hợp của ứng dụng hỗ trợ chạy nền; Apple phân biệt chạy nền với suspend khi mô tả việc gọi nó. Giữ checkpoint hữu ích trong hoạt động bình thường và xem các chuyển đổi vòng đời là cơ hội bổ sung. <Citation source="android-process-lifecycle" /> <Citation source="ios-termination" />
+
+UIKit state preservation cần ứng dụng chủ động tích hợp: định danh view controller có thể phục hồi và encode thông tin UI cần để dựng lại chúng. Archive tách biệt với dữ liệu bền vững của ứng dụng và có thể bị bỏ. SwiftUI `SceneStorage` có hợp đồng riêng: hệ thống kiểm soát thời điểm lưu, không bảo đảm tần suất và xóa dữ liệu khi scene bị hủy chủ động. Không cơ chế nào hứa giữ ký tự vừa gõ cuối cùng sau mọi lần kết thúc process. <Citation source="ios-ui-restoration" /> <Citation source="swiftui-scene-storage" />
+
+> Restoration snapshot là checkpoint tùy chọn. “Đã lưu local” nên mô tả thao tác lưu trữ ứng dụng đã hoàn tất theo chính sách xác định, không phải cập nhật trong bộ nhớ hay lệnh ghi mới được lên lịch.
+
+## Dựng lại trình soạn thảo từ đầu vào đã kiểm tra
+
+Giả sử revision 17 của `D42` đã commit local, người dùng gõ thêm một câu rồi process kết thúc trước khi revision 18 được commit. Process tiếp theo có thể phục hồi revision 17; nó không được tự dựng ra câu đã mất. Tab hoặc vị trí con trỏ đã lưu có thể còn cũ hơn. Ví dụ chọn record đã commit trong repository làm nguồn quyết định nội dung báo cáo.
+
+<Figure
+  id="restoration-sequence"
+  src="/illustrations/foundations/process-death-and-state-restoration/restoration-sequence-vi.svg"
+  alt="Trình tự: OS mở app mới kèm UI state nếu có; app kiểm tra đầu vào; dịch vụ dữ liệu xác định tài khoản hiện tại rồi tải draft hoặc báo thiếu dữ liệu; app dựng UI và có thể cập nhật từ server. Tài khoản không hợp lệ hoặc thiếu đầu vào dẫn đến đăng nhập hay màn hình bắt đầu an toàn."
+  caption="Trình tự phục hồi đề xuất. OS, App và Data là các bên tham gia trong mô hình, không phải thứ tự callback được bảo đảm trên mọi framework."
+  sources={["android-compose-state-saving", "ios-ui-restoration"]}
+/>
+
+Ba cột dọc là OS, ứng dụng vừa khởi tạo và **Data**: các dịch vụ authentication và repository của ứng dụng, gồm truy cập từ xa nếu cần. Thời gian đi từ trên xuống. Sơ đồ chủ động không có thông điệp cuối từ process đã kết thúc.
+
+1. **Khởi tạo chủ sở hữu mới.** Tạo dependency cần để đọc storage và xác định session. Hiển thị loading thay vì thoáng lộ báo cáo của tài khoản cũ.
+2. **Chọn và kiểm tra đích.** Xem việc không có restoration state là bình thường. Kiểm tra `draftId`, schema phục hồi và namespace tài khoản. Ví dụ ưu tiên incoming link hợp lệ, rõ ràng hơn đích đã lưu cũ.
+3. **Xác định quyền hiện tại.** Session hết hạn hoặc đổi tài khoản có thể làm đích cũ không còn hợp lệ. Chỉ giữ pending destination khi sản phẩm cho phép; kiểm tra lại quyền sau đăng nhập.
+4. **Tải draft đã commit.** Đọc `D42` trong namespace của tài khoản `A`. Phân biệt thiếu dữ liệu, storage chưa truy cập được và lỗi đọc. Không đổi cả ba thành báo cáo trống rồi âm thầm ghi đè bản gốc.
+5. **Suy ra giao diện.** Tạo lại model và subscription, suy ra state validation/loading, rồi áp dụng gợi ý UI tương thích sau khi đã có nội dung. Con trỏ hoặc scroll index cũ cần được giới hạn về miền hợp lệ hoặc bỏ qua.
+6. **Đối soát khi có thể.** Với chính sách draft local này, cập nhật qua mạng là tùy chọn. Nếu revision từ xa mới hơn xung đột với chỉnh sửa local, giữ cả hai đầu vào để xử lý theo chính sách rõ ràng thay vì ghi đè draft.
+
+Sáu bước là khuyến nghị thiết kế ứng dụng. Nền tảng cấp đầu vào phục hồi, không cấp chính sách tài khoản, repository, xử lý xung đột hay cam kết tiếp tục được mọi network request.
+
+## API framework giải quyết các phần phục hồi khác nhau
+
+Các cách tiếp cận dưới đây **tương tự** về mục tiêu duy trì trải nghiệm, nhưng **khác** về chủ sở hữu, thời điểm chụp và tích hợp. Chúng không phải API persistence tương đương.
+
+### React Native: danh tính React và persistence chủ động
+
+Quy tắc state của React giải thích vì sao unmount làm mất local state của component. Để giữ liên tục khi process bị thay, chọn nguồn bền vững rõ ràng rồi dựng UI từ đó; JavaScript singleton hoặc Context provider vẫn là bộ nhớ process. <Citation source="react-state-identity" />
+
+React Navigation mô tả lưu navigation bằng `onStateChange` và cấp state đã đọc lại qua `initialState`. Việc phục hồi là bất đồng bộ, state phải serializable và ví dụ chính thức tránh dùng saved navigation thay cho deep link lúc mở app. Tài liệu cũng khuyến nghị xóa persisted state lỗi để thoát đích làm app crash. Cơ chế này phục hồi navigation, không phục hồi nội dung báo cáo, tính hợp lệ của session hay mọi native view. <Citation source="react-navigation-persistence" />
+
+Với `D42`, lưu định danh ổn định thay vì toàn bộ object báo cáo trong route params. Chờ tài khoản và storage sẵn sàng trước khi mount nội dung cần quyền. Đây là chính sách ứng dụng đề xuất; React Native không tự biến React tree thành saved-state bundle của Android.
+
+### Flutter: restoration bucket và ID ổn định
+
+Cấu hình Flutter được tài liệu mô tả dùng `restorationScopeId` ở app, restoration ID cho widget hỗ trợ và đăng ký `RestorableProperty` qua `RestorationMixin` cho state tùy biến. Phục hồi Navigator cũng cần API điều hướng restorable tương ứng; bật scope không làm mọi lần `push` thông thường có thể phục hồi. <Citation source="flutter-state-restoration" />
+
+`RestorationManager` tổ chức dữ liệu thành bucket và đồng bộ restoration data đã đổi với engine ở ranh giới frame. ID ổn định nối giá trị đã phục hồi với chủ sở hữu. Tài liệu khuyến nghị dùng định danh cho dữ liệu có thể tải lại thay vì nhét record database/server vào bucket, đồng thời mô tả cấu hình embedding bổ sung trên iOS. Đồng bộ chủ động này khác việc chờ một callback thoát Dart bất kỳ. <Citation source="flutter-restoration-manager" />
+
+### Jetpack Compose: gợi ý UI và logic màn hình có chủ sở hữu khác
+
+Dùng `rememberSaveable` cho giá trị nhỏ, tương thích do UI sở hữu; dùng `SavedStateHandle` cho đầu vào phục hồi phù hợp mà `ViewModel` cần. `remember` thông thường là state trong bộ nhớ. Sau process death, `ViewModel` được tạo lại rồi suy ra screen state từ data layer lần nữa. Cả hai đường saved state đều có giới hạn payload; serialize cây object lớn có thể gây `TransactionTooLargeException`. Bài viết tập trung vào các đường Bundle đã ổn định này, không liệt kê toàn bộ API lưu state mới hơn. <Citation source="android-compose-state-saving" />
+
+Với trình soạn thảo, giá trị đã lưu có thể là `draftId`; repository sở hữu báo cáo. Custom `Saver` chuyển đổi biểu diễn, không nâng độ bền lên mức database. ID được phục hồi vẫn cần kiểm tra và có nhánh xử lý record không còn tồn tại.
+
+### SwiftUI: duy trì scene có scope và điều kiện
+
+`SceneStorage` phục hồi giá trị nhỏ cho một scene cụ thể nếu trước đó đã lưu. Các scene không dùng chung kho này; thời điểm persistence do hệ thống quyết định. Dùng nó cho gợi ý UI không nhạy cảm, như mục đã chọn hoặc định danh draft, thay vì xem như database ứng dụng. Model vẫn cần dựng lại từ dữ liệu ứng dụng sau khi process bị thay. <Citation source="swiftui-scene-storage" />
+
+Archive view controller của UIKit và scene storage của SwiftUI có mục đích phục hồi tương tự nhưng giao diện và chủ sở hữu khác nhau. Cả hai đều không tương ứng một-một với `SavedStateHandle`. App nhiều cửa sổ có thể có hai trình soạn thảo trỏ cùng draft bền vững nhưng giữ lựa chọn riêng cho từng scene. <Citation source="ios-ui-restoration" /> <Citation source="swiftui-scene-storage" />
+
+## Phục hồi cần những trạng thái lỗi bình thường
+
+Các lựa chọn sau là chính sách cho trình soạn thảo này, không phải bảo đảm bổ sung của OS.
+
+| Lỗi                                             | Vì sao đích đã phục hồi chưa đủ?                                       | Phản hồi đề xuất                                                                            |
+| ----------------------------------------------- | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| Không có snapshot hoặc schema không tương thích | Không có gợi ý UI đáng tin để áp dụng lại.                             | Mở danh sách báo cáo; đề xuất draft đã commit sau khi tài khoản sẵn sàng.                   |
+| `D42` thiếu hoặc đã xóa                         | Định danh có thể sống lâu hơn record.                                  | Giải thích báo cáo không còn khả dụng; không âm thầm tạo lại.                               |
+| Đổi tài khoản hoặc quyền bị thu hồi             | Từng nhìn thấy không đồng nghĩa hiện được phép truy cập.               | Xác thực lại hoặc rời đích; tách record theo tài khoản.                                     |
+| Storage bị khóa, hỏng hoặc không đọc được       | “Không đọc được” khác “không có draft”.                                | Hiển thị lỗi có thể khắc phục; giữ dữ liệu hiện có đến khi có quyết định phục hồi chủ động. |
+| Lưu bị gián đoạn hoặc từ chối                   | Công việc đã lên lịch không phải commit hoàn tất.                      | Phục hồi revision được chấp nhận gần nhất; báo lỗi khi phát hiện được lỗi lưu.              |
+| Mất mạng hoặc revision phân kỳ                  | Không phải lúc nào cũng đọc hoặc hợp nhất ngay được dữ liệu từ xa.     | Giữ draft local đã commit theo chính sách này; ghi rõ đang chờ đồng bộ hoặc có xung đột.    |
+| Chưa biết kết quả submit                        | Callback của request cũ mất, nhưng tác động trên server chưa chắc mất. | Tra cứu operation ID ổn định nếu dịch vụ hỗ trợ; tránh submit trùng một cách mù quáng.      |
+
+Storage thực tế phải xác định hành vi transaction và crash consistency. “Trên đĩa” chưa đủ mô tả lưu nguyên tử, chính sách mã hóa, backup hay lưu giữ sau uninstall. Ví dụ giả định durable commit thành công theo hợp đồng storage đã chọn; nó không tuyên bố đã kiểm chứng hợp đồng đó. Xem [so sánh local storage](/vi/compare/local-storage).
+
+## Chọn cam kết phục hồi rồi chấp nhận chi phí
+
+Chỉ giữ gợi ý UI thì gọn và dựng lại nhanh, nhưng cho phép bắt đầu mới khi snapshot biến mất. Draft local giúp duy trì trải nghiệm offline và sống qua nhiều vòng đời UI hơn, đổi lại cần xử lý lỗi storage, migration và chính sách lưu rõ ràng. Draft server có thể phục hồi trên nhiều thiết bị sau đồng bộ, đổi lại phụ thuộc mạng, quyền và xử lý xung đột. Kết hợp khi sản phẩm cần cả soạn thảo local lẫn tiếp nối từ xa; không nhân bản mọi trường suy ra vào cả ba nơi.
+
+Những hiểu lầm thường gặp xuất phát từ việc nhầm các cam kết đó:
+
+- **“Màn hình giống cũ nên process vẫn sống.”** Process mới có thể dựng màn hình tương tự; vẻ ngoài không xác định heap cũ.
+- **“`ViewModel` hoặc global store làm draft bền vững.”** Chủ sở hữu có thể sống lâu hơn view nhưng vẫn nằm trong process có thể bị kết thúc. Android mô tả rõ ranh giới của `ViewModel`. <Citation source="android-state-saving" />
+- **“Saved state bảo đảm đầu vào mới nhất.”** Thời điểm chụp, vòng đời task/scene và điều kiện phục hồi giới hạn dữ liệu nhận lại. <Citation source="android-saved-state-handle" /> <Citation source="swiftui-scene-storage" />
+- **“Force-stop hoặc chỉ tạo lại Activity đã chứng minh phục hồi process.”** Các sự kiện kiểm tra vòng đời khác nhau. Force-stop bỏ task saved state của Android; chỉ tạo lại Activity chưa chắc thay process. <Citation source="android-saved-state-handle" />
+- **“Phục hồi route là phục hồi thao tác.”** Route là đích điều hướng. Dữ liệu nghiệp vụ bền vững, quyền và kết quả side effect bị gián đoạn cần quy tắc phục hồi riêng.
+
+Với cam kết cụ thể cho `D42`, thành công nghĩa là mở lại báo cáo đã commit mới nhất mà tài khoản hiện tại được phép truy cập, áp dụng gợi ý UI tùy chọn còn tương thích và hiển thị công việc đang chờ. Không phải giả vờ mọi chỉnh sửa hoặc submit đều còn nguyên. [So sánh state restoration](/vi/compare/state-restoration) nối mô hình sở hữu này với các ví dụ framework hiện có.

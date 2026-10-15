@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 1080" role="img" aria-labelledby="title description">
+  <title id="title">Trình tự đề xuất khi tạo lại process</title>
+  <desc id="description">OS mở app mới. App kiểm tra đầu vào tùy chọn, xác định quyền, tải draft đã commit, dựng UI rồi cập nhật nếu cần. Thiếu đầu vào, quyền không hợp lệ và dữ liệu không khả dụng có nhánh phục hồi an toàn.</desc>
+  <defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0 8 4 0 8" fill="none" stroke="#2563eb" stroke-width="1.5"/></marker></defs>
+  <rect width="480" height="1080" rx="12" fill="#f8fafc"/>
+  <g font-family="system-ui, sans-serif" fill="#111827" font-size="22">
+    <text x="24" y="38" font-size="24" font-weight="700">Process mới, không tiếp tục cũ</text>
+    <g fill="#eff6ff" stroke="#2563eb" stroke-width="2"><rect x="16" y="60" width="88" height="48" rx="8"/><rect x="196" y="60" width="88" height="48" rx="8"/><rect x="376" y="60" width="88" height="48" rx="8"/></g>
+    <g text-anchor="middle" font-weight="700"><text x="60" y="92">OS</text><text x="240" y="92">App</text><text x="420" y="92">Data</text></g>
+    <path d="M60 108V1056M240 108V1056M420 108V1056" stroke="#94a3b8" stroke-width="2" stroke-dasharray="5 6"/>
+    <g text-anchor="middle">
+      <rect x="112" y="126" width="256" height="66" rx="6" fill="#f8fafc"/>
+      <text x="240" y="152">1. Mở process mới</text><text x="240" y="182">UI state nếu có</text>
+      <path d="M60 208H234" stroke="#2563eb" stroke-width="2.5" marker-end="url(#arrow)"/>
+      <rect x="112" y="228" width="256" height="66" rx="6" fill="#f8fafc"/>
+      <text x="240" y="254">2. Kiểm tra đầu vào</text><text x="240" y="284">ID / schema / tài khoản</text>
+      <path d="M246 306H280V326H246" fill="none" stroke="#2563eb" stroke-width="2.5" marker-end="url(#arrow)"/>
+      <rect x="32" y="344" width="416" height="44" rx="6" fill="#fff" stroke="#526071"/>
+      <text x="240" y="374">Thiếu đầu vào? Mở màn hình đầu</text>
+      <rect x="112" y="410" width="256" height="40" rx="6" fill="#f8fafc"/>
+      <text x="240" y="438">3. Xác định quyền</text>
+      <path d="M240 466H414" stroke="#2563eb" stroke-width="2.5" marker-end="url(#arrow)"/>
+      <rect x="112" y="482" width="256" height="40" rx="6" fill="#f8fafc"/>
+      <text x="240" y="510">Tài khoản sẵn sàng?</text>
+      <path d="M420 540H246" stroke="#2563eb" stroke-width="2.5" stroke-dasharray="6 4" marker-end="url(#arrow)"/>
+      <rect x="32" y="560" width="416" height="44" rx="6" fill="#fff" stroke="#526071"/>
+      <text x="240" y="590">Sai quyền? Đăng nhập hoặc rời đi</text>
+      <rect x="112" y="626" width="256" height="40" rx="6" fill="#f8fafc"/>
+      <text x="240" y="654">4. Tải D42 đã commit</text>
+      <path d="M240 684H414" stroke="#2563eb" stroke-width="2.5" marker-end="url(#arrow)"/>
+      <rect x="112" y="700" width="256" height="40" rx="6" fill="#f8fafc"/>
+      <text x="240" y="728">Draft hoặc kết quả đọc</text>
+      <path d="M420 758H246" stroke="#2563eb" stroke-width="2.5" stroke-dasharray="6 4" marker-end="url(#arrow)"/>
+      <rect x="32" y="778" width="416" height="44" rx="6" fill="#fff" stroke="#526071"/>
+      <text x="240" y="808">Thiếu hoặc lỗi đọc? Giải thích</text>
+      <rect x="112" y="844" width="256" height="40" rx="6" fill="#f8fafc"/>
+      <text x="240" y="872">5. Dựng UI + gợi ý hợp lệ</text>
+      <path d="M246 904H280V924H246" fill="none" stroke="#2563eb" stroke-width="2.5" marker-end="url(#arrow)"/>
+      <rect x="112" y="944" width="256" height="66" rx="6" fill="#f8fafc"/>
+      <text x="240" y="970">6. Cập nhật nếu cần</text><text x="240" y="1000">Chính sách offline / xung đột</text>
+      <path d="M240 1032H414" stroke="#2563eb" stroke-width="2.5" marker-end="url(#arrow)"/>
+    </g>
+  </g>
+</svg>

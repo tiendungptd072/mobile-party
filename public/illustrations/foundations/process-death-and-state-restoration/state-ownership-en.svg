@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 832" role="img" aria-labelledby="title description">
+  <title id="title">State owners across process death</title>
+  <desc id="description">Process memory is lost. Optional UI restoration, committed app storage, and an authorized remote service supply separate inputs to a new UI.</desc>
+  <defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0 8 4 0 8" fill="none" stroke="#2563eb" stroke-width="1.5"/></marker></defs>
+  <rect width="480" height="832" rx="12" fill="#f8fafc"/>
+  <g font-family="system-ui, sans-serif" fill="#111827">
+    <text x="24" y="38" font-size="24" font-weight="700">Owners and recovery inputs</text>
+    <rect x="16" y="60" width="424" height="120" rx="10" fill="#fff" stroke="#526071" stroke-width="2" stroke-dasharray="7 5"/>
+    <text x="32" y="92" font-size="22" font-weight="700">PROCESS MEMORY</text>
+    <text x="32" y="126" font-size="22">Heap / models / callbacks</text>
+    <text x="32" y="158" font-size="22">Lost when the process ends</text>
+    <path d="M16 198H464" stroke="#526071" stroke-dasharray="3 5"/>
+    <rect x="16" y="220" width="424" height="120" rx="10" fill="#eff6ff" stroke="#2563eb" stroke-width="2"/>
+    <text x="32" y="252" font-size="22" font-weight="700">UI RESTORATION</text>
+    <text x="32" y="286" font-size="22">draftId / selected tab</text>
+    <text x="32" y="318" font-size="22">Eligible snapshot only</text>
+    <rect x="16" y="368" width="424" height="120" rx="10" fill="#fff" stroke="#2563eb" stroke-width="2"/>
+    <text x="32" y="400" font-size="22" font-weight="700">APP STORAGE</text>
+    <text x="32" y="434" font-size="22">Committed D42 / revision 17</text>
+    <text x="32" y="466" font-size="22">Reload if data is available</text>
+    <rect x="16" y="516" width="424" height="120" rx="10" fill="#fff" stroke="#2563eb" stroke-width="2"/>
+    <text x="32" y="548" font-size="22" font-weight="700">REMOTE SERVICE</text>
+    <text x="32" y="582" font-size="22">Latest accepted report</text>
+    <text x="32" y="614" font-size="22">Needs access + network</text>
+    <path d="M440 280H460M440 428H460M440 576H460" fill="none" stroke="#2563eb" stroke-width="2.5"/>
+    <path d="M460 280V752H440" fill="none" stroke="#2563eb" stroke-width="2.5" marker-end="url(#arrow)"/>
+    <rect x="16" y="704" width="424" height="104" rx="10" fill="#dbeafe" stroke="#2563eb" stroke-width="2"/>
+    <text x="32" y="744" font-size="22" font-weight="700">NEW UI</text>
+    <text x="32" y="780" font-size="22">Reconstruct and validate</text>
+  </g>
+</svg>

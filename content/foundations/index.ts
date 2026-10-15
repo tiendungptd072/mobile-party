@@ -1,5 +1,166 @@
 import "server-only";
 import type { FoundationDefinition } from "@/types/foundation";
+import * as pilotEn from "./en/process-death-and-state-restoration.mdx";
+import * as pilotVi from "./vi/process-death-and-state-restoration.mdx";
 
-// Real, reviewed articles are registered here with explicit locale MDX imports.
-export const foundationDefinitions: readonly FoundationDefinition[] = [];
+export const foundationDefinitions: readonly FoundationDefinition[] = [
+  {
+    metadata: {
+      slug: "process-death-and-state-restoration",
+      topic: "runtime-lifecycle",
+      order: 30,
+      // F07 publishes the reviewed pilot after F06 adds quality reporting.
+      status: "draft",
+      platforms: ["android", "ios"],
+      technologies: ["react-native", "flutter", "kotlin", "swiftui"],
+      locales: {
+        en: {
+          title: "Process Death and State Restoration",
+          description:
+            "Separate process memory, saved UI state, and durable drafts; reconstruct a mobile screen with current data and access checks.",
+          keywords: [
+            "process death",
+            "state restoration",
+            "configuration change",
+            "SavedStateHandle",
+            "SceneStorage",
+            "draft",
+          ],
+          reviewedAt: "2026-10-15",
+        },
+        vi: {
+          title: "Process death và khôi phục state",
+          description:
+            "Phân biệt bộ nhớ process, saved UI state và draft bền vững; dựng lại màn hình từ dữ liệu hiện tại và kiểm tra quyền truy cập.",
+          keywords: [
+            "process death",
+            "khôi phục state",
+            "vòng đời",
+            "SavedStateHandle",
+            "SceneStorage",
+            "bản nháp",
+          ],
+          reviewedAt: "2026-10-15",
+        },
+      },
+      references: [
+        {
+          id: "android-process-lifecycle",
+          title: "Processes and app lifecycle",
+          url: "https://developer.android.com/guide/components/activities/process-lifecycle",
+          kind: "official-docs",
+          platforms: ["android"],
+          verifiedAt: "2026-10-15",
+        },
+        {
+          id: "android-state-saving",
+          title: "Save UI states",
+          url: "https://developer.android.com/topic/libraries/architecture/saving-states",
+          kind: "official-docs",
+          platforms: ["android"],
+          verifiedAt: "2026-10-15",
+        },
+        {
+          id: "android-saved-state-handle",
+          title: "Saved State module for ViewModel",
+          url: "https://developer.android.com/topic/libraries/architecture/viewmodel/viewmodel-savedstate",
+          kind: "official-docs",
+          platforms: ["android"],
+          technology: "kotlin",
+          verifiedAt: "2026-10-15",
+        },
+        {
+          id: "android-compose-state-saving",
+          title: "Save UI state in Compose",
+          url: "https://developer.android.com/develop/ui/compose/state-saving",
+          kind: "official-docs",
+          platforms: ["android"],
+          technology: "kotlin",
+          verifiedAt: "2026-10-15",
+        },
+        {
+          id: "ios-lifecycle",
+          title: "Managing your app’s life cycle",
+          url: "https://developer.apple.com/documentation/uikit/managing-your-app-s-life-cycle",
+          kind: "official-docs",
+          platforms: ["ios"],
+          version: "iOS 13+",
+          verifiedAt: "2026-10-15",
+        },
+        {
+          id: "ios-termination",
+          title: "applicationWillTerminate(_:)",
+          url: "https://developer.apple.com/documentation/uikit/uiapplicationdelegate/applicationwillterminate(_:)",
+          kind: "official-docs",
+          platforms: ["ios"],
+          verifiedAt: "2026-10-15",
+        },
+        {
+          id: "ios-ui-restoration",
+          title: "Preserving your app’s UI across launches",
+          url: "https://developer.apple.com/documentation/uikit/preserving-your-app-s-ui-across-launches",
+          kind: "official-docs",
+          platforms: ["ios"],
+          verifiedAt: "2026-10-15",
+        },
+        {
+          id: "ios-restoration-sample",
+          title: "Restoring your app’s state",
+          url: "https://developer.apple.com/documentation/uikit/restoring-your-app-s-state",
+          kind: "sample",
+          platforms: ["ios"],
+          verifiedAt: "2026-10-15",
+        },
+        {
+          id: "react-state-identity",
+          title: "Preserving and Resetting State",
+          url: "https://react.dev/learn/preserving-and-resetting-state",
+          kind: "official-docs",
+          technology: "react-native",
+          version: "React 19.3",
+          verifiedAt: "2026-10-15",
+        },
+        {
+          id: "react-navigation-persistence",
+          title: "State persistence",
+          url: "https://reactnavigation.org/docs/state-persistence/",
+          kind: "official-docs",
+          technology: "react-native",
+          verifiedAt: "2026-10-15",
+        },
+        {
+          id: "flutter-state-restoration",
+          title: "Restore state on Android",
+          url: "https://docs.flutter.dev/platform-integration/android/restore-state-android",
+          kind: "official-docs",
+          platforms: ["android"],
+          technology: "flutter",
+          version: "Flutter 3.47",
+          verifiedAt: "2026-10-15",
+        },
+        {
+          id: "flutter-restoration-manager",
+          title: "RestorationManager class",
+          url: "https://api.flutter.dev/flutter/services/RestorationManager-class.html",
+          kind: "official-docs",
+          platforms: ["android", "ios"],
+          technology: "flutter",
+          verifiedAt: "2026-10-15",
+        },
+        {
+          id: "swiftui-scene-storage",
+          title: "SceneStorage",
+          url: "https://developer.apple.com/documentation/swiftui/scenestorage",
+          kind: "official-docs",
+          platforms: ["ios"],
+          technology: "swiftui",
+          version: "iOS/iPadOS 14+",
+          verifiedAt: "2026-10-15",
+        },
+      ],
+      relatedArticles: [],
+      relatedConcepts: ["state-restoration", "local-storage", "authentication"],
+    },
+    bodies: { en: pilotEn, vi: pilotVi },
+  },
+];

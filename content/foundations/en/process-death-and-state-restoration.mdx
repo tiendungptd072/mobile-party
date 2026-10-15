@@ -1,0 +1,146 @@
+## The screen returned; its process did not
+
+A developer is editing field report `D42` under account `A`. They switch to a camera app, then return to the editor. The same destination can appear even though the operating system has terminated the old application process. The new process has no old heap: component state, in-memory repositories, pending callbacks, and ordinary objects must be created again. Android explicitly allows cached processes to be killed and does not guarantee `onDestroy()` before that happens. <Citation source="android-process-lifecycle" />
+
+**State restoration** means reconstructing a useful interface from surviving inputs. It does not resume the old instruction pointer, resurrect an object, or finish an interrupted request. In this article, the report editor is an explanatory design, not a complete application or a compiler-verified code sample. Platform contracts are cited; the proposed recovery policy is identified as an application choice.
+
+## Five events with different lifetimes
+
+The word “restart” hides which owner actually disappeared. Backgrounding, losing a component, recreating an Activity, and replacing a process require different reasoning.
+
+| Event                          | What changes?                                                                                                                     | What can still be available?                                                                  |
+| ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| Ordinary backgrounding         | The interface is no longer active; the process may remain.                                                                        | Existing memory while that process lives; no promise that it will remain.                     |
+| Component unmount or removal   | A particular UI owner leaves its tree.                                                                                            | State deliberately owned above it; unrelated process memory.                                  |
+| Android configuration change   | By default, the Activity is recreated for changes such as rotation.                                                               | An appropriately scoped `ViewModel`, small saved state, and persistent data.                  |
+| System-initiated process death | Every in-process owner is lost.                                                                                                   | Eligible saved UI state and previously committed durable data; neither recreates old objects. |
+| Explicit dismissal             | Android force-stop, task removal, or `finish()` ends the relevant restoration lifetime; iOS force-quit is a separate user action. | Durable application data under its own retention policy; UI restoration must not be assumed.  |
+
+Android distinguishes system recreation from user dismissal: task-associated saved state is not a general restart database. A `ViewModel` can bridge a configuration change, but cannot survive process death. These are Android contracts, not a description of iOS window behavior. <Citation source="android-state-saving" /> <Citation source="android-saved-state-handle" />
+
+React associates state with component identity and position in the render tree. Removing that component discards its local state even if the process continues. Moving state to an ancestor can extend that ownership lifetime; it does not make the ancestor's memory survive process death. <Citation source="react-state-identity" />
+
+On iOS, scene lifecycle and process lifecycle are distinct. Multiple scenes can have different activity states; UIKit can disconnect a background or suspended scene to reclaim resources. Treating every scene transition as an Android Activity recreation loses that distinction. Apple’s restoration sample also warns that force-quitting during debugging deletes preserved state, so that operation is not interchangeable with its documented restoration test. <Citation source="ios-lifecycle" /> <Citation source="ios-restoration-sample" />
+
+## Put each value with an owner that can keep its promise
+
+The editor has several kinds of state. A blinking cursor can be discarded; a report that the product says is saved cannot. Classify by the required lifetime and recovery behavior before choosing an API.
+
+| State and owner                                                         | Storage                           | After process death                               | Cost and boundary                                                           |
+| ----------------------------------------------------------------------- | --------------------------------- | ------------------------------------------------- | --------------------------------------------------------------------------- |
+| Current widget/component state                                          | Process memory                    | Lost                                              | Fast; scoped to the live UI owner.                                          |
+| Screen model, such as an Android `ViewModel`                            | Process memory                    | Lost                                              | Avoids reloads during supported owner recreation; not persistence.          |
+| Small restoration inputs, such as `draftId` or selected tab             | Platform/framework saved UI state | May be supplied on an eligible recreation         | Compact serialization; lifetime and capture rules belong to that mechanism. |
+| Report text and attachment metadata owned by the application repository | A committed app database/file     | Can be reloaded while that data remains available | I/O, migrations, account separation, and save failures require handling.    |
+| A synchronized report owned by a remote service                         | Server storage                    | Can be requested again                            | Depends on current authorization, connectivity, and server retention.       |
+
+This is a conceptual ownership comparison, not a universal durability guarantee. Android recommends small recovery inputs alongside persistent application data. UIKit similarly allows its UI archive to be discarded and tells apps to keep their real data in persistent storage. <Citation source="android-state-saving" /> <Citation source="ios-ui-restoration" />
+
+<Figure
+  id="state-ownership"
+  src="/illustrations/foundations/process-death-and-state-restoration/state-ownership-en.svg"
+  alt="Four storage boundaries: process memory is lost; eligible UI restoration may provide a draft ID; committed local data can reload the draft; an authorized remote request can refresh it. A new screen reconstructs state from these separate inputs."
+  caption="Ownership boundaries, not four interchangeable stores. Self-authored conceptual diagram; each surviving input has conditions."
+  sources={["android-state-saving", "ios-ui-restoration"]}
+/>
+
+Read the diagram from top to bottom. The first box contains owners that disappear with the process. The next three boxes are potential reconstruction inputs, not copies of that heap. A saved `draftId` selects a record; the local repository supplies its text; a remote service can refresh accepted changes. None of those arrows says that a draft has been uploaded or that its current reader is authorized.
+
+For `D42`, this article's policy is to commit valuable report edits locally, then keep only small UI hints in restoration storage. An unsaved search query might reasonably live only in saved UI state; a long report with an explicit “saved” promise should not depend on that convenience layer. Saving everything on every keystroke costs I/O; debouncing reduces writes but leaves a documented window of edits that may be lost.
+
+Credentials are a different category. A route or saved account identifier is not proof of authentication. Do not place tokens in restoration payloads. Apple explicitly prohibits sensitive data in `SceneStorage`; this example delegates session handling to the application's existing authentication mechanism. See the [authentication comparison](/en/compare/authentication). <Citation source="swiftui-scene-storage" />
+
+## Capture is a checkpoint, not a last chance to save
+
+Saved UI state does not imply one storage medium. Android's guide describes system-retained state outside the application process, with serialization details that may vary by API version. UIKit preserves its configured view/controller state in an encrypted archive on disk. SwiftUI deliberately hides the backing store of `SceneStorage`. Being outside the old heap does not give any of these mechanisms the lifetime of an application database. <Citation source="android-state-saving" /> <Citation source="ios-ui-restoration" /> <Citation source="swiftui-scene-storage" />
+
+There are two relevant moments: updating a live value and the restoration mechanism capturing a value it can later supply. They need not be the same moment. Android's `SavedStateHandle` documentation warns that writes while the host Activity is stopped are not captured unless it passes through `onStart` and `onStop` again. “The setter ran” therefore does not prove “the next process will receive this value.” <Citation source="android-saved-state-handle" />
+
+Do not make an exit callback the only path that saves a report. Android may kill a cached process without calling `onDestroy()`. On iOS, `applicationWillTerminate(_:)` is not a universal final callback for background-capable apps; Apple distinguishes background execution from suspension when describing its delivery. Keep useful checkpoints during normal operation and treat lifecycle transitions as additional opportunities. <Citation source="android-process-lifecycle" /> <Citation source="ios-termination" />
+
+UIKit state preservation is opt-in work: identify restorable view controllers and encode the UI information needed to reconstruct them. Its archive is separate from the application's durable data and may be discarded. SwiftUI `SceneStorage` has its own contract: the system controls persistence timing, gives no frequency guarantee, and destroys the stored data when the scene is explicitly destroyed. Neither mechanism promises the last typed character after every termination. <Citation source="ios-ui-restoration" /> <Citation source="swiftui-scene-storage" />
+
+> A restoration snapshot is an optional checkpoint. “Saved locally” should describe a completed application-storage operation under a defined policy, not an in-memory update or a scheduled write.
+
+## Rebuild the editor from validated inputs
+
+Suppose `D42` revision 17 was committed locally, the user typed another sentence, and the process ended before revision 18 was committed. The next process can recover revision 17; it must not invent the lost sentence. A saved tab or cursor position may be older still. This example chooses the committed repository record as the report content authority.
+
+<Figure
+  id="restoration-sequence"
+  src="/illustrations/foundations/process-death-and-state-restoration/restoration-sequence-en.svg"
+  alt="Sequence: the OS starts a new app with optional UI state; the app validates inputs; data services resolve the current account, then load the draft or report missing data; the app builds the UI and optionally refreshes remotely. Invalid account or missing input leads to sign-in or a safe starting screen."
+  caption="A proposed recovery sequence. OS, App, and Data are conceptual participants, not a guaranteed callback ordering across frameworks."
+  sources={["android-compose-state-saving", "ios-ui-restoration"]}
+/>
+
+The vertical lanes are the OS, the newly initialized application, and **Data**: the application's authentication and repository services, including optional remote access. Time runs downward. The sequence deliberately shows no final message from the terminated process.
+
+1. **Initialize fresh owners.** Create the dependencies needed to read storage and resolve the session. Show a loading state rather than briefly exposing the old account's report.
+2. **Select and validate a destination.** Treat absent restoration state as normal. Check `draftId`, restoration schema, and account namespace. This example gives an explicit valid incoming link priority over an old saved destination.
+3. **Resolve current access.** An expired session or account switch can invalidate the old destination. Keep a pending destination only if the product permits it; recheck access after sign-in.
+4. **Load the committed draft.** Read `D42` in account `A`'s namespace. Distinguish missing data, inaccessible storage, and a read failure. Do not translate all three into an empty report and silently overwrite the original.
+5. **Derive the interface.** Recreate models and subscriptions, derive validation/loading state, and apply compatible UI hints after their content exists. A stale cursor or scroll index should be clamped or ignored.
+6. **Reconcile if possible.** A network refresh is optional for this local-draft policy. If a newer remote revision conflicts with local edits, preserve both inputs for an explicit resolution policy instead of blindly replacing the draft.
+
+These six steps are an application design recommendation. Platforms provide restoration inputs, not this account policy, repository implementation, conflict resolution, or a guarantee that every network request can be resumed.
+
+## Framework APIs solve different parts of recovery
+
+The following approaches are **similar** in their goal of continuity and **different** in ownership, capture, and integration. They are not equivalent persistence APIs.
+
+### React Native: React identity plus explicit persistence
+
+React state rules explain why unmounting loses a component's local state. For continuity across process replacement, choose an explicit durable source and rebuild the UI from it; a JavaScript singleton or Context provider is still process memory. <Citation source="react-state-identity" />
+
+React Navigation documents persisting navigation with `onStateChange` and supplying recovered state through `initialState`. Restoration is asynchronous, its state must be serializable, and the official example avoids replacing a launch deep link with saved navigation. It also recommends clearing bad persisted state to escape a crashing destination. This restores navigation, not report contents, session validity, or every native view. <Citation source="react-navigation-persistence" />
+
+For `D42`, persist stable identifiers rather than an entire report object in route parameters. Wait for account and storage readiness before mounting protected content. This is the proposed app policy; React Native itself does not turn the React tree into an Android saved-state bundle.
+
+### Flutter: restoration buckets and stable IDs
+
+Flutter's documented setup uses an app `restorationScopeId`, restoration IDs for supported widgets, and registered `RestorableProperty` values through `RestorationMixin` for custom state. Navigator restoration also needs the corresponding restorable navigation APIs; enabling a scope does not make every ordinary `push` restorable. <Citation source="flutter-state-restoration" />
+
+`RestorationManager` organizes data in buckets and synchronizes changed restoration data with the engine at frame boundaries. Stable IDs reconnect restored values with their owners. Its documentation recommends identifiers for data that can be reloaded, instead of embedding database/server records in buckets, and describes additional iOS embedding configuration. This proactive synchronization is different from waiting for an arbitrary Dart exit callback. <Citation source="flutter-restoration-manager" />
+
+### Jetpack Compose: UI hints and screen logic have different owners
+
+Use `rememberSaveable` for compatible small UI-owned values and `SavedStateHandle` for suitable recovery inputs used by a `ViewModel`. Plain `remember` is in-memory state. The `ViewModel` is recreated after process death, then derives screen state again from the data layer. Both saved-state paths have payload constraints; serializing large object graphs can cause `TransactionTooLargeException`. This article focuses on those established Bundle-based paths, not an exhaustive list of newer saving APIs. <Citation source="android-compose-state-saving" />
+
+For the editor, the saved value can be `draftId`; the repository owns the report. A custom `Saver` is a representation adapter, not an upgrade to database durability. A restored ID still needs validation and a missing-record path.
+
+### SwiftUI: scene continuity is scoped and conditional
+
+`SceneStorage` restores small values for a particular scene when previously saved. Scenes do not share that storage, and persistence timing is controlled by the system. Use it for non-sensitive UI hints, such as a selected section or draft identifier, rather than treating it as an application database. Models still need reconstruction from application data after process replacement. <Citation source="swiftui-scene-storage" />
+
+UIKit view-controller archives and SwiftUI scene storage have a similar restoration purpose but different interfaces and ownership. Neither is a one-to-one counterpart of `SavedStateHandle`. A multiwindow app may have two editors pointing at the same durable draft while keeping different per-scene selections. <Citation source="ios-ui-restoration" /> <Citation source="swiftui-scene-storage" />
+
+## Recovery must have ordinary failure states
+
+The following are policy choices for this editor, not extra OS guarantees.
+
+| Failure                                   | Why a restored destination is insufficient                                 | Proposed response                                                                         |
+| ----------------------------------------- | -------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| No snapshot or incompatible schema        | There is no trustworthy UI hint to replay.                                 | Start at the report list; offer committed drafts after account readiness.                 |
+| Missing or deleted `D42`                  | An identifier can outlive its record.                                      | Explain that the report is unavailable; do not recreate it silently.                      |
+| Account changed or access revoked         | Previously visible does not mean currently authorized.                     | Reauthenticate or leave the destination; isolate records by account.                      |
+| Storage locked, corrupt, or unreadable    | “Could not read” is different from “no draft.”                             | Show a recoverable error; preserve existing bytes until a deliberate recovery decision.   |
+| Save interrupted or rejected              | Scheduled work is not a completed commit.                                  | Recover the last accepted revision; show an error when a save failure is observable.      |
+| Network unavailable or revisions diverged | The remote truth cannot always be read or merged immediately.              | Keep the committed local draft under this policy; mark pending sync or conflict.          |
+| Submission outcome unknown                | The old request's callback disappeared, not necessarily its server effect. | Query a stable operation ID if the service supports it; avoid blind duplicate submission. |
+
+A real storage implementation must define its transaction and crash-consistency behavior. “On disk” alone does not specify an atomic save, an encryption policy, backup behavior, or retention after uninstall. The example assumes a successful durable commit according to that chosen storage contract; it does not claim to verify one. See the [local storage comparison](/en/compare/local-storage).
+
+## Choose a recovery promise, then pay its cost
+
+Keeping only UI hints is compact and fast to reconstruct but permits a clean start when the snapshot disappears. Local drafts improve offline continuity and survive more UI lifetimes, at the cost of storage errors, migrations, and an explicit save policy. Server drafts can support cross-device recovery after synchronization, at the cost of network dependence, authorization, and conflict handling. Combine them when the product needs both local editing and remote continuity; do not duplicate every derived field in all three.
+
+Common misconceptions follow from confusing those promises:
+
+- **“The screen looks the same, so its process survived.”** A new process can rebuild a similar screen; appearance does not identify the old heap.
+- **“A `ViewModel` or global store makes drafts persistent.”** An owner can outlive a view while remaining inside the same mortal process. Android documents the `ViewModel` boundary explicitly. <Citation source="android-state-saving" />
+- **“Saved state guarantees the newest input.”** Capture timing, task/scene lifetime, and eligibility constrain what comes back. <Citation source="android-saved-state-handle" /> <Citation source="swiftui-scene-storage" />
+- **“A force-stop or activity-only recreation proves process recovery.”** Those events exercise different lifetimes. Force-stop discards Android task saved state; recreating an Activity alone need not replace the process. <Citation source="android-saved-state-handle" />
+- **“Restoring a route restores the operation.”** A route is a destination. Durable domain data, authorization, and the outcome of an interrupted side effect need their own recovery rules.
+
+For the concrete `D42` promise, success means reopening the latest committed report that the current account may access, applying compatible optional UI hints, and making pending work visible. It does not mean pretending that every edit or submission survived. The [state restoration comparison](/en/compare/state-restoration) connects this ownership model to the existing framework examples.

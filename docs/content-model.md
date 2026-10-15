@@ -243,8 +243,8 @@ needed by the client and never duplicates full lesson bodies.
 ## Foundations articles (F02 contract)
 
 This is the F02 contract, with the registry/content pipeline implemented in F03
-and static reader routes in F04. Real articles, comprehensive reporting, and
-discovery remain F05-F07 work. Existing Concept/Roadmap/Recipe schemas remain
+and static reader routes in F04. F05 supplies the reviewed bilingual A03 draft;
+quality reporting and public discovery/publication remain F06-F07 work. Existing Concept/Roadmap/Recipe schemas remain
 unchanged. Foundations has its own article model and does not require two implementations, exercises,
 checklists, or three snippet stages.
 
@@ -490,7 +490,7 @@ nor a compiler check proves the editorial truth of the content.
 
 ### F03 implementation entry points
 
-- [content registry](../content/foundations/index.ts): currently empty; fixtures are outside the public registry.
+- [content registry](../content/foundations/index.ts): contains the reviewed bilingual A03 draft, excluded from public projections until F07; synthetic fixtures remain outside the registry.
 - [server loader](../src/lib/content/foundations.ts): `getFoundationArticles(locale)`, `getFoundationArticle(slug, locale)`, and `getRelatedFoundationArticles(article)` expose published articles only.
 - [schema](../src/lib/content/foundation-schema.ts): `validateFoundationDefinitions` normalizes unknown inputs and checks supplied compiled bodies; its optional public-root argument supports isolated fixture validation.
 - [MDX plugin](../scripts/remark-foundations.mjs): assigns heading IDs and exports `foundation` data containing headings, citation IDs, figures, snippets, links, and a nonempty-body flag. H2/H3 headings form the TOC projection.

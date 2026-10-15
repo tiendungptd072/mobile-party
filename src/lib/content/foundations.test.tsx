@@ -24,7 +24,8 @@ import { getMessages } from "@/lib/i18n/messages";
 import { getTechnologyById } from "@/lib/content/technologies";
 import { FoundationIndex } from "@/components/foundations/foundation-index";
 import { FoundationReader } from "@/components/foundations/foundation-reader";
-import { getConceptBySlug } from "@/lib/content/concepts";
+import { getConceptBySlug, getConcepts } from "@/lib/content/concepts";
+import { foundationDefinitions } from "@content/foundations";
 import FoundationsPage, {
   generateMetadata as indexMetadata,
 } from "../../../app/[locale]/foundations/page";
@@ -72,6 +73,62 @@ beforeAll(async () => {
 });
 
 describe("Foundations reader", () => {
+  test.each(["en", "vi"] as const)(
+    "validates and renders the real %s pilot at publication readiness while keeping it unpublished",
+    async (locale) => {
+      const pilot = foundationDefinitions.find(
+        (entry) =>
+          entry.metadata.slug === "process-death-and-state-restoration",
+      )!;
+      expect(pilot.metadata.status).toBe("draft");
+      expect(getFoundationArticle(pilot.metadata.slug, locale)).toBeUndefined();
+      const definitions = validateFoundationDefinitions(
+        [{ ...pilot, metadata: { ...pilot.metadata, status: "published" } }],
+        new Set(getConcepts().map((concept) => concept.slug)),
+      );
+      const article = createFoundationCollection(definitions).getArticle(
+        pilot.metadata.slug,
+        locale,
+      )!;
+      const html = await new Response(
+        await renderToReadableStream(
+          <FoundationReader
+            article={article}
+            relatedArticles={[]}
+            relatedConcepts={getConcepts(locale).filter((concept) =>
+              pilot.metadata.relatedConcepts.includes(concept.slug),
+            )}
+          />,
+        ),
+      ).text();
+      expect(html.match(/<h1[ >]/g)).toHaveLength(1);
+      expect(article.body.foundation.figures).toHaveLength(2);
+      expect(article.body.foundation.snippets).toEqual([]);
+      const ids = [...html.matchAll(/\sid="([^"]+)"/g)].map(
+        (match) => match[1],
+      );
+      expect(new Set(ids).size).toBe(ids.length);
+      for (const match of html.matchAll(/href="#([^"]+)"/g))
+        expect(ids).toContain(match[1]);
+      for (const reference of pilot.metadata.references)
+        expect(html).toContain(`id="source-${reference.id}"`);
+      for (const slug of pilot.metadata.relatedConcepts) {
+        expect(html).toContain(`href="/${locale}/compare/${slug}"`);
+        expect(getConceptBySlug(slug, locale)).toBeDefined();
+      }
+      expect(
+        article.body.foundation.links.every((link) =>
+          link.startsWith(`/${locale}/compare/`),
+        ),
+      ).toBe(true);
+      expect(
+        pilot.bodies.en!.foundation.headings.map((heading) => heading.level),
+      ).toEqual(
+        pilot.bodies.vi!.foundation.headings.map((heading) => heading.level),
+      );
+    },
+  );
+
   test.each(["en", "vi"] as const)(
     "renders %s navigation, resolved anchors, callouts, figures and related links",
     async (locale) => {

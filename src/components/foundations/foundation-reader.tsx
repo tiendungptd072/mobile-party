@@ -83,7 +83,7 @@ export function FoundationReader({
           </nav>
         )}
         <article className="min-w-0 lg:col-span-3">
-          <div className="prose max-w-none text-foreground prose-headings:scroll-mt-24 prose-headings:text-foreground prose-p:leading-8 prose-a:break-words prose-a:text-accent prose-code:text-foreground prose-pre:bg-surface prose-th:text-foreground prose-strong:text-foreground prose-hr:border-subtle prose-li:marker:text-muted">
+          <div className="prose max-w-none text-foreground prose-headings:scroll-mt-24 prose-headings:text-foreground prose-p:leading-8 prose-a:break-words prose-a:text-accent prose-code:text-foreground prose-pre:bg-surface prose-table:min-w-2xl prose-th:text-foreground prose-strong:text-foreground prose-hr:border-subtle prose-li:marker:text-muted">
             <FoundationBody article={article} />
           </div>
           <div className="[&_a]:break-words [&_li]:scroll-mt-24">
