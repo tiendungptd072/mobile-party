@@ -1,0 +1,134 @@
+## A visible app can still be restoring
+
+A user opens the app expecting report `D42` under account `A`. The first frame appears, but storage may still be opening, session resolution may be pending, and the saved destination may be incompatible with the installed version. Displaying a screen and establishing that it is the right screen are different milestones.
+
+Android distinguishes time to initial display (TTID) from time to full display (TTFD). A fast initial frame is useful feedback; it does not, by itself, establish that application data or access decisions are ready. Define the product's usable state as well as measuring its first frame. <Citation source="android-startup-time" />
+
+This article explains startup dependencies and a proposed session/draft recovery policy. It builds on A02's lifetime boundaries and A03's storage model rather than repeating every restoration API. The `D42` workflow, state names, and coordinator described below are an explanatory design, not executable or device-verified code. Authentication protocols, secure-storage implementation, and sync algorithms retain their own scopes.
+
+## Cold, warm, and hot describe startup work
+
+Android's launch vocabulary helps describe how much platform work can be reused. A cold start creates the app process; a hot return can reuse its resident Activity. Warm start describes partial reuse or reconstruction. None of these labels says whether a saved credential is accepted or a draft is current. <Citation source="android-splash" />
+
+| Launch situation | Useful question for the app                                                                | What must not be inferred                                      |
+| ---------------- | ------------------------------------------------------------------------------------------ | -------------------------------------------------------------- |
+| Cold start       | Which dependencies and in-memory owners must be created?                                   | That no saved destination or durable application data exists.  |
+| Warm start       | Which startup work or saved inputs can be reused, and which UI owners need reconstruction? | That all owners, credentials, and cached results remain valid. |
+| Hot start        | Which retained UI and owners can resume, and which current inputs need rechecking?         | That a previous access decision remains correct indefinitely.  |
+
+The Android startup guide's warm-start examples include a surviving process that recreates an Activity, and saved-state-assisted recreation after eviction. Log the actual process/host identity when diagnosing a return; the word “warm” alone is not proof that an object survived. <Citation source="android-startup-time" />
+
+The Android 12+ splash-screen contract distinguishes cold/warm launch from hot return. A system splash is presentation during launch, not the application's session state machine. Keeping it visible longer does not resolve an unavailable credential store or repair a failed database migration. <Citation source="android-splash" />
+
+On iOS, UIKit separates application launch from scene connection and can prewarm a nonrunning process. Process creation therefore does not identify a user's completed launch or a particular editor's readiness. Avoid treating Android performance labels as exact equivalents of UIKit callbacks. <Citation source="ios-launch-sequence" />
+
+## Build a dependency graph, not one long initializer
+
+For the proposed editor, startup has a small common foundation: local configuration defaults, a coordinator, and a safe shell that can show progress or an error without exposing protected report content. “Safe shell” means the application's own unresolved UI, not a replacement for the platform launch screen.
+
+The next operations have different dependencies:
+
+- Storage preparation opens the store and performs any required schema work before repositories read records.
+- Session resolution reads the authentication service's current inputs and determines which account/access outcome the application may use.
+- Destination selection considers the current external entry and compatible saved UI hints; it does not load arbitrary protected records yet.
+- A scoped draft read needs usable storage, a selected account, and a destination allowed by this application's access policy.
+- Optional analytics, remote recommendations, and unrelated caches do not block this editor's basic local readiness.
+
+These are design choices for this example. Independent prerequisites can overlap; a dependent operation waits for the inputs it actually needs. Starting every task simultaneously creates races, while serializing unrelated work increases the critical path. Sharing a prerequisite should also share its result rather than opening the same store separately for every consumer.
+
+Android App Startup makes initializer dependencies explicit through `dependencies()` and supports manual/lazy initialization through `AppInitializer`. Its initialization order is not proof that an authentication service's later asynchronous work has completed. An initialized service object and a resolved session are separate application facts. <Citation source="android-app-startup" />
+
+<Figure
+  id="startup-dependencies"
+  src="/illustrations/foundations/startup-and-session-restoration/startup-dependencies-en.svg"
+  alt="A minimal startup and safe shell precede two independent prerequisites: usable storage and a session/account decision. Both feed a scoped read of account A's draft D42. The app then chooses an allowed editor or explicit recovery UI. Remote reconciliation is optional and accepts only current results. Errors do not silently create empty data."
+  caption="A proposed dependency graph, not platform callback order. Self-authored diagram; parallel branches express independence, not guaranteed thread placement or completion time."
+  sources={["android-app-startup", "ios-launch-sequence"]}
+/>
+
+Read the two branches as prerequisites, not as a mandate to create two OS threads. Joining them means both outcomes are known, including failure. A failed prerequisite selects an explicit recovery outcome; it does not pass through the join as an empty report. The dashed final edge expresses this application's optional network refresh.
+
+Avoid cycles such as “the session waits for the protected screen, which waits for the session.” Move shared prerequisites below those consumers, or make the dependency explicitly optional. A remote configuration request should not be required to explain its own network failure unless the product truly cannot operate without that configuration.
+
+## Resolve session state without inventing certainty
+
+For this design, a session is more than a stored account ID. It includes a selected identity, the current authentication service outcome, and the access policy used to choose UI. A credential being present is an input to resolution, not a declaration that every server operation is authorized.
+
+The coordinator distinguishes these application outcomes:
+
+| Outcome                 | Meaning in this design                                                                    | UI decision                                                                                 |
+| ----------------------- | ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| Resolving               | Required inputs are not known yet.                                                        | Show the unresolved shell; do not flash the old account's editor.                           |
+| Signed out              | The authentication service has established no usable session.                             | Offer sign-in and retain only an allowed, validated pending destination.                    |
+| Account ready           | Identity and the applicable access policy are sufficiently resolved for this destination. | Read only the selected account's permitted data.                                            |
+| Temporarily unavailable | A required read or verification cannot currently finish.                                  | Explain the failure and offer retry; use restricted local access only if policy permits it. |
+| Destination forbidden   | This target is not permitted under the current outcome.                                   | Choose an allowed destination without deleting unrelated drafts.                            |
+
+These names are proposed domain states, not enum values supplied identically by all frameworks. A timeout means a decision was not obtained within this attempt; it is not evidence that a token was revoked. Similarly, HTTP `401` describes missing valid authentication credentials for a target, while `403` describes refusal and can have reasons beyond credentials. Neither response is interchangeable with failing to obtain any response. <Citation source="http-semantics" />
+
+Storage availability also has its own causes. UIKit documents that files with specified complete-protection classes can be unavailable while protected data is inaccessible. This is a scoped file-access rule, not a claim that every Keychain item or every local file follows the same policy. A temporary protected-data failure must not be relabeled “there is no account” without the authentication service's contract supporting that result. <Citation source="ios-protected-data" />
+
+## Reopen D42 without replaying the old heap
+
+In the proposed case, account `A`'s `D42` revision 17 is committed locally. UI hints refer to `D42`; there may also be an incoming destination. The new coordinator constructs fresh owners, validates the hints' schema and target, and chooses a destination using an explicit precedence policy. Here, a valid current external entry takes priority over stale saved navigation, subject to the same access checks.
+
+Once storage and account outcomes permit a read, the repository looks up `D42` in `A`'s namespace. Missing record, read error, incompatible schema, and denied access stay distinct. This design preserves existing data on failed reads instead of saving a new empty report over it. A missing or incompatible UI hint can be discarded without discarding the durable draft.
+
+Android's state-saving guidance distinguishes temporary UI state from persistent application data. Small restoration inputs select data; they are not substitutes for the records the repository owns. The detailed survival and capture conditions remain in A03. <Citation source="android-state-storage" />
+
+After loading revision 17, this design can show the editor if local use is permitted. A remote refresh may return revision 18 while the user has already produced local revision 19. The coordinator compares the operation's original inputs with the current draft state before applying anything. A divergent remote result becomes a conflict/reconciliation outcome, not permission to overwrite newer local edits.
+
+Pending submissions are a separate problem. Lack of a saved acknowledgement does not prove the server never applied an earlier request. RFC 9110 limits automatic retries of non-idempotent requests unless the client knows they are safe to repeat or knows the original was not applied. Startup should expose pending work to an appropriate reconciliation policy rather than blindly replaying it. <Citation source="http-semantics" />
+
+## Four frameworks expose different startup boundaries
+
+The goals are **similar**: create owners, present a useful interface, and resolve required data. Their entry points and UI lifetimes are **different**; none of the following APIs automatically validates the application's session or recovers all drafts.
+
+### React Native
+
+`AppRegistry` registers a root component and lets the native host start the registered application. This is an entry point, not a session-restoration result. A root can render this design's unresolved shell while an explicitly owned coordinator produces current readiness state. <Citation source="react-native-app-registry" />
+
+React Navigation's persisted state is supplied as `initialState`; recovery is asynchronous, and its example gives a launch URL priority over saved navigation. It requires serializable valid state and warns about restoring a crashing destination. Navigation readiness remains separate from session and report readiness. <Citation source="react-navigation-persistence" />
+
+### Flutter
+
+`runApp()` attaches the root widget and initializes the binding if needed. `WidgetsFlutterBinding.ensureInitialized()` is needed when that binding must exist before `runApp()`. Neither operation proves that a plugin's asynchronous read or the application's bootstrap has completed. <Citation source="flutter-run-app" /> <Citation source="flutter-binding" />
+
+The example can start a shell and observe an owned initialization future instead of holding every dependency before any UI exists. When using `FutureBuilder`, obtain the future before `build`; creating it while building can restart the work on parent rebuilds. That future still needs explicit error and retry semantics. <Citation source="flutter-future-builder" />
+
+### Jetpack Compose
+
+Composable execution can repeat or be skipped; the Compose mental model requires side-effect-free UI descriptions. Do not use the number or order of composable calls as a once-per-process startup scheduler. <Citation source="compose-mental-model" />
+
+In this proposed design, a clearly scoped state owner coordinates storage/session work and exposes unresolved, ready, or failure outcomes for the UI to render. Android App Startup can order suitable library initialization, but it is not interchangeable with that domain-state owner. Recreating a UI host should not accidentally repeat a completed irreversible operation.
+
+### SwiftUI
+
+An `App` conformer supplies an entry point and composes scenes, each containing a root view. App-level state can be shared among scenes. This gives a place to distinguish app-wide prerequisites from each scene's destination; it does not mean every scene wants the same report. <Citation source="swiftui-app" />
+
+UIKit's launch documentation likewise separates scene-specific UI tasks from app-level service setup. For the example, shared storage/session readiness belongs to its chosen shared owner, while each scene validates its own requested destination. Ownership and re-entry rules matter more than assuming every visible root is a fresh login attempt. <Citation source="ios-launch-sequence" />
+
+## Retry and account changes need operation identity
+
+Suppose bootstrap attempt `B1` is reading account `A` when the user signs out or chooses account `B`. The coordinator starts a new generation, `B2`. A late `B1` result may be technically successful, yet no longer belong to the current UI. This design accepts a result only if its generation, account, destination, and relevant draft revision still match.
+
+Cancellation reduces unnecessary work where the underlying operation supports it. The generation check protects state even when cancellation is late or an operation cannot be cancelled. It does not undo a storage write or server action that already completed. Clear visible account-scoped state when switching accounts before presenting the new account's data.
+
+Retry only the failed scope where possible. Reattempting a session read should not reset a successfully opened store or replay a submission. A migration failure should present recovery choices rather than an automatic destructive reset. Repeated initialization observations should reuse active work or replace it deliberately, not stack duplicate subscriptions.
+
+## Keep readiness, failure, and measurement visible
+
+| Startup condition                            | Proposed response                                             | Avoid                                                       |
+| -------------------------------------------- | ------------------------------------------------------------- | ----------------------------------------------------------- |
+| No compatible saved navigation               | Choose an allowed default destination.                        | Treating optional hints as required app data.               |
+| Store cannot open or migrate                 | Show recoverable failure; preserve data.                      | Silent reset or an empty draft marked as recovered.         |
+| Session verification unavailable             | Report uncertainty; apply explicit local-access policy.       | Converting every error into logout or unconditional access. |
+| Remote refresh unavailable                   | Keep an allowed local view with a clear pending/stale status. | Blocking unrelated local work forever.                      |
+| Old attempt completes after account change   | Reject its result for current UI.                             | Exposing the old account's content.                         |
+| Previously pending write has unknown outcome | Reconcile through its operation contract.                     | Automatic duplicate submission.                             |
+
+Instrument this design's milestones separately: process/host entry, safe shell, storage outcome, session outcome, draft read, usable destination, and optional reconciliation. The application milestones complement platform metrics; they do not redefine TTID or justify reporting “fully drawn” before the chosen usable state exists.
+
+The tradeoff is explicit. Awaiting every service before UI simplifies one path but can hide failures behind an endless launch screen. Presenting a shell earlier requires more readiness states, but can explain retry, restricted access, and unavailable data. Parallelizing only independent prerequisites shortens the dependency path without racing protected reads.
+
+Read [Application and Screen Lifecycle](/en/foundations/application-and-screen-lifecycle) for ownership on return and [Process Death and State Restoration](/en/foundations/process-death-and-state-restoration) for reconstruction inputs. The [authentication comparison](/en/compare/authentication) and [offline-first data comparison](/en/compare/offline-first-data) connect the proposed gates to existing API examples; the startup coordinator here remains an application policy rather than a universal framework feature.

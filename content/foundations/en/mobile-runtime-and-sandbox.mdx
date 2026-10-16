@@ -1,0 +1,122 @@
+## An installed app is not a running process
+
+A photo editor can remain installed while none of its code is executing. Its package, stored images, current process, and visible screen are different things. Android starts a process when an application component needs one and can terminate that process to reclaim resources. The next execution starts with new in-memory owners. <Citation source="android-processes-threads" />
+
+This article explains the boundaries underneath a mobile UI: who executes code, who controls access, and who owns resources. It covers ordinary Android and iOS applications, including React Native, Flutter, Jetpack Compose, and SwiftUI. Extensions, privileged system applications, browser applications, and unusual multi-process configurations need their own analysis. The image-import scenario below is an application design explanation, not executable or device-verified code.
+
+## Name each boundary before choosing an API
+
+“Runtime” can mean a language execution system or the whole running application. Use a more precise term when the distinction matters.
+
+| Term             | Question it answers                                        | Boundary to remember                                                                   |
+| ---------------- | ---------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| Operating system | Who schedules execution and mediates protected services?   | The application requests capabilities; it does not control the device.                 |
+| Process          | Which running instance contains this memory and execution? | Another process does not receive an ordinary object reference into this heap.          |
+| Thread           | Which execution path is doing the work?                    | Threads in a process can access shared objects; coordination still matters.            |
+| Language runtime | How does this language execute and manage its objects?     | A runtime may live inside a process alongside other runtimes and native libraries.     |
+| UI framework     | How is application state turned into an interface?         | A widget or view description is not a process or a security identity.                  |
+| Sandbox          | Which resources may the application access?                | Access control does not guarantee execution time, available memory, or successful I/O. |
+
+Apple's threading guide distinguishes concurrent execution inside a process from the synchronization needed for shared objects. Creating more threads also costs resources. The table is a conceptual vocabulary, not a promise that every framework maps one task to one thread. <Citation source="apple-threading" />
+
+An asynchronous function and an OS-scheduled background task answer different questions. A function may wait without keeping its caller busy; that alone does not establish a right to execute after the app leaves the foreground. Apple explicitly limits background processing to system-provided APIs. <Citation source="ios-runtime-security" />
+
+## The sandbox surrounds access, not just framework code
+
+<Figure
+  id="execution-boundaries"
+  src="/illustrations/foundations/mobile-runtime-and-sandbox/execution-boundaries-en.svg"
+  alt="One illustrated app process contains UI and application code, language runtimes, and native libraries, with UI and worker execution paths. App files are outside its memory. Calls to protected system services cross an OS access check. A different app has separate memory and files."
+  caption="Execution and access are different boundaries. Self-authored conceptual diagram of one process; an app may have additional processes. Arrows represent requests, not guaranteed access."
+  sources={["android-app-sandbox", "ios-runtime-security"]}
+/>
+
+Read the diagram vertically. UI code, an embedded language engine, and a native plugin can participate in the same process. The file box is deliberately outside process memory: a stored file is not a live object. The final arrow reaches an OS access check before a protected service. The other-app box has no direct heap or private-file arrow.
+
+On Android, sandbox enforcement applies to native code as well as managed code. Moving an operation into C++ does not give it permission to read another application's private data. The sandbox is enforced below the application framework. <Citation source="android-app-sandbox" />
+
+This also explains a useful design rule: an in-process plugin is an integration boundary, not automatically a new security boundary. Review what the plugin does with the app's permitted data. Keeping two feature modules in different directories does not isolate their memory or revoke their access.
+
+## Android: process placement and app identity are separate
+
+Android's standard model assigns an app a Linux UID and uses kernel controls, strengthened by mechanisms such as SELinux, for isolation. A PID identifies a running process; a UID participates in access decisions. These identifiers have different purposes. <Citation source="android-app-sandbox" />
+
+By default, application components share a process and main thread. A manifest can place selected components in other processes. That changes execution and communication costs; it is not a general recipe for creating a new application identity. A service also does not automatically receive a worker thread. Remote Binder calls can arrive on a pool of threads, so “Android callback” does not mean “always main thread.” <Citation source="android-processes-threads" />
+
+Permissions add specific access to restricted operations. They are not a switch that disables the sandbox. Android distinguishes install-time, runtime, and special permissions; runtime permission state must be checked when access is needed. A previous successful request is not the current result. <Citation source="android-permissions" />
+
+For this article's importer, the design implication is to keep failure handling at the operation boundary: requesting access, opening input, decoding it, and saving output are separate steps. A successful permission check cannot substitute for the result of opening or reading a file.
+
+## iOS: containers and signed capabilities
+
+Apple documents third-party app isolation through a sandbox and access through explicit system services. Entitlements are signed capabilities; they are not ordinary mutable application preferences. Do not transfer Android's per-app UID explanation directly to iOS, whose model differs. <Citation source="ios-runtime-security" />
+
+An iOS app has a bundle container and data containers with different purposes. The bundle is not a writable draft directory. Resolve storage locations through platform APIs rather than treating an observed container path as permanent. Apple's archived file-system guide is used here for these directory roles, not as a current recipe for every file-sharing API. <Citation source="ios-file-system" />
+
+An entitlement, a user decision, and an available resource are different inputs to an operation. In the proposed importer, “allowed” and “successfully imported” are separate states. A rejected request produces an actionable UI state, not a bypass through another framework.
+
+## Four frameworks inside those platform rules
+
+The shared goal is similar: connect application state, UI, and platform services. Their execution models are different. None of these UI frameworks replaces the host operating system's access controls.
+
+### React Native
+
+React Native embeds a JavaScript engine alongside native platform integration. Its current guide identifies Hermes as the default engine, bundled with React Native releases. Hermes is not a browser tab or a permission authority. <Citation source="react-native-hermes" />
+
+The New Architecture renderer's threading guide describes JavaScript and UI execution, including high-priority cases that can render synchronously on the UI thread. Avoid assuming every phase always runs on one fixed thread. A synchronous native call still needs an acceptable execution cost and the platform's required access. <Citation source="react-native-threading" />
+
+### Flutter
+
+Flutter combines a Dart framework, an engine, and a platform embedder. Native mobile release code is compiled to machine code; compilation does not remove runtime services. The architecture guide states that, from Flutter 3.29, UI and platform threads are merged on Android/iOS. Older diagrams with permanently separate threads need a version boundary. <Citation source="flutter-architecture" />
+
+Dart isolates have their own state and event loops and communicate using messages. A worker isolate can move costly computation away from the main isolate, but it is not another app sandbox or a durable job. Message handling, stale results, and ownership still need application policy. <Citation source="dart-concurrency" />
+
+### Jetpack Compose
+
+For Android Kotlin applications, ART executes DEX code and provides managed-runtime services including garbage collection. ART is not the Compose runtime. <Citation source="android-art" />
+
+Compose's UI work has composition, layout, and drawing phases. Its runtime tracks state reads to avoid unnecessary work. Changing a composable's state changes a UI input; it does not allocate a fresh process, grant a permission, or persist the value. <Citation source="compose-phases" />
+
+### SwiftUI
+
+SwiftUI is Apple's declarative UI framework: application code describes an interface and its relationship to data. It remains distinct from OS scheduling and sandbox enforcement. <Citation source="apple-swiftui" />
+
+Swift uses ARC for class-instance ownership; structs are value types, and ARC is not a tracing garbage collector. Strong reference cycles can keep class instances alive. These memory rules do not make a view value a durable record or a background execution grant. <Citation source="swift-arc" />
+
+## Follow one image through the importer
+
+Consider importing image `I17` into a draft. The proposed design separates a UI owner, an import coordinator, storage, and platform access. Their names describe responsibilities, not extra OS processes.
+
+1. The UI asks to import an image. The coordinator creates an operation ID and records the destination draft. This identifies the request even if the visible selection later changes.
+2. The platform adapter obtains input through an appropriate system mechanism. Cancellation and access failure stop this operation without claiming that an image was saved. The exact picker and grant lifetime belong to the selected platform API.
+3. The coordinator bounds input size and schedules decoding using the framework's supported execution mechanism. It keeps temporary bytes and decoded pixels out of long-lived UI state where possible. This is a resource policy, not a universal decoding implementation.
+4. Storage writes the result and reports success or failure. Only a successful application-storage operation allows this design to mark the local import complete. Uploading to a server would be a separate outcome.
+5. Before presenting a late result, the coordinator checks that it still belongs to the intended operation and draft. If the screen has gone away, it follows an explicit policy: cancel transient work, or finish work owned by a longer-lived in-process coordinator. Neither choice promises survival after process termination.
+
+The important separation is between **where work runs**, **who may access its input**, and **who owns its result**. Changing the worker mechanism can improve responsiveness without changing the access grant. Extending a coordinator's lifetime can preserve work across UI changes without making its memory persistent.
+
+The same design can be expressed in all four frameworks, but the worker and cancellation APIs are not one-to-one equivalents. A Dart isolate exchanges messages; shared-memory threads require synchronization. Choose the mechanism after identifying the needed ownership and execution behavior. <Citation source="dart-concurrency" /> <Citation source="apple-threading" />
+
+## Memory, handles, and files need different owners
+
+| Resource in the example             | Proposed owner           | End-of-use policy                                                |
+| ----------------------------------- | ------------------------ | ---------------------------------------------------------------- |
+| Selection highlight                 | Visible UI               | Discard when that interface no longer needs it.                  |
+| Import operation and pending result | Coordinator              | Cancel or finish according to the operation's declared lifetime. |
+| Input stream and decoder resources  | The operation using them | Close or release through the API's contract, including failures. |
+| Preview cache                       | Cache subsystem          | Accept eviction and regenerate when necessary.                   |
+| Imported image promised as saved    | Application storage      | Retain under the draft's data policy; handle storage errors.     |
+
+These are application responsibilities, not guarantees delivered by a garbage collector. Object-memory reclamation, releasing an external resource, and committing a file answer different questions. ARC can leave a reference cycle alive; extending an owner unnecessarily can retain memory even after the interface disappears. <Citation source="swift-arc" />
+
+Android may remove cache files under storage pressure. iOS likewise treats caches as recreatable and temporary files as unsuitable for required persistence. A private directory describes access; it does not turn its cache contents into durable user data. <Citation source="android-app-files" /> <Citation source="ios-file-system" />
+
+## Diagnose the boundary that failed
+
+In the proposed importer, a frozen interface suggests inspecting expensive work and contention; denied access suggests checking the platform operation and its current inputs; a missing preview suggests checking eviction; a stale image suggests checking operation identity. These are investigation paths, not proofs of one root cause.
+
+Adding a thread has coordination and memory costs. Adding a process also introduces a communication boundary. Adding another language runtime brings integration and resource costs. Use those mechanisms to solve a measured problem, rather than to rename ownership that the application has not defined.
+
+> “Runs in the background,” “native,” “private,” and “saved” each need a precise contract. None of those words, by itself, promises completion, unrestricted access, or recovery.
+
+For loss of process memory and reconstruction from surviving data, continue with [Process Death and State Restoration](/en/foundations/process-death-and-state-restoration). The [lifecycle comparison](/en/compare/lifecycle) covers UI observer cleanup; the [runtime-permission comparison](/en/compare/runtime-permissions) specifically covers Android permission requests. These are related boundaries, not substitutes for the OS model.

@@ -246,8 +246,10 @@ needed by the client and never duplicates full lesson bodies.
 ## Foundations articles (F02 contract)
 
 This is the F02 contract, with the registry/content pipeline implemented in F03
-and static reader routes in F04. F05 supplies the reviewed bilingual A03 draft;
-F06 adds structural reporting and link checks; public discovery/publication remains F07 work. Existing Concept/Roadmap/Recipe schemas remain
+and static reader routes in F04. F05 supplies the reviewed bilingual A03 pilot;
+F06 adds structural reporting and link checks; F07 publishes the pilot and adds
+navigation, metadata search, sitemap entries, and contextual discovery links.
+Existing Concept/Roadmap/Recipe schemas remain
 unchanged. Foundations has its own article model and does not require two implementations, exercises,
 checklists, or three snippet stages.
 
@@ -539,12 +541,14 @@ Entry points: [report and link audit](../src/lib/content/foundation-status.ts),
 
 ### F03 implementation entry points
 
-- [content registry](../content/foundations/index.ts): contains the reviewed bilingual A03 draft, excluded from public projections until F07; synthetic fixtures remain outside the registry.
+- [content registry](../content/foundations/index.ts): contains published, reviewed bilingual articles A01 (runtime/sandbox), A02 (application/screen lifecycle), A03 (state restoration), A04 (startup/session restoration), A05 (state ownership/data flow), A06 (rendering/frame scheduling), and A07 (input/gestures/focus/keyboard); synthetic fixtures remain outside the registry.
 - [server loader](../src/lib/content/foundations.ts): `getFoundationArticles(locale)`, `getFoundationArticle(slug, locale)`, and `getRelatedFoundationArticles(article)` expose published articles only.
 - [schema](../src/lib/content/foundation-schema.ts): `validateFoundationDefinitions` normalizes unknown inputs and checks supplied compiled bodies; its optional public-root argument supports isolated fixture validation.
 - [MDX plugin](../scripts/remark-foundations.mjs): assigns heading IDs and exports `foundation` data containing headings, citation IDs, figures, snippets, links, and a nonempty-body flag. H2/H3 headings form the TOC projection.
 - [server bindings](../src/components/foundations/foundation-body.tsx): `FoundationBody` resolves article-specific components and shared Shiki highlighting; `FoundationReferences` reuses the reference list with source anchors.
 - [index route](../app/[locale]/foundations/page.tsx) and [reader route](../app/[locale]/foundations/[slug]/page.tsx): localized metadata, published-only static article parameters, and not-found handling. The index groups articles by topic and order. The reader composes generated H2/H3 navigation, the body, references, and localized related links; Markdown blockquotes use the existing informational callout and tables use a labeled keyboard-scroll region.
+- [search projection](../src/lib/search/foundation-index.ts) and [interactive index](../src/features/search/foundation-search.client.tsx): expose only published slug/topic/title/description/keywords, preserve editorial order within topic groups, and match every query word with Vietnamese diacritic normalization. MDX modules and references stay on the server. Results use ordinary keyboard-accessible links and a localized live result count.
+- [sitemap](../app/sitemap.ts) and [Dictionary detail](../app/[locale]/dictionary/[slug]/page.tsx): derive article URLs and contextual links from the published collection and `relatedConcepts`; no separate article list is maintained.
 - [snippet loader](../src/lib/content/snippets.ts): `loadSnippetPath(path, language)` reuses root containment and display-region extraction without a synthetic concept/stage.
 
 The compiler and GFM plugin are build/test dependencies. They do not process

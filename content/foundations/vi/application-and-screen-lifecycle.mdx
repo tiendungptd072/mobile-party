@@ -1,0 +1,119 @@
+## Rời màn hình chưa cho biết thứ gì đã kết thúc
+
+Người dùng đang sửa báo cáo `D42` mở màn hình đính kèm, quay lại editor rồi về màn hình Home của thiết bị. “Đã đóng editor” quá mơ hồ để quyết định lưu hay dừng việc gì. Editor có thể vẫn nằm trong navigation stack, các component vẫn tồn tại và process vẫn sống. React Navigation mô tả chuyển màn hình trong stack mà màn hình trước vẫn mounted. Đó là hành vi của thư viện navigation, không phải quy tắc OS dùng chung. <Citation source="react-navigation-lifecycle" />
+
+Bài này tách lifetime của process, UI host nền tảng, navigation destination và component framework. Từ đó xây dựng chính sách tài nguyên cho preview giả định trong `D42`. Tình huống giải thích quyết định thiết kế; không phải code thực thi hay tuyên bố đã kiểm chứng trên thiết bị. Lưu bền và dựng lại process chi tiết thuộc bài khôi phục state đã có.
+
+## Gọi đúng chủ sở hữu và tín hiệu quan sát
+
+Lifecycle có hai nghĩa khác nhau: thời gian một owner tồn tại và các điều kiện thay đổi quyết định owner nên làm việc khi nào. Object có thể tồn tại dù UI bị ẩn. Giao diện đang nhìn thấy có thể tạm mất khả năng tương tác. Không quan sát nào tự nó cho biết process đã kết thúc.
+
+| Owner hoặc tín hiệu                      | Mô tả điều gì?                                                           | Không xác lập điều gì?                                                  |
+| ---------------------------------------- | ------------------------------------------------------------------------ | ----------------------------------------------------------------------- |
+| Application process                      | Instance thực thi hiện tại và các owner trong bộ nhớ                     | Một destination cụ thể có đang nhìn thấy hoặc tương tác được hay không. |
+| Android Activity hoặc iOS scene          | UI host do nền tảng quản lý và các chuyển trạng thái                     | Ánh xạ một-một tới mọi màn hình do app định nghĩa.                      |
+| Navigation destination                   | Route còn trong navigator, được focus hoặc bị che theo quy tắc navigator | Component bị xóa khi mở route khác.                                     |
+| Component, composable hoặc view identity | UI state và công việc do framework sở hữu                                | App có quyền thực thi ở foreground.                                     |
+| Subscription hoặc operation bất đồng bộ  | Tài nguyên có owner và chính sách hủy riêng                              | Tạo tài nguyên đó sẽ giữ process sống.                                  |
+
+Độ quan trọng của process Android xét các thành phần đang hoạt động, không do tên một màn hình quyết định. App UIKit hỗ trợ scene nhận lifecycle event theo từng scene, nên các scene có thể ở trạng thái khác nhau. Các hợp đồng này khiến một boolean toàn app không thể trả lời mọi câu hỏi về quyền sở hữu UI. <Citation source="android-process-lifecycle" /> <Citation source="ios-lifecycle" />
+
+## Android: Activity instance không phải toàn ứng dụng
+
+Activity đi qua tạo mới, starting, resuming, pausing, stopping và destruction. Khả năng nhìn thấy khác khả năng tương tác: Activity paused vẫn có thể nhìn thấy, còn stopping nghĩa là không còn nhìn thấy. Chọn ngưỡng kích hoạt tài nguyên theo nhu cầu, thay vì coi mọi lần mất tương tác là biến mất. <Citation source="android-activity-lifecycle" />
+
+Activity có thể bị hủy bình thường do finishing hoặc được tạo lại vì thay đổi cấu hình. Vì vậy, mất instance chưa xác định số phận toàn process. Ngược lại, hệ thống có thể kết thúc process mà không gọi `onDestroy()`. Callback cleanup tài nguyên không phải ranh giới giao dịch cuối đáng tin cậy cho dữ liệu ứng dụng có giá trị. <Citation source="android-activity-lifecycle" /> <Citation source="android-process-lifecycle" />
+
+Với editor đề xuất, cần theo dõi host và destination liên quan riêng biệt. Nếu nhiều màn hình app dùng chung host, Activity có thể vẫn tương tác được khi navigation chuyển từ editor sang đính kèm. Code chỉ gắn với host chưa nhận được thông tin rằng công việc riêng của editor không còn cần thiết.
+
+## iOS: state của scene khác lifetime của process
+
+Khi bật scene support trên iOS 13+, UIKit gửi UI lifecycle event tới scene delegate. Scene đại diện một UI instance; các scene có thể ở trạng thái foreground/background khác nhau. UIKit có thể ngắt kết nối scene đang background hoặc suspended để thu hồi tài nguyên. Ngắt kết nối không có nghĩa mọi scene và application process đều biến mất. <Citation source="ios-lifecycle" />
+
+Với thực thi app thông thường, suspension nghĩa là tạm ngưng thực thi; khác với kết thúc process và mất bộ nhớ của nó. UIKit có thể suspend app sau khi chuyển background; muốn thực thi thêm phải dùng cơ chế background phù hợp do hệ thống hỗ trợ. Snapshot trong app switcher không chứng minh code đang chạy. <Citation source="ios-background" />
+
+Background và suspension cũng cần cách suy luận khác nhau: chuyển sang background tạo cơ hội giảm hoạt động, không hứa được thực thi vô hạn. Hợp đồng termination của Apple phân biệt thực thi background với suspension, không cung cấp callback cuối dùng chung cho mọi lần kết thúc app hỗ trợ background. Không dùng callback đó làm đường lưu duy nhất. <Citation source="ios-termination" />
+
+Chính sách tài nguyên editor nên dùng scene chứa UI của nó. Cửa sổ khác đang active không khiến editor này nhìn thấy được. Scene trở lại active là cơ hội kiểm tra nhu cầu và đầu vào hiện tại, không phải bằng chứng yêu cầu cũ đã hoàn tất.
+
+## App state, navigation và component state trong bốn framework
+
+Các lớp này liên quan nhưng **khác nhau**, không có ánh xạ callback một-một dùng chung. Để đạt hành vi sản phẩm tương tự, cần chọn tín hiệu phù hợp của từng framework, không thay thế bằng state trùng tên.
+
+### React Native
+
+`AppState` báo chuyển foreground/background của ứng dụng, thêm chuyển trạng thái `inactive` trên iOS. Trên Android, mở notification drawer có thể phát `blur` mà AppState không đổi. Tín hiệu đó khác screen blur của navigator. <Citation source="react-native-app-state" />
+
+Với React Navigation, screen focus khác component mounting. `useFocusEffect` gắn effect với focus và cleanup khi blur, unmount hoặc dependency đổi. Vì vậy, cleanup không phải event riêng cho “người dùng đã rời màn hình này” để ghi analytics. <Citation source="react-navigation-focus-effect" />
+
+React `useEffect` cũng cleanup dependency cũ trước setup thay thế và khi component bị xóa. Strict Mode thêm một lượt kiểm tra setup/cleanup chỉ ở development. Setup lặp có thể phản ánh các hợp đồng này; không nhất thiết là ứng dụng khởi động lại. <Citation source="react-effect" />
+
+### Flutter
+
+`AppLifecycleState` chuẩn hóa state nền tảng. Flutter `inactive` và `paused` không trực tiếp tương đương các giai đoạn lifecycle Android được gọi tương tự; `hidden` có thể được tổng hợp trên Android/iOS. Flutter cảnh báo rõ rằng có thể bỏ qua chuyển trạng thái. Không được yêu cầu log event đầy đủ mới khôi phục được. <Citation source="flutter-app-lifecycle" />
+
+`State` object có tree lifetime riêng: deactivate có thể được tiếp nối bằng chèn lại vào tree, còn `dispose()` là điểm kết thúc của object đó. Rebuild không phải một lần `initState()` khác. <Citation source="flutter-state-lifecycle" />
+
+Navigation thêm một phạm vi nữa. `ModalRoute.maintainState` kiểm soát việc giữ hierarchy của route inactive; đặt false không đảm bảo xóa khi route vẫn nhìn thấy. `RouteAware` quan sát thay đổi lịch sử navigator, như route khác được push lên trên. Không cơ chế nào là tín hiệu foreground toàn app. <Citation source="flutter-route-retention" /> <Citation source="flutter-route-aware" />
+
+### Jetpack Compose
+
+Composable vào Composition, có thể recompose rồi rời Composition. Recomposition không phải tạo lại Activity. `DisposableEffect` cleanup khi key đổi hoặc call rời Composition; đăng ký Lifecycle observer ở đó cấp owner cho observer, không biến việc còn trong composition thành Activity đang nhìn thấy. <Citation source="compose-lifecycle" /> <Citation source="compose-effects" />
+
+Với UI flow Android, `collectAsStateWithLifecycle()` cung cấp collection có xét lifecycle. Nó kiểm soát collection của UI; producer upstream có tiếp tục chạy hay không tùy quyền sở hữu và chính sách sharing của producer. Kiểm tra Lifecycle owner thực tế và ngưỡng mong muốn, thay vì giả định từ “màn hình” tự chọn cả hai. <Citation source="compose-lifecycle-state" />
+
+### SwiftUI
+
+SwiftUI view value có thể được tạo lại trong khi identity của view tiếp tục tồn tại. Apple gắn lifetime và state liên quan của view với identity đó, không phải lifetime của một struct value tạm. Đánh giá lại mô tả UI vì thế không đồng nghĩa có scene hoặc process mới. <Citation source="swiftui-identity" />
+
+Đọc `scenePhase` bên trong view phản ánh scene bao quanh nó; đọc ở App level cho giá trị tổng hợp từ các scene. Ví dụ, giá trị tổng hợp có thể active vì scene khác đang active. Nó không xác định navigation destination đang focus. <Citation source="swiftui-scene-phase" />
+
+SwiftUI task modifier gắn công việc với view được sửa đổi và hủy việc chưa xong khi SwiftUI xóa view hoặc đổi identity của view. Đây là hợp đồng gắn với view, không phải quyền thực thi background. Bài dùng semantics của task modifier trong tài liệu hiện hành, không cung cấp overload thực thi phụ thuộc phiên bản. <Citation source="swiftui-view-task" />
+
+## Theo dõi preview qua một chuỗi navigation có thể xảy ra
+
+Editor giả định hiển thị preview trực tiếp. Thiết kế này chủ động giữ editor khi route đính kèm che nó. App vẫn ở một process cho tới khả năng kết thúc cuối cùng; navigator khác hoặc picker nền tảng có thể tạo event khác.
+
+<Figure
+  id="lifetime-trace"
+  src="/illustrations/foundations/application-and-screen-lifecycle/lifetime-trace-vi.svg"
+  alt="Một chuỗi có thể xảy ra: editor đang tương tác và mounted; route đính kèm che editor còn được giữ lại và preview dừng; quay lại dùng editor đó và điều chỉnh preview; về Home đổi hoạt động app nhưng chưa chứng minh component bị xóa; process có thể kết thúc, làm mất mọi owner trong bộ nhớ mà không đảm bảo callback cuối."
+  caption="Chuỗi editor được giữ lại theo thiết kế đề xuất, không phải state machine OS dùng chung. Sơ đồ tự biên soạn; chuyển trạng thái thông thường và khả năng mất process có đảm bảo khác nhau."
+  sources={["react-navigation-lifecycle", "android-process-lifecycle"]}
+/>
+
+Sơ đồ thể hiện ba quan sát thay đổi độc lập: editor này còn được cần đến hay không, owner của nó còn tồn tại hay không và process còn tồn tại hay không. Mũi tên đứt cuối là khả năng, không phải bước bắt buộc sau Home. Không có mũi tên làm sống lại cùng object sau khi mất process.
+
+1. **Mở editor.** Thiết kế tạo editor identity và subscribe các đầu vào preview cần. Chỉnh sửa có giá trị đi theo chính sách lưu thông thường của app, không phụ thuộc callback rời đi trong tương lai.
+2. **Che bằng màn hình đính kèm.** Editor vẫn được giữ trong ví dụ này. Quan sát navigation đổi điều kiện cho preview chạy dù component cleanup có thể chưa chạy. Preview giải phóng tài nguyên tạm; quyền sở hữu draft vẫn riêng biệt.
+3. **Quay lại.** Thiết kế tính lại điều kiện và lấy lại tài nguyên nếu còn cần. Nó kiểm tra permission hiện tại, input identity và content revision trước khi nhận kết quả; không giả định mọi thứ giữ nguyên khi UI bị ẩn.
+4. **Về Home.** Quan sát app/host giờ có thể tắt việc mà navigation focus riêng lẻ vẫn cho phép. Thiết kế chấp nhận rằng đây có thể là quan sát cuối process nhận được.
+5. **Có thể mất process.** Mọi owner editor và operation trong bộ nhớ process đó biến mất. Lần chạy sau dựng lại từ dữ liệu còn tồn tại như A03 mô tả; không tiếp tục subscription cũ hay yêu cầu cleanup của nó phải từng chạy.
+
+Các bước này là chính sách ứng dụng cho ví dụ, không khẳng định mọi OS gửi cùng thứ tự event. Picker nền tảng có thể đổi app state khác route bên trong app. Ghi nhận thứ thực sự sở hữu công việc, thay vì suy ra owner từ tên màn hình.
+
+## Suy ra điều kiện hoạt động thay vì đếm callback
+
+Với preview này, điều kiện hoạt động là phép AND của bốn dữ kiện hiện tại: owner tồn tại, editor destination cần hiển thị preview, host ở trạng thái tương tác đã chọn, và quyền truy cập/đầu vào hợp lệ. Ngưỡng host cụ thể là quyết định sản phẩm và tài nguyên. Feed chỉ đọc đang nhìn thấy có thể dùng ngưỡng khác preview tương tác cần tài nguyên độc quyền.
+
+Khi điều kiện chuyển thành false, thiết kế dừng preview và giải phóng tài nguyên tạm. Khi thành true, nó kiểm tra công việc tương đương đã chạy chưa trước khi bắt đầu. Đổi document hoặc operation identity sẽ thay thế công việc lỗi thời. Nhờ đó, quan sát lặp vẫn an toàn mà không giả vờ có thể khôi phục event rời đi bị bỏ lỡ bằng cách đếm start/stop.
+
+| Triệu chứng trong ví dụ                  | Ranh giới cần kiểm tra                         | Hướng xử lý đề xuất                                       |
+| ---------------------------------------- | ---------------------------------------------- | --------------------------------------------------------- |
+| Preview chạy sau màn hình đính kèm       | Điều kiện destination với sự tồn tại component | Quan sát route coverage/focus bên cạnh lifetime owner.    |
+| Preview chạy sau khi về Home             | Host/app state với navigation focus            | Tính lại quy tắc kết hợp điều kiện hoạt động.             |
+| Có hai subscription sau khi quay lại     | Setup, cleanup và effect identity              | Kích hoạt idempotent và gắn mỗi tài nguyên với owner.     |
+| Kết quả cũ ghi đè nội dung mới           | Operation identity với thời điểm callback đến  | Loại kết quả lỗi thời trước khi cập nhật editor hiện tại. |
+| Mất chỉnh sửa có giá trị sau termination | Dữ liệu bền vững với lifecycle notification    | Kiểm tra đường lưu đã hoàn tất và đầu vào dựng lại.       |
+
+Dừng UI collection không nhất thiết dừng nguồn dữ liệu, và hủy không rollback thao tác storage hoặc server đã hoàn tất. Đó là các chính sách riêng. Chọn owner sống lâu hơn có thể giảm số lần khởi động lại, nhưng cũng giữ công việc và tài nguyên lâu hơn. Chọn lifetime vì nhu cầu sản phẩm, không phải để tránh hiểu cleanup.
+
+## Quan sát là bằng chứng, không phải đồng hồ dùng chung
+
+Để chẩn đoán, thiết kế này log định danh lượt chạy process, định danh host/scene, route key, component/effect identity, operation ID và chuyển trạng thái quan sát được. Đây là các trường chẩn đoán đề xuất, không phải API nền tảng bắt buộc. Chúng giúp phân biệt process mới với route được giữ, hoặc effect thay thế với màn hình mới.
+
+Xem riêng trace navigation thông thường, gián đoạn tạm thời, đổi cấu hình khi phù hợp, Home/quay lại và thay process. Kiểm tra effect chỉ ở development không phải trace navigation người dùng. Không có crash log không chứng minh mọi finalizer hoặc callback đã chạy. Đây là ranh giới kiểm chứng của lời giải thích, không phải bài tập giao cho người đọc.
+
+> Lifecycle notification mô tả một owner hoặc quan sát. Nó không commit dữ liệu người dùng, cấp quyền chạy background hay chứng minh owner khác đã biến mất.
+
+Đọc [Runtime và sandbox trên di động](/vi/foundations/mobile-runtime-and-sandbox) để hiểu ranh giới thực thi và [Process death và khôi phục state](/vi/foundations/process-death-and-state-restoration) để hiểu dựng lại. [So sánh lifecycle](/vi/compare/lifecycle) và [so sánh Android Activity lifecycle](/vi/compare/android-activity-lifecycle) cung cấp ví dụ API hẹp hơn; mục đích tương tự không làm mọi lifetime framework và nền tảng trở nên tương đương.

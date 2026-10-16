@@ -1,0 +1,136 @@
+## App đã hiển thị vẫn có thể đang khôi phục
+
+Người dùng mở app, mong thấy báo cáo `D42` của tài khoản `A`. First frame đã xuất hiện, nhưng storage có thể vẫn đang mở, session chưa được xác định và destination đã lưu không tương thích với phiên bản đang cài. Hiển thị một màn hình và xác lập rằng đó là màn hình phù hợp là hai mốc khác nhau.
+
+Android phân biệt time to initial display (TTID) với time to full display (TTFD). First frame nhanh cung cấp phản hồi hữu ích; tự nó chưa xác lập dữ liệu ứng dụng hay quyết định truy cập đã sẵn sàng. Cần định nghĩa trạng thái sản phẩm dùng được bên cạnh đo first frame. <Citation source="android-startup-time" />
+
+Bài này giải thích dependency khởi động và chính sách khôi phục session/draft đề xuất. Nội dung dựa trên ranh giới lifetime của A02 và mô hình storage của A03, không lặp lại mọi API restoration. Luồng `D42`, tên state và coordinator bên dưới là thiết kế minh họa, không phải code thực thi hay hành vi đã kiểm chứng trên thiết bị. Giao thức authentication, triển khai secure storage và thuật toán sync có phạm vi riêng.
+
+## Cold, warm và hot mô tả công việc khởi động
+
+Thuật ngữ launch của Android giúp mô tả bao nhiêu công việc nền tảng có thể tái sử dụng. Cold start tạo app process; hot return có thể dùng lại Activity còn trong bộ nhớ. Warm start mô tả tái sử dụng một phần hoặc dựng lại. Không nhãn nào cho biết credential đã lưu còn được chấp nhận hay draft còn mới hay không. <Citation source="android-splash" />
+
+| Tình huống launch | Câu hỏi hữu ích cho app                                                                  | Không được suy ra điều gì?                                  |
+| ----------------- | ---------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| Cold start        | Dependency và owner trong bộ nhớ nào phải tạo?                                           | Không có destination đã lưu hoặc dữ liệu ứng dụng bền vững. |
+| Warm start        | Công việc khởi động hoặc đầu vào đã lưu nào có thể dùng lại, UI owner nào phải dựng lại? | Mọi owner, credential và kết quả cache đều còn hợp lệ.      |
+| Hot start         | UI và owner còn được giữ nào có thể tiếp tục, đầu vào hiện tại nào cần kiểm tra lại?     | Quyết định truy cập trước đó vẫn đúng vô thời hạn.          |
+
+Ví dụ warm start trong hướng dẫn Android gồm process còn sống nhưng phải tạo lại Activity, và dựng lại có hỗ trợ saved state sau khi bị thu hồi. Khi chẩn đoán lần quay lại, log identity process/host thực tế; riêng từ “warm” không chứng minh object đã sống sót. <Citation source="android-startup-time" />
+
+Hợp đồng splash screen Android 12+ phân biệt cold/warm launch với hot return. System splash là phần hiển thị khi launch, không phải state machine session của ứng dụng. Giữ splash lâu hơn không xác định được credential store đang không khả dụng hay sửa migration database thất bại. <Citation source="android-splash" />
+
+Trên iOS, UIKit tách application launch khỏi scene connection và có thể prewarm process chưa chạy. Tạo process vì thế chưa xác định người dùng đã hoàn tất launch hay editor cụ thể đã sẵn sàng. Không coi nhãn hiệu năng Android là tương đương chính xác của callback UIKit. <Citation source="ios-launch-sequence" />
+
+## Xây dependency graph, không dồn vào một initializer dài
+
+Với editor đề xuất, startup có nền tảng chung nhỏ: giá trị mặc định cấu hình cục bộ, coordinator và giao diện chờ an toàn có thể hiển thị tiến độ hoặc lỗi mà không lộ nội dung báo cáo cần bảo vệ. “Giao diện chờ an toàn” là UI chưa xác định kết quả của ứng dụng, không thay launch screen nền tảng.
+
+Các thao tác tiếp theo có dependency khác nhau:
+
+- Chuẩn bị storage mở store và thực hiện công việc schema cần thiết trước khi repository đọc record.
+- Xác định session đọc đầu vào hiện tại của dịch vụ authentication và xác định kết quả account/access mà ứng dụng được dùng.
+- Chọn destination xét external entry hiện tại và UI hint đã lưu còn tương thích; chưa tải record được bảo vệ tùy ý.
+- Đọc draft theo phạm vi cần storage dùng được, tài khoản đã chọn và destination được chính sách truy cập của app cho phép.
+- Analytics tùy chọn, đề xuất từ xa và cache không liên quan không chặn điều kiện dùng editor cục bộ cơ bản.
+
+Đây là lựa chọn thiết kế cho ví dụ. Prerequisite độc lập có thể chạy chồng lấp; thao tác phụ thuộc chờ đúng đầu vào nó cần. Bắt đầu mọi task cùng lúc tạo race, còn tuần tự hóa việc không liên quan kéo dài critical path. Dùng chung prerequisite cũng nên dùng chung kết quả, thay vì mỗi consumer mở lại cùng store.
+
+Android App Startup khai báo dependency initializer qua `dependencies()` và hỗ trợ khởi tạo thủ công/lazy qua `AppInitializer`. Thứ tự initialization không chứng minh công việc bất đồng bộ sau đó của dịch vụ authentication đã xong. Service object được khởi tạo và session được xác định là hai dữ kiện ứng dụng khác nhau. <Citation source="android-app-startup" />
+
+<Figure
+  id="startup-dependencies"
+  src="/illustrations/foundations/startup-and-session-restoration/startup-dependencies-vi.svg"
+  alt="Startup tối thiểu và giao diện chờ an toàn đi trước hai prerequisite độc lập: storage dùng được và quyết định session/account. Cả hai cấp đầu vào cho việc đọc draft D42 theo tài khoản A. App chọn editor được phép hoặc UI khôi phục rõ ràng. Reconciliation từ xa là tùy chọn và chỉ nhận kết quả còn phù hợp. Lỗi không âm thầm tạo dữ liệu rỗng."
+  caption="Dependency graph đề xuất, không phải thứ tự callback nền tảng. Sơ đồ tự biên soạn; hai nhánh song song thể hiện độc lập, không đảm bảo thread hay thời gian hoàn tất."
+  sources={["android-app-startup", "ios-launch-sequence"]}
+/>
+
+Đọc hai nhánh như prerequisite, không phải yêu cầu tạo hai OS thread. Hợp nhất nghĩa là đã biết cả hai kết quả, kể cả lỗi. Prerequisite thất bại chọn nhánh khôi phục rõ ràng, không đi qua điểm hợp nhất dưới dạng báo cáo rỗng. Cạnh đứt cuối thể hiện network refresh tùy chọn của app này.
+
+Tránh chu trình như “session chờ màn hình được bảo vệ, màn hình đó lại chờ session”. Đưa prerequisite dùng chung xuống dưới các consumer, hoặc xác định dependency là tùy chọn. Yêu cầu remote config không nên bắt buộc để giải thích chính lỗi mạng của nó, trừ khi sản phẩm thực sự không thể hoạt động thiếu cấu hình đó.
+
+## Xác định session mà không tự tạo sự chắc chắn
+
+Trong thiết kế này, session không chỉ là account ID đã lưu. Nó gồm danh tính đã chọn, kết quả hiện tại của dịch vụ authentication và chính sách truy cập dùng để chọn UI. Có credential là đầu vào để xác định session, không tuyên bố mọi thao tác server đã được phép.
+
+Coordinator phân biệt các kết quả ứng dụng sau:
+
+| Kết quả                 | Ý nghĩa trong thiết kế                                                 | Quyết định UI                                                                           |
+| ----------------------- | ---------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| Resolving               | Chưa biết đủ đầu vào cần thiết.                                        | Hiển thị giao diện chờ; không lóe editor của tài khoản cũ.                              |
+| Signed out              | Dịch vụ authentication đã xác lập không có session dùng được.          | Cho phép đăng nhập, chỉ giữ pending destination hợp lệ mà chính sách cho phép.          |
+| Account ready           | Danh tính và chính sách truy cập áp dụng đã đủ rõ cho destination này. | Chỉ đọc dữ liệu được phép của tài khoản đã chọn.                                        |
+| Temporarily unavailable | Đọc hoặc kiểm chứng bắt buộc hiện chưa thể hoàn tất.                   | Giải thích lỗi và cho retry; chỉ dùng truy cập cục bộ giới hạn nếu chính sách cho phép. |
+| Destination forbidden   | Target này không được phép với kết quả hiện tại.                       | Chọn destination được phép mà không xóa draft không liên quan.                          |
+
+Đây là domain state đề xuất, không phải enum được mọi framework cung cấp giống nhau. Timeout nghĩa là chưa có quyết định trong lần thử này, không phải bằng chứng token bị thu hồi. Tương tự, HTTP `401` mô tả thiếu credential authentication hợp lệ cho target; `403` mô tả từ chối, có thể vì lý do ngoài credential. Không kết quả nào tương đương việc không nhận được response. <Citation source="http-semantics" />
+
+Storage cũng có nguyên nhân không khả dụng riêng. UIKit ghi rõ file thuộc các lớp complete-protection được chỉ định có thể không truy cập được khi protected data chưa khả dụng. Đây là quy tắc truy cập file có phạm vi, không khẳng định mọi Keychain item hoặc file cục bộ theo cùng chính sách. Không đổi tên lỗi protected data tạm thời thành “không có tài khoản” nếu hợp đồng dịch vụ authentication không hỗ trợ kết luận đó. <Citation source="ios-protected-data" />
+
+## Mở lại D42 mà không phát lại heap cũ
+
+Trong tình huống đề xuất, revision 17 của `D42` thuộc tài khoản `A` đã commit cục bộ. UI hint trỏ tới `D42`; cũng có thể có incoming destination. Coordinator mới tạo owner mới, kiểm tra schema và target của hint, rồi chọn destination bằng chính sách ưu tiên rõ ràng. Ở đây, external entry hiện tại hợp lệ được ưu tiên hơn navigation cũ, vẫn qua cùng kiểm tra truy cập.
+
+Khi kết quả storage và account cho phép đọc, repository tìm `D42` trong namespace của `A`. Không có record, lỗi đọc, schema không tương thích và truy cập bị từ chối vẫn là kết quả riêng. Thiết kế giữ dữ liệu hiện có khi đọc lỗi, thay vì lưu báo cáo rỗng mới đè lên. Có thể bỏ UI hint thiếu hoặc không tương thích mà không bỏ draft bền vững.
+
+Hướng dẫn lưu state Android phân biệt UI state tạm với dữ liệu ứng dụng được lưu bền. Đầu vào restoration nhỏ chọn dữ liệu, không thay record repository sở hữu. Điều kiện sống sót và capture chi tiết vẫn thuộc A03. <Citation source="android-state-storage" />
+
+Sau khi tải revision 17, thiết kế có thể hiển thị editor nếu dùng cục bộ được phép. Remote refresh có thể trả revision 18 khi người dùng đã tạo local revision 19. Coordinator so sánh đầu vào gốc của operation với state draft hiện tại trước khi áp dụng. Kết quả từ xa phân kỳ trở thành kết quả conflict/reconciliation, không phải quyền ghi đè chỉnh sửa cục bộ mới hơn.
+
+Submission đang chờ là vấn đề riêng. Không có acknowledgement đã lưu không chứng minh server chưa áp dụng request trước. RFC 9110 giới hạn tự retry request non-idempotent, trừ khi client biết có thể lặp an toàn hoặc biết lần trước chưa được áp dụng. Startup nên đưa việc đang chờ tới chính sách reconciliation phù hợp thay vì phát lại mù quáng. <Citation source="http-semantics" />
+
+## Bốn framework có ranh giới startup khác nhau
+
+Mục tiêu là **tương tự**: tạo owner, hiển thị giao diện hữu ích và xác định dữ liệu bắt buộc. Entry point và UI lifetime **khác nhau**; không API nào dưới đây tự kiểm chứng session ứng dụng hoặc khôi phục mọi draft.
+
+### React Native
+
+`AppRegistry` đăng ký root component và cho native host bắt đầu ứng dụng đã đăng ký. Đây là entry point, không phải kết quả khôi phục session. Root có thể render giao diện chờ của thiết kế này trong khi coordinator có owner rõ ràng tạo readiness state hiện tại. <Citation source="react-native-app-registry" />
+
+State đã lưu của React Navigation được cấp qua `initialState`; khôi phục là bất đồng bộ và ví dụ ưu tiên launch URL hơn navigation đã lưu. Cơ chế cần state hợp lệ, serializable và cảnh báo việc khôi phục destination bị crash. Navigation readiness vẫn khác session và report readiness. <Citation source="react-navigation-persistence" />
+
+### Flutter
+
+`runApp()` gắn root widget và khởi tạo binding nếu cần. Cần `WidgetsFlutterBinding.ensureInitialized()` khi binding phải tồn tại trước `runApp()`. Không thao tác nào chứng minh plugin đã đọc bất đồng bộ xong hay bootstrap ứng dụng đã hoàn tất. <Citation source="flutter-run-app" /> <Citation source="flutter-binding" />
+
+Ví dụ có thể mở giao diện chờ và quan sát initialization future có owner, thay vì chờ mọi dependency trước khi có UI. Khi dùng `FutureBuilder`, lấy future trước `build`; tạo future trong lúc build có thể khởi động lại công việc khi parent rebuild. Future đó vẫn cần semantics lỗi và retry rõ ràng. <Citation source="flutter-future-builder" />
+
+### Jetpack Compose
+
+Composable có thể chạy lặp hoặc bị skip; mental model của Compose yêu cầu mô tả UI không có side effect. Không dùng số lần hoặc thứ tự gọi composable làm bộ lập lịch startup một lần mỗi process. <Citation source="compose-mental-model" />
+
+Trong thiết kế đề xuất, state owner có phạm vi rõ ràng điều phối việc storage/session và đưa kết quả chưa xác định, sẵn sàng hoặc lỗi cho UI render. Android App Startup có thể sắp thứ tự khởi tạo thư viện phù hợp, nhưng không thay thế domain-state owner đó. Tạo lại UI host không nên vô tình lặp thao tác không thể đảo ngược đã hoàn tất.
+
+### SwiftUI
+
+Kiểu conform `App` cung cấp entry point và kết hợp các scene, mỗi scene chứa một root view. App-level state có thể dùng chung giữa các scene. Nhờ đó có nơi tách prerequisite toàn app khỏi destination từng scene; không có nghĩa scene nào cũng muốn cùng báo cáo. <Citation source="swiftui-app" />
+
+Tài liệu launch UIKit cũng tách công việc UI theo scene khỏi setup dịch vụ toàn app. Với ví dụ này, readiness storage/session dùng chung thuộc owner dùng chung đã chọn, còn từng scene kiểm tra destination riêng được yêu cầu. Quy tắc ownership và re-entry quan trọng hơn giả định root nào hiển thị cũng là một lần đăng nhập mới.
+
+<Citation source="ios-launch-sequence" />
+
+## Retry và đổi tài khoản cần operation identity
+
+Giả sử bootstrap attempt `B1` đang đọc tài khoản `A` khi người dùng logout hoặc chọn tài khoản `B`. Coordinator bắt đầu generation mới, `B2`. Kết quả `B1` đến muộn có thể thành công về kỹ thuật nhưng không còn thuộc UI hiện tại. Thiết kế chỉ nhận kết quả nếu generation, account, destination và revision draft liên quan vẫn khớp.
+
+Cancellation giảm việc không cần thiết khi operation bên dưới hỗ trợ. Kiểm tra generation bảo vệ state ngay cả khi hủy muộn hoặc operation không thể hủy. Nó không hoàn tác storage write hay server action đã xong. Xóa state tài khoản cũ đang hiển thị khi đổi tài khoản trước khi đưa dữ liệu tài khoản mới lên UI.
+
+Retry phạm vi lỗi nhỏ nhất có thể. Đọc lại session không nên reset store đã mở thành công hoặc phát lại submission. Migration lỗi nên đưa ra lựa chọn khôi phục, không tự reset phá hủy dữ liệu. Quan sát initialization lặp nên dùng lại công việc đang chạy hoặc chủ động thay thế, không chồng thêm subscription trùng.
+
+## Làm rõ readiness, lỗi và phép đo
+
+| Điều kiện startup                          | Hướng xử lý đề xuất                                            | Cần tránh                                               |
+| ------------------------------------------ | -------------------------------------------------------------- | ------------------------------------------------------- |
+| Không có navigation đã lưu còn tương thích | Chọn destination mặc định được phép.                           | Coi hint tùy chọn là dữ liệu app bắt buộc.              |
+| Store không mở hoặc migrate được           | Hiển thị lỗi có hướng khôi phục; giữ dữ liệu.                  | Reset âm thầm hoặc đánh dấu draft rỗng là đã khôi phục. |
+| Không kiểm chứng session được              | Báo sự chưa chắc chắn; dùng chính sách local access rõ ràng.   | Đổi mọi lỗi thành logout hoặc truy cập vô điều kiện.    |
+| Remote refresh không khả dụng              | Giữ local view được phép với trạng thái pending/stale rõ ràng. | Chặn việc cục bộ không liên quan vô hạn.                |
+| Attempt cũ xong sau khi đổi account        | Loại kết quả đó khỏi UI hiện tại.                              | Lộ nội dung tài khoản cũ.                               |
+| Chưa biết kết quả write trước đang chờ     | Reconcile theo hợp đồng operation.                             | Tự gửi submission trùng.                                |
+
+Đo riêng các mốc của thiết kế này: process/host entry, giao diện chờ an toàn, kết quả storage, kết quả session, đọc draft, destination dùng được và reconciliation tùy chọn. Mốc ứng dụng bổ sung metric nền tảng; không định nghĩa lại TTID hay biện minh báo “fully drawn” trước khi có trạng thái dùng được đã chọn.
+
+Đánh đổi cần rõ ràng. Chờ mọi dịch vụ trước UI đơn giản hóa một đường đi nhưng có thể giấu lỗi sau launch screen vô tận. Hiển thị giao diện chờ sớm cần thêm readiness state, nhưng có thể giải thích retry, truy cập giới hạn và dữ liệu chưa khả dụng. Chỉ chạy song song prerequisite độc lập rút ngắn dependency path mà không tạo race khi đọc dữ liệu được bảo vệ.
+
+Đọc [Lifecycle ứng dụng và màn hình](/vi/foundations/application-and-screen-lifecycle) để hiểu ownership khi quay lại và [Process death và khôi phục state](/vi/foundations/process-death-and-state-restoration) để hiểu đầu vào dựng lại. [So sánh authentication](/vi/compare/authentication) và [so sánh offline-first data](/vi/compare/offline-first-data) nối các gate đề xuất với ví dụ API đã có; startup coordinator ở đây vẫn là chính sách ứng dụng, không phải tính năng framework dùng chung.

@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 816" role="img" aria-labelledby="title description">
+  <title id="title">Thực thi và truy cập</title>
+  <desc id="description">Một app process: UI và code ứng dụng, Language runtime, Thư viện / plugin native, Luồng thực thi UI / worker. File của app: Dữ liệu lưu khác bộ nhớ sống. Yêu cầu dịch vụ: OS kiểm tra truy cập, Dịch vụ hệ thống được bảo vệ. App khác: Bộ nhớ và file riêng biệt, Không có truy cập trực tiếp.</desc>
+  <defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0 8 4 0 8" fill="none" stroke="#2563eb" stroke-width="1.5"/></marker></defs>
+  <rect width="480" height="816" rx="12" fill="#f8fafc"/>
+  <g font-family="system-ui, sans-serif" fill="#111827">
+    <text x="24" y="38" font-size="25" font-weight="700">Thực thi và truy cập</text>
+    <rect x="16" y="60" width="448" height="268" rx="10" fill="#fff" stroke="#526071" stroke-width="2" stroke-dasharray="7 5"/>
+    <text x="32" y="96" font-size="23" font-weight="700">Một app process</text>
+    <text x="32" y="142" font-size="22">UI và code ứng dụng</text>
+    <text x="32" y="190" font-size="22">Language runtime</text>
+    <text x="32" y="238" font-size="22">Thư viện / plugin native</text>
+    <text x="32" y="290" font-size="21">Luồng thực thi UI / worker</text>
+    <path d="M208 328V374" fill="none" stroke="#2563eb" stroke-width="2.5" marker-end="url(#arrow)"/>
+    <rect x="16" y="374" width="424" height="96" rx="10" fill="#eff6ff" stroke="#2563eb" stroke-width="2"/>
+    <text x="32" y="410" font-size="23" font-weight="700">File của app</text>
+    <text x="32" y="448" font-size="21">Dữ liệu lưu khác bộ nhớ sống</text>
+    <path d="M464 280H472V568H440" fill="none" stroke="#2563eb" stroke-width="2.5" marker-end="url(#arrow)"/>
+    <text x="260" y="502" font-size="20">Yêu cầu dịch vụ</text>
+    <rect x="16" y="522" width="424" height="96" rx="10" fill="#dbeafe" stroke="#2563eb" stroke-width="2"/>
+    <text x="32" y="560" font-size="23" font-weight="700">OS kiểm tra truy cập</text>
+    <text x="32" y="597" font-size="21">Dịch vụ hệ thống được bảo vệ</text>
+    <rect x="16" y="660" width="448" height="132" rx="10" fill="#fff" stroke="#526071" stroke-width="2"/>
+    <text x="32" y="696" font-size="23" font-weight="700">App khác</text>
+    <text x="32" y="736" font-size="21">Bộ nhớ và file riêng biệt</text>
+    <text x="32" y="774" font-size="21">Không có truy cập trực tiếp</text>
+  </g>
+</svg>

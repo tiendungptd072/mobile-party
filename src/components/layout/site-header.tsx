@@ -34,6 +34,13 @@ export function SiteHeader() {
 
         <Link
           className="rounded-sm text-sm font-medium text-muted hover:text-foreground"
+          href={getLocalizedPath("/foundations", locale)}
+        >
+          {messages.foundations.title}
+        </Link>
+
+        <Link
+          className="rounded-sm text-sm font-medium text-muted hover:text-foreground"
           href={getLocalizedPath("/bookmarks", locale)}
         >
           {messages.bookmarks}

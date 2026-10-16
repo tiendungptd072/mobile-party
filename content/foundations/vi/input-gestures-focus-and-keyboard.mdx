@@ -1,0 +1,115 @@
+## Input có nhiều owner
+
+Ngón tay chạm tiêu đề report, chuột bấm Save, phím Tab chuyển focus và input method thay văn bản tạm thời là các tương tác khác nhau. Pointer event mô tả tiếp xúc hoặc chuyển động. Gesture diễn giải một chuỗi thành hành động. Focus định tuyến keyboard input. Text editing thay đổi editing value có thể gồm selection và composition. Gom chúng thành một luồng “click và phím” gây hành động ngoài ý muốn và lỗi nhập liệu.
+
+Bài này đề xuất trình soạn report `D42`, gồm field tiêu đề, body cuộn được, handle kéo attachment và nút Save. Policy tương tác dùng để giải thích thiết kế, không phải snippet thực thi hay hành vi đã kiểm chứng trên thiết bị. Các framework hỗ trợ mục tiêu sản phẩm **tương tự** nhưng hợp đồng hit testing, phân xử gesture, focus và text input **khác nhau**.
+
+| Cơ chế             | Trách nhiệm                                                        | Điều chưa được xác lập                                         |
+| ------------------ | ------------------------------------------------------------------ | -------------------------------------------------------------- |
+| Hit testing        | Tìm target đủ điều kiện tại vị trí pointer.                        | Người dùng muốn tap hoặc submit.                               |
+| Nhận diện gesture  | Diễn giải chuỗi pointer và phối hợp handler cạnh tranh.            | Mọi candidate đều nhận hành động thành công.                   |
+| Keyboard focus     | Chọn target hoặc focus chain liên quan cho keyboard interaction.   | Bàn phím phần mềm đang hiển thị.                               |
+| Text editing / IME | Duy trì text, selection và composition tạm thời qua input control. | Mỗi key event là một ký tự hoặc một record ứng dụng đã commit. |
+| Domain command     | Kiểm tra và thực hiện Save, điều hướng hoặc hành động ứng dụng.    | Quan sát pointer-down hay mất focus cho phép thực hiện nó.     |
+
+Input method editor (IME) có thể biến nhiều tương tác thành văn bản tạm thời rồi thay một range. UIKit mô tả marked text là văn bản chèn tạm cần xác nhận, với selection nằm trong range đó. Đây là hợp đồng text input của iOS, không phải lời hứa mọi string callback đa nền tảng đều cung cấp marked range. <Citation source="ios-marked-text" />
+
+## Hit testing có trước việc diễn giải
+
+Trong Flutter, pointer-down xác lập hit-test path; event tiếp theo của pointer đó đi theo path này. Nhận diện gesture sau đó diễn giải chuỗi. Tiếp xúc trên attachment của D42 có thể thành tap, drag hoặc tương tác bị hủy. Nhận event ban đầu không có nghĩa ứng dụng nên di chuyển hay lưu attachment ngay. <Citation source="flutter-gestures" />
+
+Trong thiết kế đề xuất, kiểm tra target bounds thực tế, input handler chồng lấp, clipping và hệ tọa độ trước khi quy lỗi tap hụt cho business state. Overlay trang trí không nên vô tình chắn input. Ngược lại, modal overlay có chủ đích phải chặn tương tác tới control được bảo vệ bên dưới. Đây là yêu cầu sản phẩm cần kiểm chứng bằng hit-testing behavior thực tế của framework.
+
+<Figure
+  id="input-ownership"
+  src="/illustrations/foundations/input-gestures-focus-and-keyboard/input-ownership-vi.svg"
+  alt="Hai đường khái niệm dẫn tới owner trình soạn. Chuỗi pointer đi qua hit testing và nhận diện gesture. Keyboard hoặc IME input được định tuyến tới target có focus và tạo editing update. Liên kết nét đứt cho biết tap được nhận diện có thể yêu cầu focus. Cancellation không phải command thành công; text edit không phải save bền vững."
+  caption="Hai đường input liên quan, không phải thứ tự event phổ quát. Sơ đồ tự biên soạn; keyboard shortcut và accessibility action là các đường khác tới domain command, không phải raw text edit."
+  sources={["flutter-gestures", "flutter-focus", "ios-marked-text"]}
+/>
+
+Đọc nét đứt là tương tác tùy chọn của ứng dụng: tap tiêu đề có thể yêu cầu focus. Hardware keyboard có thể chuyển focus mà không có pointer event; accessibility action có thể kích hoạt Save mà không dựng lại gesture ngón tay. Owner chung nhận edit hoặc command có ý nghĩa, không nhận chỉ thị lưu mọi raw input event.
+
+## Chủ động xử lý xung đột và cancellation
+
+Với D42, drag dọc trên body nên scroll; drag trên handle attachment riêng nên đổi thứ tự attachment đó. Nhấn Save chỉ kích hoạt sau khi control nhận diện activation hợp lệ. Nếu tương tác bị hủy, xóa trạng thái pressed/drag tạm và không phát Save. Tách preview kéo khỏi vị trí cuối đã được chấp nhận.
+
+Các lựa chọn này tránh để mọi parent có handler bao trùm giành toàn bộ input. Chi phí custom gesture không chỉ là tính chuyển động: nó phải phối hợp scroll container, selection, cancellation, input khác và semantics. Bắt đầu từ control chuẩn và gesture abstraction sẵn có; chỉ dùng raw pointer handling khi hành vi thực sự tùy biến.
+
+Xung đột không nhất thiết được giải quyết bằng cách “cho child thắng”. Xác định các hành động loại trừ nhau, đồng thời hay theo chuỗi. Chẳng hạn map nằm trong scroll container cần policy rõ chuyển động thuộc control nào. Không chép quy tắc event consumption từ framework này sang framework khác: các phần dưới mô tả cơ chế khác nhau.
+
+## Focus là vị trí, không phải cờ chiều cao bàn phím
+
+Với form đề xuất, đặt traversal là tiêu đề → body → Save. Validation lỗi có thể yêu cầu focus vào field sai đầu tiên sau khi control liên quan tồn tại. Đóng modal nên trả focus về control còn tồn tại và hữu ích. Đây là policy ứng dụng; riêng keyboard visibility hay screen navigation không xác định target đang edit.
+
+Giữ focus identity ổn định khi trình soạn được giữ lại. Trong Flutter, FocusNode tồn tại qua các widget build; cấp node mới mỗi build có thể mất focus, và node do mình sở hữu cần được dispose. Keyboard event bắt đầu tại primary focus rồi có thể đi qua ancestor của nó. Đây là đường khác với pointer hit-test path. <Citation source="flutter-focus" />
+
+Bàn phím vật lý có thể cung cấp văn bản mà không chiếm không gian bàn phím phần mềm. Xem focus, software-keyboard presentation và viewport khả dụng là các quan sát riêng. Tránh liên tục yêu cầu focus trong lúc tính lại UI: nó có thể giành focus về sau khi người dùng chủ động chuyển đi.
+
+## Giữ đúng editing trước khi validation document
+
+Owner D42 cần text hiện tại, nhưng input control còn cần selection và composing state nhất quán. Không dựng text bằng cách nối ký tự từ key-down callback. Paste, replacement, input-method composition và selection change cần hợp đồng editing của control thực tế.
+
+TextEditingController của Flutter cảnh báo thay composing state trong listener của chính nó có thể tranh chấp với input method và gây vòng lặp. Gán `text` xóa selection và composition; đổi text cùng selection cần editing value phù hợp. Vì vậy ép viết lại tiêu đề sau mọi callback có thể làm nhảy caret hoặc gián đoạn composition chưa xong. <Citation source="flutter-editing" />
+
+Thiết kế này giữ intermediate edit tiếp tục sửa được và áp dụng validation cấp document ở ranh giới rõ, như Save. Nếu sản phẩm cần giới hạn trong lúc gõ, dùng hợp đồng input transformation/filtering được framework hỗ trợ và kiểm chứng với composing input. Nhãn lỗi có thể báo draft chưa hợp lệ mà không xóa ngay thứ người dùng đang nhập.
+
+IME action mang nhãn Next hoặc Done là gợi ý tương tác, không chứng minh D42 hợp lệ hay đã lưu. Ánh xạ nó tới policy focus/submit rõ ràng và chạy cùng domain validation như nút Save. Field multiline cũng cần chủ động phân biệt chèn newline với kích hoạt submit command.
+
+## Bốn framework có hợp đồng khác nhau
+
+### React Native
+
+Responder system của RN phân xử view nào xử lý touch và phân biệt release với termination. Capture handler của parent có thể được ưu tiên; termination có thể xảy ra mà không có release thành công. Dùng hợp đồng activation của control thay vì xem responder grant là press hoàn tất. Vòng đời responder này không phải gesture arena của Flutter. <Citation source="rn-responder" />
+
+TextInput cung cấp `onChangeText`, method focus/blur và editing event. Trên Android, `onKeyPress` được tài liệu mô tả chỉ bao phủ soft-keyboard input, không phải hardware-keyboard input. Controlled `value` ép native text khớp giá trị đó; liên tục từ chối edit bằng cách giữ value cũ có thể gây flicker. String callback không phải API editing state đầy đủ, tổng quát. <Citation source="rn-text-input" />
+
+Với D42, giữ text hiện tại đã chấp nhận tại owner và xử lý submit rõ ràng riêng. Yêu cầu focus không xác nhận save; remount field để reset có thể bỏ editing session đang hoạt động.
+
+### Flutter
+
+Recognizer cạnh tranh tham gia gesture arena; chúng có thể từ chối nhận diện hoặc thắng trong khi candidate khác thua. Pointer-event bubbling và arena resolution là các lớp khác nhau. Không giả định nhận pointer event bảo đảm sẽ có `onTap` sau drag. <Citation source="flutter-gestures" />
+
+Dùng focus/controller ownership ổn định cho trình soạn được giữ lại. Dispose TextEditingController khi lifetime sở hữu nó kết thúc. Ưu tiên editable control chuẩn và formatter được hỗ trợ thay cho listener liên tục sửa composing text. Những control này vẫn cần quy tắc save và validation của ứng dụng. <Citation source="flutter-editing" />
+
+### Jetpack Compose
+
+Hit testing của Compose xác lập chain cho pointer mới. Consume PointerInputChange đánh dấu nó đã được consume; không tự dừng propagation. Custom handler phải tôn trọng consumption. Control cấp cao có nhiều hành vi focus và semantics hơn raw `pointerInput`, nên dựng lại button từ pointer event cũng tạo thêm trách nhiệm. <Citation source="compose-gestures" />
+
+Remember và gắn FocusRequester, rồi yêu cầu focus từ event hoặc effect phù hợp thay vì trực tiếp trong composable body. Đây là yêu cầu có phạm vi, không phải quyền vĩnh viễn giành focus sau mỗi update. <Citation source="compose-focus" />
+
+Hướng dẫn text field hiện tại phân biệt value-based callback với state-based field; TextFieldState gồm text, selection và composition. Kiểm tra API được Compose/Material version của dự án hỗ trợ trước khi áp dụng ví dụ. Comparison dùng string hiện có vẫn là ví dụ controlled value hẹp, không phải mô hình IME đầy đủ. <Citation source="compose-text" />
+
+### SwiftUI
+
+Trên iOS/iPadOS 15+, FocusState nối focus với Boolean hoặc optional value; thay giá trị có thể chuyển focus. Gắn cùng một value cho hai field riêng là mơ hồ. Cho tiêu đề và body identity riêng thay vì một flag không xác định được target mong muốn. <Citation source="swiftui-focus" />
+
+`highPriorityGesture` có thể được ưu tiên hơn gesture hiện có. Dùng nó cho policy xung đột có chủ đích, không coi là cách sửa chung cho mọi child không phản hồi. Hợp đồng priority của nó khác RN responder capture hay Compose consumption. <Citation source="swiftui-gesture" />
+
+Text control của SwiftUI phối hợp với editing system của nền tảng. Mô tả marked text của UIKit giải thích văn bản tạm; không có nghĩa SwiftUI String binding cung cấp UIKit UITextRange. Tách composition API riêng của nền tảng khỏi application text value dùng chung.
+
+## Thích ứng bàn phím mà không che trình soạn
+
+Field đang dùng, caret, validation message và Save của D42 cần còn tiếp cận được khi không gian bàn phím phần mềm đổi. Chọn container nào resize hoặc scroll thay vì cộng keyboard height ước lượng vào mọi ancestor. Kiểm tra landscape, chữ lớn và bàn phím vật lý; một chiều cao cố định không phải layout contract.
+
+Trong Compose, IME inset padding tham gia inset consumption, tránh áp cùng không gian nhiều lần qua các modifier có phối hợp. Hiểu container nào đã consume trước khi thêm padding. Cơ chế inset Android này không phải API keyboard size đa nền tảng. <Citation source="compose-insets" />
+
+Trên iOS/iPadOS 16+, `scrollDismissesKeyboard` của SwiftUI chỉ định cách scrollable content ẩn bàn phím phần mềm. Chọn mode có chủ đích khi cần thay vì giả định mọi trình soạn cuộn được có cùng mặc định. Policy dismissal riêng với việc chấp nhận hay lưu text của D42. <Citation source="swiftui-keyboard" />
+
+Handler “tap bất cứ đâu để ẩn bàn phím” quá rộng có thể cạnh tranh với selection, link và button. Xác định vùng trống đủ điều kiện và để child control giữ hành động mong muốn. Dismissal không nên âm thầm xóa provisional input hay bỏ qua domain validation.
+
+## Theo dõi tương tác đầy đủ khi tìm lỗi
+
+| Điều tra đề xuất                                      | Kết quả mong đợi                                      | Bằng chứng cần xem                                     |
+| ----------------------------------------------------- | ----------------------------------------------------- | ------------------------------------------------------ |
+| Nhấn Save rồi hủy trước activation                    | Không phát Save command; xóa pressed feedback.        | Nhận diện/cancellation và domain-command log.          |
+| Scroll bắt đầu trên child có tương tác                | Giữ đúng policy scroll/gesture đã chọn.               | Hit-test path và quyết định recognizer/consumption.    |
+| Chuyển field bằng Tab                                 | Traversal dễ đoán và focus nhìn thấy được.            | Focus identity và target thực sự thay đổi.             |
+| Nhập tiếng Việt hoặc input method có composition khác | Giữ intermediate edit và text cuối nguyên vẹn.        | Hành vi selection/composing, không chỉ string cuối.    |
+| Paste hoặc thay text được chọn                        | Replacement và caret đúng.                            | Editing value và ownership update.                     |
+| Mở bàn phím gần cuối form                             | Vị trí edit và hành động cần thiết còn tiếp cận được. | Insets, scroll position và phần không gian đã consume. |
+| Đóng modal hoặc rời trình soạn                        | Kết thúc interaction state tạm; focus theo policy.    | Lifetime owner và target khôi phục focus.              |
+
+Dùng thiết bị và input method thực tế được hỗ trợ để kiểm tra hành vi native. Log event type, target identity, gesture outcome và focus transition mà không ghi văn bản report riêng tư. Web reader check đạt chỉ kiểm tra trình bày bài này; không kiểm chứng native IME hay triển khai gesture.
+
+[State ownership và luồng dữ liệu](/vi/foundations/state-ownership-and-data-flow) giải thích owner nhận edit; [Process death và khôi phục state](/vi/foundations/process-death-and-state-restoration) giải thích ranh giới recovery. [So sánh gesture abstractions](/vi/compare/gesture-abstractions) và [so sánh text input](/vi/compare/text-input) cung cấp ví dụ API tập trung. Giữ tính đúng của tương tác và accessibility cùng hiệu năng, thay vì tối ưu bằng cách bỏ input update hợp lệ.

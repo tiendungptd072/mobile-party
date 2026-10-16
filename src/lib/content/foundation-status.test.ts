@@ -21,7 +21,7 @@ const routes = getFoundationLinkRoutes();
 const pilot = foundationDefinitions[0];
 function fixture(): FoundationDefinition {
   return {
-    metadata: structuredClone(pilot.metadata),
+    metadata: { ...structuredClone(pilot.metadata), status: "draft" },
     bodies: {
       en: {
         ...pilot.bodies.en!,
@@ -367,10 +367,9 @@ describe("Foundations quality report", () => {
     );
   });
 
-  test("strict CLI preserves concept/stage coverage and includes the actual draft report", () => {
+  test("strict CLI preserves concept/stage coverage and includes the published pilot report", () => {
     const result = Bun.spawnSync([
       process.execPath,
-      "run",
       "scripts/content-status.ts",
       "--strict",
     ]);
@@ -378,7 +377,7 @@ describe("Foundations quality report", () => {
     const output = new TextDecoder().decode(result.stdout);
     expect(output).toContain("Required cells: 864; ready: 864; missing: 0.");
     expect(output).toContain(
-      "Foundation registry: 1 articles; published: 0; drafts: 1;",
+      "Foundation registry: 7 articles; published: 7; drafts: 0;",
     );
     expect(output).toContain("errors: 0; pending: 0.");
   });

@@ -1,0 +1,115 @@
+## Input has several owners
+
+A finger touching a report title, a mouse clicking Save, a Tab key moving focus, and an input method replacing provisional text are different interactions. A pointer event describes contact or movement. A gesture interprets a sequence as an action. Focus directs keyboard input. Text editing changes an editing value that can include selection and composition. Treating them as one stream of “clicks and keys” causes accidental actions and broken typing.
+
+This article proposes an editor for report `D42`, containing a title field, scrollable body, draggable attachment handle, and Save button. Its interaction policies are explanatory designs, not executable snippets or device-tested behavior. The frameworks support **similar** product goals but use **different** hit-testing, gesture arbitration, focus, and text-input contracts.
+
+| Mechanism           | Responsibility                                                                   | What it does not establish                                     |
+| ------------------- | -------------------------------------------------------------------------------- | -------------------------------------------------------------- |
+| Hit testing         | Find eligible targets for a pointer's location.                                  | That the user intended a tap or submission.                    |
+| Gesture recognition | Interpret a pointer sequence and coordinate competing handlers.                  | That every candidate receives a successful action.             |
+| Keyboard focus      | Select the relevant target or focus chain for keyboard interaction.              | That the software keyboard is visible.                         |
+| Text editing / IME  | Maintain text, selection, and provisional composition through the input control. | One character per key event or a committed application record. |
+| Domain command      | Validate and perform Save, navigation, or another application action.            | That observing pointer-down or losing focus authorizes it.     |
+
+An input method editor (IME) can turn several interactions into provisional text and later replace a range. UIKit documents marked text as provisionally inserted text requiring confirmation, with selection inside that range. This is an iOS text-input contract, not a promise that every cross-platform string callback exposes the marked range. <Citation source="ios-marked-text" />
+
+## Hit testing precedes interpretation
+
+In Flutter, pointer-down establishes a hit-test path; subsequent events for that pointer travel along that path. Gesture recognition then interprets the sequence. A contact over D42's attachment can become a tap, a drag, or a cancelled interaction. Receiving the initial event does not mean the application should already move or save the attachment. <Citation source="flutter-gestures" />
+
+In this proposed design, inspect actual target bounds, overlapping input handlers, clipping, and coordinate spaces before blaming a missed tap on business state. A decorative overlay should not accidentally become an input shield. Conversely, an intentional modal overlay must not let interactions reach protected controls underneath. These are product requirements to verify through the framework's actual hit-testing behavior.
+
+<Figure
+  id="input-ownership"
+  src="/illustrations/foundations/input-gestures-focus-and-keyboard/input-ownership-en.svg"
+  alt="Two conceptual paths lead to the editor owner. A pointer sequence passes through hit testing and gesture recognition. Keyboard or IME input is routed to a focused target and produces editing updates. A dashed cross-link shows that a recognized tap may request focus. Cancellation is not a successful command, and text edits are not durable saves."
+  caption="Two related input paths, not one universal event order. Self-authored diagram; keyboard shortcuts and accessibility actions are additional routes to domain commands, not raw text edits."
+  sources={["flutter-gestures", "flutter-focus", "ios-marked-text"]}
+/>
+
+Read the dashed link as an optional application interaction: tapping the title can request focus. A hardware keyboard can move focus without any pointer event, and an accessibility action can activate Save without reconstructing a finger gesture. The shared owner receives meaningful edits or commands, not an instruction to persist every raw input event.
+
+## Resolve conflicts and cancellation deliberately
+
+For D42, a vertical drag over the report body should scroll; a drag on its dedicated attachment handle should reorder that attachment. A Save press should activate only after the control recognizes a valid activation. If an interaction is cancelled, clear temporary pressed/drag state and do not issue Save. Keep a preview of a drag separate from its accepted final position.
+
+These choices avoid giving every parent a catch-all handler that claims all input. The cost of a custom gesture is more than its movement calculation: it must cooperate with scroll containers, selection, cancellation, alternate input, and semantics. Start with standard controls and established gesture abstractions; use raw pointer handling only when the required behavior is genuinely custom.
+
+A conflict is not necessarily solved by “making the child win.” Determine whether the actions are exclusive, simultaneous, or sequential. A map inside a scroll container, for example, needs an intentional policy for which motion belongs to which control. Do not copy event-consumption rules from one framework into another: the sections below describe different mechanisms.
+
+## Focus is a location, not a keyboard-height flag
+
+For the proposed form, define traversal as title → body → Save. A validation failure can request the first invalid field after the relevant control exists. Closing a modal should return focus to a useful surviving control. These are application policies; neither keyboard visibility nor screen navigation alone identifies the current editing target.
+
+Maintain stable focus identities while an editor is retained. In Flutter, FocusNode objects persist across widget builds; allocating a node on every build can lose focus, and owned nodes require disposal. Keyboard events begin at primary focus and can propagate through its ancestors. These are distinct from the pointer hit-test path. <Citation source="flutter-focus" />
+
+A physical keyboard can supply text without occupying software-keyboard space. Treat focus, software-keyboard presentation, and available viewport space as separate observations. Avoid continuously requesting focus during UI recomputation: it can steal focus back from a user who deliberately moved elsewhere.
+
+## Preserve text editing before validating the document
+
+The D42 owner needs current text, but the input control also needs a coherent selection and composing state. Do not reconstruct text by appending characters from key-down callbacks. Paste, replacement, input-method composition, and selection changes require the editing contract of the actual control.
+
+Flutter's TextEditingController warns that changing composing state inside its own listener can fight the input method and cause a loop. Setting its `text` clears selection and composition; updating text and selection together requires an appropriate editing value. This is why forcibly rewriting the title after every callback can move the caret or disrupt an unfinished composition. <Citation source="flutter-editing" />
+
+For this design, keep intermediate edits editable and apply document-level validation at a clear boundary, such as Save. If the product requires restrictions while typing, use the framework's supported input transformation/filtering contract and verify it with composing input. An error label may report an invalid draft without immediately deleting what the person is entering.
+
+An IME action labelled Next or Done is an input affordance, not proof that D42 is valid or stored. Map it to an explicit focus/submit policy and run the same domain validation as the Save button. A multiline field also needs an intentional distinction between inserting a newline and activating a submit command.
+
+## Four frameworks expose different contracts
+
+### React Native
+
+RN's responder system negotiates which view handles a touch and distinguishes release from termination. Parent capture handlers can take precedence; termination may occur without a successful release. Use the control's activation contract rather than treating responder grant as a completed press. This responder lifecycle is not Flutter's gesture arena. <Citation source="rn-responder" />
+
+TextInput exposes `onChangeText`, focus/blur methods, and editing events. On Android, its documented `onKeyPress` covers soft-keyboard input, not hardware-keyboard input. A controlled `value` forces the native text to match; repeatedly rejecting edits by leaving the value unchanged can flicker. A string callback is not a general-purpose complete editing-state API. <Citation source="rn-text-input" />
+
+For D42, keep current accepted text with its owner and treat explicit submission separately. Requesting focus does not acknowledge a save, and remounting a field to reset it can discard an active editing session.
+
+### Flutter
+
+Competing recognizers join a gesture arena; they can reject recognition or win while other candidates lose. Pointer-event bubbling and arena resolution describe different layers. Avoid assuming that receiving pointer events guarantees `onTap` after a drag. <Citation source="flutter-gestures" />
+
+Use stable focus/controller ownership for the retained editor. Dispose its TextEditingController when its owning lifetime ends. Prefer standard editable controls and supported formatters over a listener that repeatedly modifies composing text. These controls still need the application's save and validation rules. <Citation source="flutter-editing" />
+
+### Jetpack Compose
+
+Compose hit testing establishes a chain for a new pointer. Consuming a PointerInputChange marks it consumed; it does not stop propagation automatically. Custom handlers must respect consumption. High-level controls include more focus and semantics behavior than raw `pointerInput`, so rebuilding a button from pointer events also creates extra responsibilities. <Citation source="compose-gestures" />
+
+Remember and attach a FocusRequester, then request focus from an event or suitable effect rather than directly in the composable body. This gives a scoped request, not a permanent right to reclaim focus after every update. <Citation source="compose-focus" />
+
+The current text-field guide distinguishes value-based callbacks from state-based fields; TextFieldState includes text, selection, and composition. Check the APIs supported by the project's Compose/Material versions before adopting an example. The existing string-based comparison remains a narrow controlled-value example, not a complete IME model. <Citation source="compose-text" />
+
+### SwiftUI
+
+On iOS/iPadOS 15+, FocusState connects focus to a Boolean or optional value; changing it can move focus. Binding the same value to two distinct fields is ambiguous. Give title and body distinct identities instead of one flag that cannot identify the intended target. <Citation source="swiftui-focus" />
+
+`highPriorityGesture` can take precedence over existing gestures. Use it for an intentional conflict policy, not as a general repair for every unresponsive child. Its priority contract is different from RN responder capture or Compose consumption. <Citation source="swiftui-gesture" />
+
+SwiftUI text controls cooperate with the platform editing system. UIKit's marked-text description explains provisional text; it does not imply that a SwiftUI String binding exposes a UIKit UITextRange. Keep platform-specific composition APIs distinct from the shared application text value.
+
+## Adapt to the keyboard without hiding the editor
+
+D42's active field, caret, validation message, and Save action should remain reachable when software-keyboard space changes. Choose which container resizes or scrolls instead of adding an estimated keyboard height to every ancestor. Test landscape, large text, and physical-keyboard use; a single fixed height is not a layout contract.
+
+In Compose, IME inset padding participates in inset consumption, which avoids repeatedly applying the same space through cooperating modifiers. Understand which container already consumes it before adding more padding. This Android inset mechanism is not a cross-platform keyboard-size API. <Citation source="compose-insets" />
+
+On iOS/iPadOS 16+, SwiftUI's `scrollDismissesKeyboard` specifies how scrollable content dismisses the software keyboard. Set an intentional mode where needed instead of assuming all scrollable editors share a default. Dismissal policy is separate from accepting or saving D42's text. <Citation source="swiftui-keyboard" />
+
+A broad “tap anywhere to dismiss” handler can compete with selection, links, and buttons. Define the eligible empty area and let child controls retain their intended actions. Dismissal should not silently erase provisional input or bypass domain validation.
+
+## Follow complete interactions when diagnosing failures
+
+| Proposed investigation                             | Expected result                                             | Evidence to inspect                                   |
+| -------------------------------------------------- | ----------------------------------------------------------- | ----------------------------------------------------- |
+| Press Save, then cancel before activation          | No Save command; pressed feedback clears.                   | Recognition/cancellation and domain-command logs.     |
+| Scroll starting over an interactive child          | The chosen scroll/gesture policy holds.                     | Hit-test path and recognizer/consumption decisions.   |
+| Move through fields with Tab                       | Predictable traversal and visible focus.                    | Focus identities and actual target changes.           |
+| Enter Vietnamese or another composing input method | Intermediate edits and final text remain intact.            | Selection/composing behavior, not only final strings. |
+| Paste or replace selected text                     | Correct replacement and caret position.                     | Editing values and update ownership.                  |
+| Open keyboard near the bottom of the form          | The editing location and required actions remain reachable. | Insets, scroll position, and consumed space.          |
+| Close a modal or leave the editor                  | Temporary interaction state ends; focus follows policy.     | Owner lifetime and focus restoration target.          |
+
+Use actual supported devices and input methods for native behavior. Log event type, target identity, gesture outcome, and focus transition without recording private report text. A passing web reader check verifies this article's presentation; it does not verify a native IME or gesture implementation.
+
+[State Ownership and Data Flow](/en/foundations/state-ownership-and-data-flow) explains the owner receiving edits; [Process Death and State Restoration](/en/foundations/process-death-and-state-restoration) explains recovery boundaries. The [gesture abstractions comparison](/en/compare/gesture-abstractions) and [text input comparison](/en/compare/text-input) provide focused API examples. Keep interaction correctness and accessibility alongside performance rather than optimizing away legitimate input updates.

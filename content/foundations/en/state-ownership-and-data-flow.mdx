@@ -1,0 +1,101 @@
+## Give each fact a clear owner
+
+A report editor can contain local UI state, an editable buffer, a committed draft, a server revision, and a navigation destination at the same time. Calling all of them “the state” hides different responsibilities. An owner accepts changes to a fact; an observable value tells the UI when to read again; durable storage determines what survives process loss. These are separate contracts.
+
+A **single source of truth is scoped to a particular fact**, not necessarily to the entire application. React recommends one owner for each piece of shared state. Android's data-layer guidance similarly assigns a source of truth to each repository; a repository can reconcile multiple underlying sources. Neither recommendation requires every cursor position and remote record to live in one global store. <Citation source="react-sharing" /> <Citation source="android-data-layer" />
+
+This article proposes an editor for account `A`'s report `D42`. Its policies and event trace are explanatory designs, not executable snippets or device-tested guarantees. Framework APIs below support **similar** ownership goals but have **different** observation, lifetime, and mutation contracts.
+
+| Fact                           | Proposed owner and meaning                               | What it does not prove                             |
+| ------------------------------ | -------------------------------------------------------- | -------------------------------------------------- |
+| Cursor and expanded section    | The editor's local UI owner.                             | That the draft has been saved.                     |
+| Editable text                  | The current editor's working buffer.                     | That another editor or the server has accepted it. |
+| Committed local draft          | The account-scoped repository and its storage contract.  | That remote synchronization has completed.         |
+| Server-accepted revision       | The server's response and reconciliation contract.       | That current local edits are identical to it.      |
+| Current destination            | The navigation owner, preferably identifying `D42`.      | That `D42` exists or access is currently allowed.  |
+| Validation and dirty indicator | Derived from current inputs and acknowledged versions.   | That a separate mutable copy is needed.            |
+| Save operation phase           | The coordinator responsible for this editor's operation. | That other editors cannot write the same report.   |
+
+The buffer and committed record intentionally represent different facts. Keeping both is not the accidental duplication that occurs when two independent mutable values both claim to be the current editable text. Two editor windows may also have different buffers; their repository needs an explicit conflict policy. An in-memory repository source of truth is still not durable merely because it has that architectural name. <Citation source="android-data-layer" />
+
+## Derive values instead of synchronizing copies
+
+Compute a cheap validation result from the current text. Compute a selected item from its ID and the current collection rather than storing an independently editable copy of the selected object. React's state-structure guidance warns about redundant state, duplicated state, and combinations that contradict each other. Its Effect guidance recommends calculating renderable derived data during rendering rather than using an Effect to copy it into another state variable. <Citation source="react-structure" /> <Citation source="react-no-effect" />
+
+For this proposed editor, `workingVersion` increases on every accepted edit. `committedVersion` records the editor version most recently acknowledged by its serialized save coordinator. The dirty indicator is `workingVersion != committedVersion`. This means “the latest working version has not been acknowledged,” not “the text differs byte for byte.” Typing and then undoing can still require an acknowledgement under this policy. A product that wants content equality needs a different, explicit comparison policy.
+
+Do not turn every calculation into a cache. Compose's `derivedStateOf` is intended for cases where inputs change more often than the UI needs to update, such as converting frequent scroll changes into a threshold. It has overhead and is unnecessary just to combine values that must update at the same frequency. This is not a universal counterpart to every React memoization API. <Citation source="compose-effects" />
+
+## Send events to owners and render their state
+
+In the proposed flow, the UI sends `TextChanged` or `SaveRequested` to an owner. The owner validates the event, computes the next state, and decides whether an external operation is required. The UI renders the new state. An I/O runner performs the requested operation and returns a result event to the same owner.
+
+Android describes unidirectional data flow as state flowing toward the UI and events toward state holders. A screen-level ViewModel is one possible holder; simple UI logic can use a plain class or local state. Hoist only as far as the actual consumers and writers require. <Citation source="android-ui-layer" />
+
+<Figure
+  id="state-flow"
+  src="/illustrations/foundations/state-ownership-and-data-flow/state-flow-en.svg"
+  alt="A user event enters the state owner. The owner computes a new UI snapshot and, when needed, an I/O request with a captured version and operation ID. The UI renders without committing storage. I/O returns a success or failure event to the owner, which checks whether it still belongs to the current operation."
+  caption="A proposed event and result loop. Self-authored diagram; arrows show responsibility, not threads, scheduling order, or automatic persistence."
+  sources={["react-reducer", "android-ui-layer"]}
+/>
+
+The two branches mean different work: rendering displays a snapshot, while I/O can change external data. The result loops back through the owner instead of directly mutating a label. A pure transition function can describe decisions without executing storage or network calls inside it. React's reducer contract requires a pure reducer that returns the next state; state objects must be replaced rather than mutated. <Citation source="react-reducer" />
+
+“Effect” here means an external operation. It does not mean every button handler must launch a React `useEffect`. React recommends keeping interaction-specific logic with the interaction that caused it and using Effects for synchronization with external systems. Re-rendering an editor must not submit the same report again just because it is dirty. <Citation source="react-no-effect" />
+
+## Model save phases and late results explicitly
+
+Use one save phase such as `Idle`, `Saving(operationId, capturedVersion)`, or `Failed(error)` instead of unrelated `isSaving`, `hasFailed`, and `hasSucceeded` booleans that permit contradictory combinations. Keep the working buffer separately: editing is allowed during a save in this design. React's state-structure guidance supports avoiding impossible combinations; the exact phase names and save policy here are application choices. <Citation source="react-structure" />
+
+This coordinator permits **one in-flight save per editor draft**. A second save request while saving is rejected or coalesced according to an explicit UI policy; it does not start a concurrent write. This limit does not serialize other windows or devices. The repository must enforce any cross-editor ordering or conflict contract.
+
+| Event                                           | State transition in the proposed editor                                                            |
+| ----------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| Initial state                                   | Working version 17, committed version 16, phase `Idle`; dirty is true.                             |
+| `SaveRequested`                                 | Start `R1`, capturing version 17 and its payload; phase becomes `Saving`.                          |
+| `TextChanged` while `R1` runs                   | Working version becomes 18; the captured payload for `R1` remains version 17.                      |
+| Matching `SaveSucceeded(R1, 17)`                | Committed version becomes 17, phase becomes `Idle`; dirty remains true because 18 differs from 17. |
+| Matching `SaveFailed(R1)` instead               | Preserve the working buffer and previous committed version; expose failure and retry.              |
+| Retry after failure                             | Start a new operation ID and capture the latest working payload.                                   |
+| Result from an obsolete owner/account/operation | Reject it for the current UI; do not overwrite the current state.                                  |
+
+These version numbers are editor-local acknowledgements, not a server's global ordering scheme. A successful result must mean the chosen storage contract completed, not merely that the write was queued. If failure can leave the external outcome uncertain, expose that uncertainty and reconcile it rather than pretending the record was never written. Rejecting a stale UI result does not undo an external write that already happened.
+
+React event handlers observe the state snapshot for the render that created them. Setting state schedules a later render; it does not change the variables already captured by that handler. Capture the payload deliberately and include operation identity in completion events. A closure is not evidence that its captured inputs are still current when asynchronous work finishes. <Citation source="react-snapshot" />
+
+## Four frameworks place ownership differently
+
+### React Native
+
+React's shared-state model lifts ownership to the nearest suitable common parent and passes values and handlers down. `useReducer` can express transitions for related state without making that state global. The reducer itself performs no I/O, and neither lifting state nor dispatching an action persists a draft. These are React contracts used by React Native, not claims about browser DOM behavior. <Citation source="react-sharing" /> <Citation source="react-reducer" />
+
+A child can be controlled by its owner while retaining unrelated local UI state. Avoid copying an incoming editable value into a second owner and then trying to synchronize both directions on every render.
+
+### Flutter
+
+Flutter distinguishes ephemeral state from application state, but explicitly treats the boundary as dependent on the application. A selected tab can stay local until real consumers require sharing. Shared state is not automatically persistent state. <Citation source="flutter-state-scope" />
+
+`ChangeNotifier` provides listener notification; the application still chooses its owner, mutation methods, and lifetime. `ValueNotifier` notifies when an assigned value compares unequal using `==`. Mutating a list inside its existing value does not itself trigger notification. Immutable replacement can make changes observable; it does not supply validation, storage, or cross-editor conflict handling. <Citation source="flutter-change-notifier" /> <Citation source="flutter-value-notifier" />
+
+### Jetpack Compose
+
+Compose's hoisting guidance considers both the lowest common ancestor that reads state and the highest place that writes it; state changing in response to the same events may need to be hoisted together. Passing state down and events up keeps responsibilities visible. Ordinary mutable collections are not automatically observable state, so mutation must use an appropriate observable representation or immutable replacement. <Citation source="compose-state" />
+
+A screen state holder can expose an immutable UI snapshot while a repository owns records. `derivedStateOf` controls appropriate derived observation; it is not a persistence mechanism. A ViewModel's scope is not equivalent to a process-wide JavaScript store or to durable storage. <Citation source="android-ui-layer" /> <Citation source="compose-effects" />
+
+### SwiftUI
+
+For iOS/iPadOS 17+, SwiftUI supports Observation-based model data. An `@Observable` model supplies tracked properties, and reads in a view's body establish relevant dependencies. `@State` can hold the model instance owned at the chosen view scope; sharing it through the hierarchy does not require creating another owner for each child. Earlier deployment targets need their applicable observation APIs. <Citation source="swiftui-model" />
+
+A `Binding` reads and writes a value owned by a source of truth elsewhere; it does not store a separate copy. This two-way connection is compatible with a single owner. Use explicit domain commands where writes must enforce rules instead of assuming every writable binding performs business validation. Neither a binding nor Observation guarantees persistence or safe cross-thread mutation. <Citation source="swiftui-binding" />
+
+## Keep feedback, restoration, and global scope intentional
+
+A transient message can be represented in UI state with an ID and an acknowledgement event that clears the matching message. Android's UI-events guidance describes reducing events to state and acknowledging displayed messages. This is not a durable exactly-once delivery guarantee for payments or submissions. <Citation source="android-ui-events" />
+
+Restoring an editor reconstructs state; it does not automatically replay `SaveRequested`. Keep pending external operations under their own reconciliation contract. [Startup and Session Restoration](/en/foundations/startup-and-session-restoration) covers account changes and uncertain outcomes; [Process Death and State Restoration](/en/foundations/process-death-and-state-restoration) covers survival boundaries.
+
+Start with the smallest owner that can serve the readers and accept valid changes. Move it upward when consumers actually share a fact. A global store can help truly shared state, but widens lifetime and invalidation responsibilities; it cannot replace ownership decisions. [Application and Screen Lifecycle](/en/foundations/application-and-screen-lifecycle) explains why a visible screen, retained owner, and running operation can have different lifetimes.
+
+Verify transitions with concrete cases: editing during save, failed save with intact text, duplicate save requests, switching accounts before completion, and reopening without replaying a command. Check that the dirty label follows the acknowledged version and that derived values cannot drift from their inputs. The [derived state comparison](/en/compare/derived-state) and [side effects comparison](/en/compare/side-effects) provide focused API examples; this article's coordinator remains an application design.

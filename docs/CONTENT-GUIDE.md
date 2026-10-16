@@ -1291,7 +1291,7 @@ If the article does not make that comparison easier, simplify or restructure it.
 
 Foundations explains how mobile applications work. Readers should understand the mechanism, its constraints, and the consequences of alternative choices. This is reference material for developers who already understand programming, with no exercises, quizzes, challenges, assignments, or completion requirements.
 
-Use the [Foundations contract](content-model.md#foundations-articles-f02-contract), [pilot specification](FOUNDATIONS-ARTICLE-SPEC.md), and [inventory](FOUNDATIONS-INVENTORY.md). F03 implements the registry/metadata validation, generated body data, and server component bindings; F04 adds the static index and reader. F05 supplies the reviewed bilingual pilot draft; F06 adds structural reporting and CI checks. Public discovery/publication remains F07 work.
+Use the [Foundations contract](content-model.md#foundations-articles-f02-contract), [pilot specification](FOUNDATIONS-ARTICLE-SPEC.md), and [inventory](FOUNDATIONS-INVENTORY.md). F03 implements the registry/metadata validation, generated body data, and server component bindings; F04 adds the static index and reader. F05 supplies the reviewed bilingual pilot; F06 adds structural reporting and CI checks. F07 publishes the pilot and adds navigation, metadata search, sitemap entries, and contextual Dictionary links. Keep drafts excluded from these discovery surfaces; publishing an article requires both locale versions.
 
 ## Explanation and depth
 

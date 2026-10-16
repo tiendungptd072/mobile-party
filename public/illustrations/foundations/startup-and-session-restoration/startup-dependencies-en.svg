@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 1000" role="img" aria-labelledby="title description">
+<title id="title">Startup dependencies</title>
+<desc id="description">Minimal startup + safe shell. Local defaults / coordinator. No protected report yet. Storage. Open / migrate. Ready or error. Preserve data. Session. Resolve account. Access outcome. Or unavailable. Join prerequisites. Usable storage + account policy. Then read A / D42. Choose an allowed UI. Editor, sign-in, or recovery. A read error is not empty data. Optional reconciliation. Accept only current results. On error: show recovery UI.</desc>
+<defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0 8 4 0 8" fill="none" stroke="#2563eb" stroke-width="1.5"/></marker></defs>
+<rect width="480" height="1000" rx="12" fill="#f8fafc"/>
+<g font-family="system-ui, sans-serif" fill="#111827">
+<text x="24" y="38" font-size="25" font-weight="700">Startup dependencies</text>
+<rect x="16" y="64" width="448" height="120" rx="10" fill="#eff6ff" stroke="#526071" stroke-width="2"/>
+<text x="32" y="96" font-size="22" font-weight="700">Minimal startup + safe shell</text>
+<text x="32" y="126" font-size="21">Local defaults / coordinator</text>
+<text x="32" y="156" font-size="21">No protected report yet</text>
+<rect x="16" y="244" width="216" height="140" rx="10" fill="#eff6ff" stroke="#526071" stroke-width="2"/>
+<text x="32" y="276" font-size="22" font-weight="700">Storage</text>
+<text x="32" y="306" font-size="20">Open / migrate</text>
+<text x="32" y="336" font-size="20">Ready or error</text>
+<text x="32" y="366" font-size="20">Preserve data</text>
+<rect x="248" y="244" width="216" height="140" rx="10" fill="#eff6ff" stroke="#526071" stroke-width="2"/>
+<text x="264" y="276" font-size="22" font-weight="700">Session</text>
+<text x="264" y="306" font-size="20">Resolve account</text>
+<text x="264" y="336" font-size="20">Access outcome</text>
+<text x="264" y="366" font-size="20">Or unavailable</text>
+<path d="M240 184V212H124V244" fill="none" stroke="#2563eb" stroke-width="2.5" marker-end="url(#arrow)"/>
+<path d="M240 212H356V244" fill="none" stroke="#2563eb" stroke-width="2.5" marker-end="url(#arrow)"/>
+<path d="M124 384V414H356V384" fill="none" stroke="#2563eb" stroke-width="2.5"/>
+<path d="M240 414V446" fill="none" stroke="#2563eb" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="16" y="446" width="448" height="120" rx="10" fill="#eff6ff" stroke="#526071" stroke-width="2"/>
+<text x="32" y="478" font-size="22" font-weight="700">Join prerequisites</text>
+<text x="32" y="508" font-size="21">Usable storage + account policy</text>
+<text x="32" y="538" font-size="21">Then read A / D42</text>
+<path d="M240 566V626" fill="none" stroke="#2563eb" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="16" y="626" width="448" height="120" rx="10" fill="#eff6ff" stroke="#526071" stroke-width="2"/>
+<text x="32" y="658" font-size="22" font-weight="700">Choose an allowed UI</text>
+<text x="32" y="688" font-size="21">Editor, sign-in, or recovery</text>
+<text x="32" y="718" font-size="21">A read error is not empty data</text>
+<path d="M240 746V806" fill="none" stroke="#2563eb" stroke-width="2.5" stroke-dasharray="6 5" marker-end="url(#arrow)"/>
+<rect x="16" y="806" width="448" height="108" rx="10" fill="#eff6ff" stroke="#526071" stroke-width="2" stroke-dasharray="6 5"/>
+<text x="32" y="838" font-size="22" font-weight="700">Optional reconciliation</text>
+<text x="32" y="868" font-size="21">Accept only current results</text>
+<text x="24" y="966" font-size="21">On error: show recovery UI</text>
+</g></svg>

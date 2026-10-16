@@ -1,0 +1,116 @@
+## A UI update is not yet a displayed frame
+
+A report editor can accept text immediately in its state owner while the screen still shows the previous image. Computing a UI description, measuring its geometry, updating host objects, drawing, and presenting pixels are different work. “Render” is overloaded: React uses it for calling components to describe UI, while a graphics pipeline uses rendering for producing an image. React's introductory commit examples target the browser DOM; those host operations must not be copied literally into React Native. <Citation source="react-render-commit" />
+
+This article explains mobile frame delivery, not web Server Component rendering. The frameworks have **similar** goals—turn current state into a responsive interface—but **different** trees, phases, scheduling, and host integration. No universal callback proves that one accepted state update has already reached the display.
+
+Consider a proposed editor for report `D42`. Typing changes its text and character count; scrolling moves its preview; a background save changes a status indicator. These are explanatory cases, not compiled snippets, native benchmarks, or measurements from this website. The question is which work each change actually requires, and whether that work reaches its relevant deadline.
+
+## Separate the kinds of work
+
+Use the following vocabulary as a conceptual checklist. Framework-specific names and boundaries appear later.
+
+| Work                      | Question it answers                                           | Incorrect inference                                         |
+| ------------------------- | ------------------------------------------------------------- | ----------------------------------------------------------- |
+| UI description/update     | What should this UI contain for current inputs?               | A component call already displayed pixels.                  |
+| Measurement and placement | What sizes and positions satisfy available constraints?       | Only the changed leaf can need new geometry.                |
+| Host update or mounting   | Which native objects or renderer structures must change?      | Every framework creates an OS widget for every UI function. |
+| Drawing and graphics work | What drawing commands, layers, and rendered image are needed? | A cheap UI function guarantees cheap graphics.              |
+| Presentation              | When is the prepared image made available for display?        | Submitting work means it appeared immediately.              |
+
+A longer report title may alter wrapping and push later content down. A color-only change need not change geometry, but whether earlier phases can be skipped depends on how the property is read and implemented. A stable layout can still be expensive to draw. These are reasons to inspect actual dependencies rather than infer a redraw scope from the line of code that changed.
+
+<Figure
+  id="frame-pipeline"
+  src="/illustrations/foundations/rendering-and-frame-scheduling/frame-pipeline-en.svg"
+  alt="A state or input change leads to the required UI-description work, then required geometry or host updates, then drawing and rendering work, and finally display presentation. Earlier results may be reused. Missing a relevant deadline can make a frame arrive late. The conceptual boxes do not assign a fixed thread or duration."
+  caption="A conceptual dependency checklist, not one shared framework pipeline. Self-authored diagram; optional work may be reused or skipped, and different frames may overlap."
+  sources={["rn-pipeline", "flutter-frame", "apple-hitches"]}
+/>
+
+Read each arrow as “the necessary output feeds later work,” not “this always executes once per state change.” The boxes group different mechanisms for comparison; they are not interchangeable API phases. In particular, Flutter's layer-tree compositing, Compose composition, and a Core Animation commit name different responsibilities.
+
+## Frame intervals are not a private CPU allowance
+
+For a fixed refresh rate, the interval is `1000 / Hz` milliseconds:
+
+| Refresh rate | Approximate interval |
+| ------------ | -------------------- |
+| 60 Hz        | 16.67 ms             |
+| 90 Hz        | 11.11 ms             |
+| 120 Hz       | 8.33 ms              |
+
+These are arithmetic intervals, not measured guarantees for every device. Android's rendering guidance uses these rates to explain tighter frame targets. A missed target can disrupt motion; it is not necessarily a visible delay equal to the exact amount of CPU overrun. <Citation source="android-rendering" />
+
+Apple notes that system conditions can leave less than a full refresh interval for an app's UI update. High-level frameworks adapt to display refresh behavior; a 120 Hz-capable display does not mean every interaction always runs at 120 Hz. <Citation source="apple-responsiveness" />
+
+Throughput and latency also differ. A pipeline can prepare several frames at different stages concurrently: maintaining regular presentation does not make input-to-display latency zero. Apple's render-loop explanation gives stages their own deadlines and distinguishes app-side commit hitches from render-side hitches. A hitch does not always imply a dropped frame. <Citation source="apple-hitches" />
+
+For the D42 design, keep input feedback short and separate optional preview preparation. Moving costly work to a later callback without changing where it executes can simply move the stall. Awaiting a result does not by itself prove that CPU work runs off the UI executor; choose an execution mechanism appropriate to the framework and data safety requirements. Apple explicitly warns that a task inheriting the main actor can still block UI work. <Citation source="apple-responsiveness" />
+
+## Invalidation decides what needs another pass
+
+Invalidation marks previously computed output as needing an update; it is not itself a paint or a presentation. Multiple changes may be combined before work runs. Flutter's `markNeedsPaint()` documents this distinction directly: it marks visual output dirty and schedules a visual update rather than immediately regenerating a display list on each write. <Citation source="flutter-paint-invalidation" />
+
+For D42, separate the following proposed dependencies:
+
+- The count reads the current text; changing save status should not require recomputing a costly document preview.
+- The preview reads text and its available width; a width change can invalidate wrapping even if the text is unchanged.
+- Scrolling changes placement or drawing inputs; it need not change report contents.
+- Save status reads the current operation outcome; it must not initiate a save merely because UI work runs again.
+
+These are design intentions, not automatic optimization guarantees. Actual layout parents, observation scopes, renderer implementation, and effects determine the work. [State Ownership and Data Flow](/en/foundations/state-ownership-and-data-flow) explains where these facts belong; this article follows their visual consequences.
+
+## Four frameworks expose different boundaries
+
+### React Native
+
+For the New Architecture/Fabric renderer, the documented sequence is render, commit, and mount. React produces elements and C++ shadow nodes; commit calculates layout using Yoga and promotes a tree; mount applies host-view changes. Flattening means a shadow node need not require its own host view. This is not a Flutter widget-to-render-object mapping. <Citation source="rn-pipeline" />
+
+Do not assign one permanent thread to every phase. The threading guide describes a common JavaScript-thread path and synchronous UI-thread paths for high-priority work. Host-view manipulation belongs to the UI thread. The architecture guides are conceptual and include older rollout wording, so verify actual behavior against the app's RN version when diagnosing a trace. <Citation source="rn-threading" />
+
+A native ScrollView can continue scrolling while JavaScript is busy, although JS-driven feedback can lag. Observe both JS and native work; one smooth animation does not prove the app can promptly process all events. RN's performance guide recommends release-build checks because development work changes performance. <Citation source="rn-performance" />
+
+### Flutter
+
+Flutter distinguishes immutable widget descriptions, persistent elements, and render objects responsible for geometry and painting. Rebuilding a widget subtree is not equivalent to replacing every underlying render object. Flutter normally draws its own widget set rather than translating each widget into an Android View or UIKit view. <Citation source="flutter-architecture" />
+
+`WidgetsBinding.drawFrame()` documents dirty-element build, dirty-render-object layout, paint, scene compositing, semantics, and finalization work. Build and paint are separate stages; semantics is also part of the complete pipeline even though the conceptual figure focuses on visual output. A post-frame callback belongs to framework scheduling, not proof of physical display presentation. <Citation source="flutter-frame" />
+
+DevTools distinguishes UI work from raster work. A quickly built scene can still be expensive to rasterize. Use profile mode when analyzing Flutter performance; debug timings are not representative of release performance. Diagnose the slow lane before choosing an optimization. <Citation source="flutter-performance" />
+
+### Jetpack Compose
+
+Compose separates composition, layout, and drawing. Layout includes measurement and placement. State reads are tracked by phase: a value read only during drawing can invalidate drawing without recomposition. This depends on the actual read site, not where the state was declared. Layout-dependent composition in lazy layouts is one reason not to teach a rigid universal sequence. <Citation source="compose-phases" />
+
+For frequent position changes, an appropriate lambda-based modifier can defer the read into a later phase. Moving unrelated expensive calculations out of composables can also reduce repeated work. Apply this when the semantics fit; a value that changes UI structure still needs the relevant earlier work. Fewer recompositions are useful evidence, not a complete frame-time measurement. <Citation source="compose-performance" />
+
+### SwiftUI
+
+SwiftUI updates views when their dependencies change. Its performance tooling separates view-body calculations from platform-view and other updates. Long body calculations and many short updates can both be costly. Use Instruments to locate actual update causes and costs instead of assuming a body evaluation means an immediate redraw of the entire screen. Available timeline details depend on the installed Xcode/toolchain. <Citation source="swiftui-performance" />
+
+For D42, keep expensive preview preparation out of repeated body evaluation and expose a current result through its owner. Protect against obsolete results when input changes while preparation runs. This is an application policy; it does not require a particular cache or concurrency abstraction.
+
+## Diagnose the deadline that was missed
+
+Suppose D42's preview stutters after every keystroke. First distinguish input handling, preview calculation, layout, and graphics. An application-level timer around the preview function measures only that function; it does not measure the whole frame or actual presentation.
+
+| Observation in the proposed investigation              | Next question                                                  | Possible focused response                                                  |
+| ------------------------------------------------------ | -------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| Expensive document processing on the UI execution path | Is processing repeated for unchanged inputs?                   | Reuse an appropriate result or move eligible preparation out of that path. |
+| Short UI calculations but costly geometry              | Did wrapping, constraints, or measurement dependencies change? | Reduce unnecessary geometry changes; inspect parent constraints.           |
+| UI work finishes promptly but graphics work is slow    | Is the scene expensive to draw or composite?                   | Simplify the measured graphics cost, not just component calls.             |
+| Many small updates around scrolling                    | Which observation produces each update?                        | Narrow reads or update only the meaningfully changed output.               |
+| Hitch only on first use                                | Which one-time work occurs in that interaction?                | Investigate that work separately from steady-state behavior.               |
+
+These are hypotheses to validate in a trace, not diagnoses made from symptoms alone. Android recommends system tracing and points to Perfetto FrameTimeline for slow-frame investigation; framework-specific monitoring has coverage limits. Do not treat an absent counter in one dashboard as proof that a different renderer has no jank. <Citation source="android-rendering" />
+
+Use representative devices and repeat the same interaction under comparable conditions. Record OS/framework versions, build mode, refresh conditions, content size, and cold versus repeated runs. Compare tail behavior and missed deadlines, not only average FPS. Capture another trace after a focused change: a faster UI calculation is insufficient evidence if presentation still misses its target.
+
+## Optimize required work without breaking behavior
+
+Choose the response to match the measured bottleneck. Caching can save computation but needs invalidation and uses memory. Delaying optional preview updates can improve typing while making previews less current. Reducing graphics complexity changes appearance. Moving preparation off the UI path introduces result ownership, cancellation, and synchronization responsibilities.
+
+Preserve immediate editing, accessible state, correct navigation, and the latest report contents. Do not remove legitimate updates merely to make a render counter smaller. Avoid indiscriminate memoization, global state changes, or a new rendering library before a trace demonstrates the need.
+
+Read [Process Death and State Restoration](/en/foundations/process-death-and-state-restoration) for what survives process loss; frame scheduling does not save data. The [render/recomposition comparison](/en/compare/recomposition) and [layout constraints comparison](/en/compare/layout-constraints) provide narrower API examples. This article's diagrams and D42 investigation remain conceptual; no native frame rate or optimization result is claimed.

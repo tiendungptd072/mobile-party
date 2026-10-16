@@ -1,0 +1,122 @@
+## App đã cài không đồng nghĩa với process đang chạy
+
+Một app chỉnh ảnh có thể vẫn được cài dù không có dòng code nào đang chạy. Gói cài đặt, ảnh đã lưu, process hiện tại và màn hình đang hiển thị là những thứ khác nhau. Android tạo process khi một thành phần ứng dụng cần đến và có thể kết thúc process để thu hồi tài nguyên. Lần thực thi tiếp theo bắt đầu với các chủ sở hữu mới trong bộ nhớ. <Citation source="android-processes-threads" />
+
+Bài này giải thích các ranh giới bên dưới UI di động: ai thực thi code, ai kiểm soát truy cập và ai sở hữu tài nguyên. Phạm vi là ứng dụng Android/iOS thông thường, gồm React Native, Flutter, Jetpack Compose và SwiftUI. Extension, ứng dụng hệ thống đặc quyền, ứng dụng trình duyệt và cấu hình nhiều process đặc biệt cần phân tích riêng. Tình huống nhập ảnh bên dưới là giải thích thiết kế ứng dụng, không phải code thực thi hay hành vi đã kiểm chứng trên thiết bị.
+
+## Gọi đúng ranh giới trước khi chọn API
+
+“Runtime” có thể chỉ hệ thống thực thi ngôn ngữ hoặc toàn bộ ứng dụng đang chạy. Dùng thuật ngữ cụ thể hơn khi sự khác biệt này quan trọng.
+
+| Thuật ngữ        | Trả lời câu hỏi nào?                                          | Ranh giới cần nhớ                                                                     |
+| ---------------- | ------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| Hệ điều hành     | Ai lập lịch thực thi và trung gian cho dịch vụ được bảo vệ?   | App yêu cầu khả năng truy cập; app không điều khiển thiết bị.                         |
+| Process          | Instance đang chạy nào chứa bộ nhớ và hoạt động thực thi này? | Process khác không nhận được object reference thông thường trỏ vào heap này.          |
+| Thread           | Luồng thực thi nào đang làm việc?                             | Các thread trong process có thể truy cập object dùng chung; vẫn cần phối hợp.         |
+| Language runtime | Ngôn ngữ này thực thi và quản lý object thế nào?              | Một runtime có thể cùng tồn tại trong process với runtime khác và thư viện native.    |
+| UI framework     | State ứng dụng được chuyển thành giao diện thế nào?           | Widget hay mô tả view không phải process hoặc danh tính bảo mật.                      |
+| Sandbox          | Ứng dụng được phép truy cập tài nguyên nào?                   | Kiểm soát truy cập không đảm bảo thời gian chạy, bộ nhớ còn trống hay I/O thành công. |
+
+Hướng dẫn threading của Apple phân biệt thực thi đồng thời trong process với việc đồng bộ cần thiết cho object dùng chung. Tạo thêm thread cũng tốn tài nguyên. Bảng trên là hệ thuật ngữ khái niệm, không hứa rằng mọi framework ánh xạ một task thành một thread. <Citation source="apple-threading" />
+
+Hàm bất đồng bộ và background task do OS lập lịch trả lời hai câu hỏi khác nhau. Một hàm có thể chờ mà không giữ bên gọi bận; điều đó chưa tạo quyền tiếp tục chạy khi app rời foreground. Apple giới hạn xử lý nền qua các API do hệ thống cung cấp. <Citation source="ios-runtime-security" />
+
+## Sandbox bao quanh quyền truy cập, không chỉ code framework
+
+<Figure
+  id="execution-boundaries"
+  src="/illustrations/foundations/mobile-runtime-and-sandbox/execution-boundaries-vi.svg"
+  alt="Một app process minh họa chứa UI và code ứng dụng, language runtime cùng thư viện native, với các luồng thực thi UI và worker. File app nằm ngoài bộ nhớ process. Lời gọi dịch vụ hệ thống được bảo vệ đi qua kiểm tra truy cập của OS. App khác có bộ nhớ và file riêng."
+  caption="Thực thi và truy cập là hai ranh giới khác nhau. Sơ đồ khái niệm tự biên soạn minh họa một process; app có thể có process khác. Mũi tên là yêu cầu, không đảm bảo quyền truy cập."
+  sources={["android-app-sandbox", "ios-runtime-security"]}
+/>
+
+Đọc sơ đồ từ trên xuống. Code UI, engine ngôn ngữ nhúng và plugin native có thể cùng tham gia một process. Hộp file được đặt ngoài bộ nhớ process có chủ đích: file đã lưu không phải object đang sống. Mũi tên cuối đi qua kiểm tra truy cập của OS trước khi tới dịch vụ được bảo vệ. Hộp app khác không có mũi tên truy cập trực tiếp vào heap hoặc file riêng.
+
+Trên Android, sandbox áp dụng cho cả code native lẫn managed code. Chuyển thao tác sang C++ không cấp quyền đọc dữ liệu riêng của app khác. Sandbox được thực thi bên dưới application framework. <Citation source="android-app-sandbox" />
+
+Từ đó có một quy tắc thiết kế hữu ích: plugin chạy trong process là ranh giới tích hợp, không tự động trở thành ranh giới bảo mật mới. Cần xem plugin làm gì với dữ liệu mà app được phép truy cập. Đặt hai feature module trong hai thư mục không cô lập bộ nhớ hay thu hồi quyền truy cập của chúng.
+
+## Android: vị trí process khác danh tính app
+
+Mô hình chuẩn của Android cấp Linux UID cho app và dùng kiểm soát ở kernel, được tăng cường bằng các cơ chế như SELinux, để cô lập. PID xác định một process đang chạy; UID tham gia quyết định truy cập. Hai định danh có mục đích khác nhau. <Citation source="android-app-sandbox" />
+
+Mặc định, các thành phần ứng dụng dùng chung process và main thread. Manifest có thể đặt một số thành phần ở process khác. Điều này thay đổi cách thực thi và chi phí giao tiếp; không phải công thức chung để tạo danh tính ứng dụng mới. Service cũng không tự động có worker thread. Lời gọi Binder từ process khác có thể đến trên thread pool, nên “Android callback” không đồng nghĩa với “luôn chạy trên main thread”. <Citation source="android-processes-threads" />
+
+Permission bổ sung quyền truy cập cụ thể vào thao tác bị hạn chế, không phải công tắc tắt sandbox. Android phân biệt install-time, runtime và special permission; cần kiểm tra runtime permission khi cần truy cập. Một yêu cầu từng thành công không phải kết quả hiện tại. <Citation source="android-permissions" />
+
+Với luồng nhập ảnh của bài này, hệ quả thiết kế là xử lý lỗi ngay tại ranh giới thao tác: xin quyền, mở đầu vào, giải mã và lưu đầu ra là các bước riêng. Kiểm tra permission thành công không thay thế được kết quả mở hoặc đọc file.
+
+## iOS: container và khả năng truy cập đã ký
+
+Apple mô tả cô lập app bên thứ ba bằng sandbox và truy cập qua dịch vụ hệ thống được cung cấp rõ ràng. Entitlement là khả năng truy cập đã ký, không phải thiết lập ứng dụng có thể tùy ý sửa. Không áp thẳng giải thích UID riêng cho từng app của Android sang iOS vì mô hình khác nhau. <Citation source="ios-runtime-security" />
+
+App iOS có bundle container và data container với vai trò khác nhau. Bundle không phải thư mục để ghi draft. Lấy vị trí lưu trữ qua API nền tảng thay vì coi đường dẫn container quan sát được là cố định. Bài dùng hướng dẫn file system đã lưu trữ của Apple cho vai trò thư mục, không coi đó là công thức hiện hành cho mọi API chia sẻ file. <Citation source="ios-file-system" />
+
+Entitlement, quyết định của người dùng và tài nguyên đang sẵn sàng là các đầu vào khác nhau của một thao tác. Trong thiết kế nhập ảnh này, “được phép” và “đã nhập thành công” là hai state riêng. Yêu cầu bị từ chối dẫn tới state UI có hướng xử lý, không dẫn tới cách lách qua framework khác.
+
+## Bốn framework trong quy tắc của nền tảng
+
+Mục tiêu chung là tương tự: kết nối state ứng dụng, UI và dịch vụ nền tảng. Mô hình thực thi của chúng khác nhau. Không UI framework nào ở đây thay thế kiểm soát truy cập của hệ điều hành chủ.
+
+### React Native
+
+React Native nhúng JavaScript engine cùng phần tích hợp nền tảng native. Hướng dẫn hiện hành xác định Hermes là engine mặc định, được đóng gói cùng các bản phát hành React Native. Hermes không phải tab trình duyệt hay nơi cấp permission. <Citation source="react-native-hermes" />
+
+Hướng dẫn threading của renderer New Architecture mô tả thực thi JavaScript và UI, gồm trường hợp ưu tiên cao có thể render đồng bộ trên UI thread. Tránh giả định mỗi phase luôn chạy trên một thread cố định. Lời gọi native đồng bộ vẫn cần chi phí thực thi phù hợp và quyền truy cập mà nền tảng yêu cầu. <Citation source="react-native-threading" />
+
+### Flutter
+
+Flutter kết hợp framework Dart, engine và platform embedder. Code native mobile ở bản release được biên dịch thành mã máy; biên dịch không loại bỏ dịch vụ runtime. Hướng dẫn kiến trúc nêu rằng từ Flutter 3.29, UI thread và platform thread hợp nhất trên Android/iOS. Sơ đồ cũ mô tả hai thread luôn tách biệt cần giới hạn phiên bản. <Citation source="flutter-architecture" />
+
+Dart isolate có state và event loop riêng, giao tiếp bằng message. Worker isolate có thể chuyển tính toán nặng khỏi main isolate, nhưng không phải app sandbox khác hay công việc bền vững. Xử lý message, kết quả lỗi thời và quyền sở hữu vẫn cần chính sách ứng dụng. <Citation source="dart-concurrency" />
+
+### Jetpack Compose
+
+Với ứng dụng Kotlin trên Android, ART thực thi DEX code và cung cấp dịch vụ managed runtime, gồm garbage collection. ART không phải Compose runtime. <Citation source="android-art" />
+
+Công việc UI của Compose có các phase composition, layout và drawing. Runtime theo dõi state read để tránh việc không cần thiết. Đổi state của composable là đổi đầu vào UI; không tạo process mới, cấp permission hay lưu bền giá trị đó. <Citation source="compose-phases" />
+
+### SwiftUI
+
+SwiftUI là UI framework khai báo của Apple: code ứng dụng mô tả giao diện và quan hệ của nó với dữ liệu. Framework vẫn khác với lập lịch OS và thực thi sandbox. <Citation source="apple-swiftui" />
+
+Swift dùng ARC để quản lý quyền sở hữu class instance; struct là value type, còn ARC không phải tracing garbage collector. Strong reference cycle có thể giữ class instance tiếp tục tồn tại. Các quy tắc bộ nhớ này không biến view value thành bản ghi bền vững hoặc quyền chạy nền. <Citation source="swift-arc" />
+
+## Theo dõi một ảnh qua luồng nhập
+
+Xét việc nhập ảnh `I17` vào draft. Thiết kế đề xuất tách UI owner, bộ điều phối nhập ảnh, storage và truy cập nền tảng. Các tên này mô tả trách nhiệm, không phải các OS process bổ sung.
+
+1. UI yêu cầu nhập ảnh. Bộ điều phối tạo operation ID và ghi nhận draft đích. Nhờ đó vẫn xác định được yêu cầu nếu lựa chọn đang hiển thị thay đổi sau này.
+2. Platform adapter lấy đầu vào qua cơ chế hệ thống phù hợp. Hủy hoặc lỗi truy cập kết thúc thao tác mà không tuyên bố đã lưu ảnh. Picker cụ thể và thời hạn quyền truy cập thuộc hợp đồng của API nền tảng đã chọn.
+3. Bộ điều phối giới hạn kích thước đầu vào và lập lịch giải mã bằng cơ chế thực thi framework hỗ trợ. Khi có thể, byte tạm và pixel đã giải mã không được giữ trong UI state sống lâu. Đây là chính sách tài nguyên, không phải triển khai giải mã dùng chung cho mọi trường hợp.
+4. Storage ghi kết quả và báo thành công hoặc thất bại. Chỉ thao tác application storage thành công mới cho phép thiết kế này đánh dấu nhập cục bộ hoàn tất. Upload lên server là kết quả riêng.
+5. Trước khi hiển thị kết quả đến muộn, bộ điều phối kiểm tra nó còn thuộc operation và draft dự định hay không. Nếu màn hình đã rời đi, áp dụng chính sách rõ ràng: hủy việc tạm thời, hoặc hoàn tất việc do bộ điều phối trong process có lifetime dài hơn sở hữu. Không lựa chọn nào hứa sống sót khi process kết thúc.
+
+Điểm cần tách là **việc chạy ở đâu**, **ai được phép truy cập đầu vào**, và **ai sở hữu kết quả**. Đổi cơ chế worker có thể cải thiện độ phản hồi mà không đổi quyền truy cập. Kéo dài lifetime bộ điều phối có thể giữ việc qua thay đổi UI mà không làm bộ nhớ trở nên bền vững.
+
+Cả bốn framework đều có thể thể hiện thiết kế này, nhưng API worker và hủy không tương đương một-một. Dart isolate trao đổi message; thread dùng bộ nhớ chung cần đồng bộ. Chọn cơ chế sau khi xác định yêu cầu sở hữu và thực thi. <Citation source="dart-concurrency" /> <Citation source="apple-threading" />
+
+## Bộ nhớ, handle và file cần chủ sở hữu khác nhau
+
+| Tài nguyên trong ví dụ             | Chủ sở hữu đề xuất      | Chính sách khi không còn dùng                              |
+| ---------------------------------- | ----------------------- | ---------------------------------------------------------- |
+| Đánh dấu ảnh đang chọn             | UI đang hiển thị        | Bỏ khi giao diện đó không còn cần.                         |
+| Operation nhập và kết quả đang chờ | Bộ điều phối            | Hủy hoặc hoàn tất theo lifetime đã xác định của operation. |
+| Input stream và tài nguyên decoder | Operation sử dụng chúng | Đóng hoặc giải phóng theo hợp đồng API, kể cả khi lỗi.     |
+| Cache ảnh xem trước                | Hệ thống cache          | Chấp nhận bị thu hồi và tạo lại khi cần.                   |
+| Ảnh đã nhập mà app hứa đã lưu      | Application storage     | Giữ theo chính sách dữ liệu draft; xử lý lỗi lưu trữ.      |
+
+Đây là trách nhiệm ứng dụng, không phải đảm bảo do garbage collector cung cấp. Thu hồi bộ nhớ object, giải phóng tài nguyên bên ngoài và commit file trả lời các câu hỏi khác nhau. ARC có thể để reference cycle tồn tại; kéo dài owner không cần thiết có thể giữ bộ nhớ sau khi giao diện biến mất. <Citation source="swift-arc" />
+
+Android có thể xóa cache file khi thiếu dung lượng. iOS cũng coi cache là dữ liệu có thể tạo lại và file tạm không phù hợp cho dữ liệu bắt buộc phải giữ. Thư mục riêng mô tả quyền truy cập; không biến nội dung cache thành dữ liệu người dùng bền vững. <Citation source="android-app-files" /> <Citation source="ios-file-system" />
+
+## Chẩn đoán đúng ranh giới bị lỗi
+
+Trong luồng nhập ảnh đề xuất, UI đơ gợi ý xem công việc nặng và tranh chấp tài nguyên; truy cập bị từ chối gợi ý kiểm tra thao tác nền tảng cùng đầu vào hiện tại; mất preview gợi ý xem cache bị thu hồi; ảnh lỗi thời gợi ý kiểm tra operation identity. Đây là hướng điều tra, không phải bằng chứng khẳng định một nguyên nhân duy nhất.
+
+Thêm thread có chi phí phối hợp và bộ nhớ. Thêm process còn tạo ranh giới giao tiếp. Thêm language runtime kéo theo chi phí tích hợp và tài nguyên. Dùng các cơ chế này để giải quyết vấn đề đã đo được, thay vì đổi tên cho trách nhiệm sở hữu mà ứng dụng chưa xác định.
+
+> “Chạy nền”, “native”, “riêng tư” và “đã lưu” đều cần hợp đồng cụ thể. Tự thân các từ đó không hứa hoàn tất, truy cập không giới hạn hay khôi phục được.
+
+Để hiểu mất bộ nhớ process và dựng lại từ dữ liệu còn tồn tại, đọc tiếp [Process death và khôi phục state](/vi/foundations/process-death-and-state-restoration). [So sánh lifecycle](/vi/compare/lifecycle) trình bày cleanup observer UI; [so sánh runtime permission](/vi/compare/runtime-permissions) chỉ trình bày yêu cầu permission Android. Đây là các ranh giới liên quan, không thay thế mô hình OS.

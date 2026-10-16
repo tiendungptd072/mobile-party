@@ -1,0 +1,116 @@
+## UI update chưa phải frame đã hiển thị
+
+Owner của trình soạn báo cáo có thể tiếp nhận văn bản mới trong khi màn hình vẫn hiện ảnh trước đó. Tính mô tả UI, đo geometry, cập nhật host object, vẽ và đưa pixel lên màn hình là những công việc khác nhau. “Render” có nhiều nghĩa: React dùng từ này cho việc gọi component để mô tả UI, còn graphics pipeline dùng nó cho việc tạo ảnh. Ví dụ commit nhập môn của React nhắm tới DOM trên browser; không được chép nguyên các thao tác host đó sang React Native. <Citation source="react-render-commit" />
+
+Bài này giải thích phân phối frame trên mobile, không phải render Server Component trên web. Các framework có mục tiêu **tương tự**—biến state hiện tại thành giao diện phản hồi tốt—nhưng tree, phase, scheduling và tích hợp host **khác nhau**. Không có callback phổ quát chứng minh một state update vừa được tiếp nhận đã tới màn hình.
+
+Xét trình soạn report `D42` được đề xuất. Gõ phím thay đổi văn bản và số ký tự; scroll di chuyển preview; save nền thay đổi chỉ báo trạng thái. Đây là tình huống giải thích, không phải snippet đã compile, benchmark native hay số đo từ website này. Câu hỏi là mỗi thay đổi thực sự cần công việc nào, và công việc đó có kịp deadline liên quan hay không.
+
+## Phân biệt các loại công việc
+
+Dùng các thuật ngữ dưới đây làm checklist khái niệm. Tên gọi và ranh giới riêng của framework nằm ở phần sau.
+
+| Công việc                   | Câu hỏi được trả lời                             | Suy luận sai                                         |
+| --------------------------- | ------------------------------------------------ | ---------------------------------------------------- |
+| Mô tả/cập nhật UI           | UI cần chứa gì với input hiện tại?               | Gọi component đã hiển thị pixel.                     |
+| Đo và đặt vị trí            | Kích thước, vị trí nào thỏa constraint hiện có?  | Chỉ leaf thay đổi mới cần geometry mới.              |
+| Cập nhật host hoặc mounting | Native object hay cấu trúc renderer nào cần đổi? | Mọi framework tạo một OS widget cho mỗi UI function. |
+| Vẽ và xử lý graphics        | Cần drawing command, layer và ảnh kết quả nào?   | UI function nhẹ bảo đảm graphics cũng nhẹ.           |
+| Presentation                | Khi nào ảnh đã chuẩn bị được đưa ra để hiển thị? | Submit công việc nghĩa là ảnh hiện ngay.             |
+
+Tiêu đề report dài hơn có thể đổi cách xuống dòng và đẩy nội dung phía sau xuống. Đổi màu đơn thuần không nhất thiết đổi geometry, nhưng khả năng bỏ qua phase trước phụ thuộc cách property được đọc và triển khai. Layout ổn định vẫn có thể tốn chi phí vẽ. Vì vậy cần xem dependency thực tế thay vì suy phạm vi redraw từ dòng code vừa thay đổi.
+
+<Figure
+  id="frame-pipeline"
+  src="/illustrations/foundations/rendering-and-frame-scheduling/frame-pipeline-vi.svg"
+  alt="Thay đổi state hoặc input dẫn tới phần mô tả UI cần thiết, rồi geometry hoặc host update cần thiết, tiếp theo là công việc vẽ và rendering, cuối cùng là presentation lên màn hình. Có thể dùng lại kết quả cũ. Trễ deadline liên quan có thể khiến frame đến muộn. Các khối khái niệm không gán thread hay thời lượng cố định."
+  caption="Checklist dependency khái niệm, không phải pipeline chung của mọi framework. Sơ đồ tự biên soạn; công việc có thể được dùng lại hoặc bỏ qua, và nhiều frame có thể xử lý chồng lấp."
+  sources={["rn-pipeline", "flutter-frame", "apple-hitches"]}
+/>
+
+Đọc mũi tên là “output cần thiết cung cấp cho bước sau”, không phải “bước này luôn chạy một lần cho mỗi state change”. Các khối gom cơ chế khác nhau để so sánh; không phải những API phase thay thế cho nhau. Đặc biệt, compositing layer tree của Flutter, composition của Compose và Core Animation commit chỉ những trách nhiệm khác nhau.
+
+## Frame interval không phải ngân sách CPU riêng
+
+Với refresh rate cố định, interval là `1000 / Hz` mili giây:
+
+| Refresh rate | Interval xấp xỉ |
+| ------------ | --------------- |
+| 60 Hz        | 16.67 ms        |
+| 90 Hz        | 11.11 ms        |
+| 120 Hz       | 8.33 ms         |
+
+Đây là interval tính bằng số học, không phải bảo đảm đã đo trên mọi thiết bị. Hướng dẫn rendering của Android dùng các mức này để giải thích target frame chặt hơn. Lỡ target có thể làm đứt quãng chuyển động; độ trễ nhìn thấy không nhất thiết bằng chính xác phần CPU vượt thời gian. <Citation source="android-rendering" />
+
+Apple lưu ý điều kiện hệ thống có thể để lại ít hơn một refresh interval đầy đủ cho UI update của app. Framework cấp cao thích ứng với hoạt động refresh của màn hình; màn hình hỗ trợ 120 Hz không có nghĩa mọi tương tác luôn chạy ở 120 Hz. <Citation source="apple-responsiveness" />
+
+Throughput và latency cũng khác nhau. Pipeline có thể đồng thời chuẩn bị nhiều frame ở các giai đoạn khác nhau: duy trì presentation đều không làm độ trễ từ input đến màn hình bằng không. Giải thích render loop của Apple đặt deadline riêng cho các giai đoạn và phân biệt commit hitch phía app với render hitch phía rendering. Hitch không phải lúc nào cũng gây dropped frame. <Citation source="apple-hitches" />
+
+Trong thiết kế D42, giữ feedback input ngắn và tách phần chuẩn bị preview tùy chọn. Chuyển công việc nặng sang callback chạy sau mà không đổi nơi thực thi có thể chỉ dời thời điểm bị khựng. Await kết quả không tự chứng minh CPU work chạy ngoài UI executor; chọn cơ chế thực thi phù hợp framework và yêu cầu an toàn dữ liệu. Apple cảnh báo task kế thừa main actor vẫn có thể chặn UI work. <Citation source="apple-responsiveness" />
+
+## Invalidation quyết định phần cần chạy lại
+
+Invalidation đánh dấu output đã tính cần cập nhật; bản thân nó không phải paint hay presentation. Nhiều thay đổi có thể được gộp trước khi xử lý. `markNeedsPaint()` của Flutter mô tả trực tiếp sự phân biệt này: đánh dấu output hiển thị là dirty và lên lịch visual update, thay vì tạo lại display list ngay sau mỗi write. <Citation source="flutter-paint-invalidation" />
+
+Với D42, tách các dependency đề xuất sau:
+
+- Số ký tự đọc văn bản hiện tại; đổi save status không nên buộc tính lại document preview tốn kém.
+- Preview đọc văn bản và chiều rộng được cấp; đổi chiều rộng có thể làm mất hiệu lực cách xuống dòng dù văn bản không đổi.
+- Scroll đổi input về vị trí hoặc vẽ; không nhất thiết đổi nội dung report.
+- Save status đọc kết quả thao tác hiện tại; không được khởi động save chỉ vì UI work chạy lại.
+
+Đây là chủ đích thiết kế, không phải bảo đảm tối ưu tự động. Layout parent, observation scope, triển khai renderer và effect thực tế quyết định công việc. [State ownership và luồng dữ liệu](/vi/foundations/state-ownership-and-data-flow) giải thích dữ kiện thuộc về đâu; bài này theo dõi hệ quả hiển thị của chúng.
+
+## Bốn framework có ranh giới khác nhau
+
+### React Native
+
+Với renderer New Architecture/Fabric, chuỗi được tài liệu mô tả là render, commit và mount. React tạo element và C++ shadow node; commit tính layout bằng Yoga và nâng tree; mount áp dụng thay đổi host view. Flattening khiến shadow node không nhất thiết cần host view riêng. Đây không phải ánh xạ widget sang render object của Flutter. <Citation source="rn-pipeline" />
+
+Không gán một thread cố định cho mọi phase. Hướng dẫn threading mô tả đường chạy thường gặp trên JavaScript thread và đường chạy đồng bộ trên UI thread cho công việc ưu tiên cao. Thao tác host view thuộc UI thread. Hướng dẫn kiến trúc mang tính khái niệm và còn câu chữ rollout cũ, nên khi chẩn đoán trace cần xác minh hành vi theo RN version của app. <Citation source="rn-threading" />
+
+Native ScrollView có thể tiếp tục scroll khi JavaScript bận, dù feedback do JS điều khiển có thể trễ. Quan sát cả JS lẫn native work; một animation mượt không chứng minh app xử lý nhanh mọi event. Hướng dẫn hiệu năng RN khuyến nghị kiểm tra bằng release build vì công việc phục vụ development làm thay đổi hiệu năng. <Citation source="rn-performance" />
+
+### Flutter
+
+Flutter phân biệt widget description immutable, element được giữ qua frame và render object chịu trách nhiệm geometry, painting. Rebuild widget subtree không tương đương thay mọi render object bên dưới. Flutter thường tự vẽ bộ widget của mình thay vì chuyển mỗi widget thành Android View hoặc UIKit view. <Citation source="flutter-architecture" />
+
+`WidgetsBinding.drawFrame()` mô tả build dirty element, layout dirty render object, paint, scene compositing, semantics và finalization. Build và paint là giai đoạn riêng; semantics cũng thuộc pipeline đầy đủ dù sơ đồ khái niệm tập trung vào output hiển thị. Post-frame callback thuộc scheduling của framework, không chứng minh ảnh đã được màn hình vật lý trình bày. <Citation source="flutter-frame" />
+
+DevTools phân biệt UI work và raster work. Scene dựng nhanh vẫn có thể rasterize tốn kém. Dùng profile mode khi phân tích hiệu năng Flutter; số đo debug không đại diện hiệu năng release. Xác định lane chậm trước khi chọn tối ưu. <Citation source="flutter-performance" />
+
+### Jetpack Compose
+
+Compose tách composition, layout và drawing. Layout gồm measurement và placement. State read được theo dõi theo phase: giá trị chỉ đọc lúc drawing có thể invalidate drawing mà không recompose. Điều này phụ thuộc nơi thực sự đọc, không phải nơi khai báo state. Composition phụ thuộc layout trong lazy layout là một lý do không dạy chuỗi cố định phổ quát. <Citation source="compose-phases" />
+
+Với thay đổi vị trí thường xuyên, lambda-based modifier phù hợp có thể dời lần đọc sang phase sau. Đưa phép tính nặng không liên quan ra khỏi composable cũng có thể giảm công việc lặp lại. Áp dụng khi semantics phù hợp; giá trị đổi cấu trúc UI vẫn cần phần công việc trước liên quan. Ít recomposition hơn là bằng chứng hữu ích, không phải số đo frame time đầy đủ. <Citation source="compose-performance" />
+
+### SwiftUI
+
+SwiftUI cập nhật view khi dependency thay đổi. Công cụ hiệu năng tách tính view body khỏi platform-view update và update khác. Body tính lâu hoặc nhiều update ngắn đều có thể tốn kém. Dùng Instruments tìm nguyên nhân và chi phí update thực tế thay vì giả định tính body nghĩa là redraw ngay toàn màn hình. Chi tiết timeline có sẵn phụ thuộc Xcode/toolchain đã cài. <Citation source="swiftui-performance" />
+
+Với D42, giữ phần chuẩn bị preview nặng ngoài việc tính body lặp lại và cung cấp kết quả hiện hành qua owner. Chặn kết quả cũ khi input đổi trong lúc chuẩn bị. Đây là policy ứng dụng; không yêu cầu cache hay abstraction concurrency cụ thể.
+
+## Chẩn đoán deadline bị lỡ
+
+Giả sử preview D42 khựng sau mỗi lần gõ phím. Trước hết phân biệt xử lý input, tính preview, layout và graphics. Timer cấp ứng dụng bọc hàm preview chỉ đo hàm đó; không đo cả frame hay presentation thực tế.
+
+| Quan sát trong điều tra đề xuất            | Câu hỏi tiếp theo                                    | Phản hồi tập trung có thể phù hợp                                                  |
+| ------------------------------------------ | ---------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| Xử lý document nặng trên đường thực thi UI | Có tính lại với input không đổi không?               | Dùng lại kết quả phù hợp hoặc chuyển phần chuẩn bị đủ điều kiện ra ngoài đường đó. |
+| Tính UI ngắn nhưng geometry tốn kém        | Wrapping, constraint hay dependency đo có đổi không? | Giảm thay đổi geometry không cần thiết; xem constraint của parent.                 |
+| UI work xong nhanh nhưng graphics chậm     | Scene có tốn công vẽ hoặc composite không?           | Giảm chi phí graphics đã đo, không chỉ số lần gọi component.                       |
+| Nhiều update nhỏ quanh lúc scroll          | Observation nào tạo từng update?                     | Thu hẹp lần đọc hoặc chỉ cập nhật output thay đổi có ý nghĩa.                      |
+| Chỉ hitch ở lần dùng đầu                   | Công việc một lần nào xảy ra trong tương tác đó?     | Điều tra riêng với hành vi ổn định sau đó.                                         |
+
+Đây là giả thuyết cần kiểm chứng bằng trace, không phải chẩn đoán chỉ từ triệu chứng. Android khuyến nghị system tracing và chỉ tới Perfetto FrameTimeline để điều tra slow frame; monitoring riêng của framework có giới hạn bao phủ. Không coi việc thiếu counter ở một dashboard là bằng chứng renderer khác không có jank. <Citation source="android-rendering" />
+
+Dùng thiết bị đại diện và lặp cùng tương tác trong điều kiện so sánh được. Ghi OS/framework version, build mode, điều kiện refresh, kích thước nội dung và lần chạy đầu so với lần lặp. So sánh phần đuôi phân bố và deadline bị lỡ, không chỉ FPS trung bình. Thu trace mới sau thay đổi tập trung: tính UI nhanh hơn chưa đủ nếu presentation vẫn trễ target.
+
+## Tối ưu công việc cần thiết mà giữ đúng hành vi
+
+Chọn cách xử lý theo bottleneck đã đo. Cache có thể tiết kiệm tính toán nhưng cần invalidation và dùng bộ nhớ. Dời update preview tùy chọn có thể giúp gõ mượt hơn nhưng preview kém hiện hành hơn. Giảm độ phức tạp graphics làm đổi hình thức. Chuyển chuẩn bị ra ngoài UI path bổ sung trách nhiệm ownership kết quả, cancellation và synchronization.
+
+Giữ phản hồi chỉnh sửa tức thời, state hỗ trợ accessibility, điều hướng đúng và nội dung report mới nhất. Không bỏ update hợp lệ chỉ để render counter nhỏ hơn. Tránh memoization tràn lan, thay global state hay thêm thư viện rendering trước khi trace chứng minh nhu cầu.
+
+Đọc [Process death và khôi phục state](/vi/foundations/process-death-and-state-restoration) để biết dữ liệu nào sống sót khi process mất; frame scheduling không lưu dữ liệu. [So sánh render/recomposition](/vi/compare/recomposition) và [so sánh layout constraints](/vi/compare/layout-constraints) cung cấp ví dụ API hẹp hơn. Sơ đồ và điều tra D42 trong bài vẫn mang tính khái niệm; không khẳng định frame rate native hay kết quả tối ưu nào.

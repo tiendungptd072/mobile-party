@@ -1,7 +1,8 @@
-import Link from "next/link";
 import { Container } from "@/components/ui/container";
 import { getMessages } from "@/lib/i18n/messages";
-import { FOUNDATION_TOPICS, type FoundationArticle } from "@/types/foundation";
+import type { FoundationArticle } from "@/types/foundation";
+import { FoundationSearch } from "@/features/search/foundation-search.client";
+import { createFoundationSearchIndex } from "@/lib/search/foundation-index";
 import type { Locale } from "@/types/locale";
 
 export function FoundationIndex({
@@ -25,42 +26,12 @@ export function FoundationIndex({
       {articles.length === 0 && (
         <p className="mt-10 text-muted">{messages.empty}</p>
       )}
-      {FOUNDATION_TOPICS.map((topic) => {
-        const entries = articles
-          .filter((article) => article.metadata.topic === topic)
-          .toSorted(
-            (a, b) =>
-              a.metadata.order - b.metadata.order ||
-              a.metadata.slug.localeCompare(b.metadata.slug),
-          );
-        if (entries.length === 0) return null;
-        return (
-          <section
-            key={topic}
-            className="mt-10"
-            aria-labelledby={`topic-${topic}`}
-          >
-            <h2 id={`topic-${topic}`} className="text-2xl font-semibold">
-              {messages.topics[topic]}
-            </h2>
-            <ul className="mt-5 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {entries.map((article) => (
-                <li key={article.metadata.slug}>
-                  <Link
-                    className="block h-full rounded-xl border border-subtle bg-surface p-5 transition-colors hover:bg-surface-raised"
-                    href={`/${locale}/foundations/${article.metadata.slug}`}
-                  >
-                    <h3 className="font-semibold">{article.localized.title}</h3>
-                    <p className="mt-2 text-sm leading-6 text-muted">
-                      {article.localized.description}
-                    </p>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </section>
-        );
-      })}
+      {articles.length > 0 && (
+        <FoundationSearch
+          index={createFoundationSearchIndex(articles)}
+          locale={locale}
+        />
+      )}
     </Container>
   );
 }

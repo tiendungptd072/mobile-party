@@ -33,7 +33,7 @@ expected to remove these values.
 - Recipes presents real-world flows and framework implementations.
 - Bookmarks lists locally saved lessons and concepts.
 
-### Foundations extension (specified; implementation pending)
+### Foundations extension
 
 Foundations adds detailed knowledge articles about mobile runtimes, lifecycle,
 state, concurrency, networking, storage, platform integration, security, quality,
@@ -64,11 +64,21 @@ See the [content contract](content-model.md#foundations-articles-f02-contract) a
 
 F03 supplies the server-side content pipeline; F04 supplies the static locale index
 and article reader, including localized metadata. F05 authors the A03 pilot in
-English and Vietnamese with reviewed sources and localized diagrams. It remains a
-draft until F07. F06 supplies offline structural reporting and CI link/anchor checks. Public indexes still show a
-localized empty state and unpublished article slugs return 404. F07 publishes the
-pilot and adds navigation, search, and sitemap discovery. Test fixtures are not
-published knowledge articles.
+English and Vietnamese with reviewed sources and localized diagrams. F06 supplies
+offline structural reporting and CI link/anchor checks. F07 publishes the pilot
+and adds header navigation, local metadata search with topic groups, sitemap
+discovery, and contextual links from related Dictionary entries. Search accepts
+Vietnamese without diacritics. A01 explains runtime/sandbox boundaries; A02
+explains application/screen lifecycle; A04 explains startup dependencies and
+session/draft recovery. A05 explains state ownership, derived values,
+unidirectional data flow, and save-result coordination. A06 explains rendering
+phases, invalidation, frame deadlines, and measured performance diagnosis.
+A07 explains input delivery, gesture conflicts, focus, IME composition, and
+keyboard interaction. A01-A07 are published in both locales, with 41 articles
+remaining in the editorial
+backlog. Drafts remain excluded from public
+discovery and their reader routes return 404. Test fixtures are not published
+knowledge articles.
 
 ## Primary flow
 
@@ -105,7 +115,7 @@ first complete content.
 Shareable state belongs in the URL when practical. Local preferences that do
 not define a public resource belong in browser storage.
 
-Planned Foundations routes use the existing canonical locale convention:
+Foundations routes use the existing canonical locale convention:
 
 ```text
 /en/foundations

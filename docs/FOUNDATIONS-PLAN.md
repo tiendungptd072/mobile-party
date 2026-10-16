@@ -1,6 +1,6 @@
 # Mobile Foundations: implementation and editorial plan
 
-Status: in progress; F01-F06 are complete. Created: 2026-10-14. Next task: F07.
+Status: infrastructure F01-F07 complete; A01-A07 published. Created: 2026-10-14. Next task: A08 (Wave 1); 41 article tasks remain.
 
 Inventory and scope decisions: [FOUNDATIONS-INVENTORY.md](FOUNDATIONS-INVENTORY.md). Execution evidence: [FOUNDATIONS-LOG.md](FOUNDATIONS-LOG.md).
 
@@ -130,7 +130,7 @@ Define metadata, source/citation IDs, locale publication rules, related links, h
 
 Acceptance: a sample article specification supports long prose, inline citations, accessible diagrams, and both locales without requiring paired implementations or exercises. Editorial requirements and mechanically enforceable checks are distinguished.
 
-Evidence (2026-10-14): [article contract](content-model.md#foundations-articles-f02-contract) defines metadata, source/figure/snippet IDs, heading anchors, related links, paired-locale publication, and draft exclusion. [Editorial rules](CONTENT-GUIDE.md#53-foundations-articles), [product scope](PRODUCT.md#foundations-extension-specified-implementation-pending), and the [A03 blueprint](FOUNDATIONS-ARTICLE-SPEC.md) distinguish structural checks from source/translation/diagram review. The blueprint is not a published article or a claim of new source verification; F03-F07 implementation and A03/F05 authoring remain unchecked. See [F02 log](FOUNDATIONS-LOG.md#f02--article-contract-and-editorial-guide--2026-10-14).
+Evidence (2026-10-14): [article contract](content-model.md#foundations-articles-f02-contract) defines metadata, source/figure/snippet IDs, heading anchors, related links, paired-locale publication, and draft exclusion. [Editorial rules](CONTENT-GUIDE.md#53-foundations-articles), [product scope](PRODUCT.md#foundations-extension), and the [A03 blueprint](FOUNDATIONS-ARTICLE-SPEC.md) distinguish structural checks from source/translation/diagram review. The blueprint is not a published article or a claim of new source verification; F03-F07 implementation and A03/F05 authoring remain unchecked. See [F02 log](FOUNDATIONS-LOG.md#f02--article-contract-and-editorial-guide--2026-10-14).
 
 ### F03 [x] Implement the MDX content pipeline
 
@@ -172,13 +172,15 @@ Acceptance: controlled invalid fixtures fail the relevant checks, then are remov
 
 Evidence (2026-10-15): [content:status](../scripts/content-status.ts) preserves the concept/stage table and appends [Foundations coverage/readiness diagnostics](../src/lib/content/foundation-status.ts). Shared schema checks cover supplied content and publication inputs; link auditing checks canonical locale destinations, reader/asset fragments, and generated HTML anchors with `--built`. Twenty-four new tests pass, including real EN/VI reader HTML and invalid isolated fixtures. A temporary real article link to a valid generated dictionary anchor passes; changing it to a nonexistent anchor exits 1; the link was removed and the article restored byte-for-byte. Final strict/built report: 864/864 concept/stage cells ready; one draft, 2/2 bodies, zero errors/pending issues. Lint/typecheck and the 692-page Webpack build pass; full tests report 199 passes and the unchanged Windows-path failure on macOS. CI is configured with both checks; no remote job success is asserted. Runtime-only fragment targets report missing build evidence rather than being mislabeled as broken content. See the [F06 log](FOUNDATIONS-LOG.md#f06--quality-reporting-and-ci-checks--2026-10-15). A03 remains draft; F07 is next.
 
-### F07 [ ] Integrate discovery and publish the pilot in the site build
+### F07 [x] Integrate discovery and publish the pilot in the site build
 
 Dependencies: F05 and F06.
 
 Add the Foundations navigation entry, sitemap URLs, topic index, and a small localized article search using metadata. Reuse existing search utilities where appropriate without turning the concept dictionary into an unrelated universal search rewrite. Add contextual links from selected existing content.
 
 Acceptance: readers find A03 from navigation and search in both locales; locale switching preserves the article; sitemap/canonical URLs agree; drafts are absent. Existing Learn/Compare/Dictionary/Recipes behavior still passes relevant checks. No deployment is required by this task.
+
+Evidence (2026-10-16): published the reviewed bilingual A03 pilot in the [registry](../content/foundations/index.ts). Header navigation, metadata-only local search with localized topic groups, paired-locale sitemap URLs, and contextual Dictionary links use published article projections. Search supports Vietnamese without diacritics; reader locale switching retains the slug and removes heading fragments. Lint, typecheck, 210 tests, the Webpack production build (694 static pages), and strict built-content checks pass. Chrome checked both locales at 390/1440 px in light/dark themes, search/no-results and keyboard activation, reader images/anchors, locale switching, six contextual links, existing route smoke checks, and unknown article 404s. Draft exclusion is covered by collection/search tests; no fixture is published. Turbopack remains blocked by the local worker-port restriction. See the [F07 log](FOUNDATIONS-LOG.md#f07--discovery-and-pilot-publication--2026-10-16). No deployment or remote CI success is claimed. Next eligible task: A01.
 
 ## Article catalog and writing waves
 
@@ -190,15 +192,27 @@ Every article is one authoring task covering both locales, sources, illustration
 
 | ID      | Article slug                          | Core coverage                                                                                           |
 | ------- | ------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| A01 [ ] | `mobile-runtime-and-sandbox`          | OS/process/thread roles, app runtime, sandbox, resource ownership                                       |
-| A02 [ ] | `application-and-screen-lifecycle`    | Process, Activity/scene, screen and component lifetimes; foreground/background/suspension               |
+| A01 [x] | `mobile-runtime-and-sandbox`          | OS/process/thread roles, app runtime, sandbox, resource ownership                                       |
+| A02 [x] | `application-and-screen-lifecycle`    | Process, Activity/scene, screen and component lifetimes; foreground/background/suspension               |
 | A03 [x] | `process-death-and-state-restoration` | State loss, configuration change, saved state versus durable storage; completed in F05; publication F07 |
-| A04 [ ] | `startup-and-session-restoration`     | Cold/warm start, initialization dependencies, session/draft recovery and reconciliation                 |
-| A05 [ ] | `state-ownership-and-data-flow`       | UI/server/navigation/persistent state, derived state, UDF, state machines and effects                   |
-| A06 [ ] | `rendering-and-frame-scheduling`      | Render/layout/mount, invalidation, frame deadlines, framework-specific models                           |
-| A07 [ ] | `input-gestures-focus-and-keyboard`   | Event delivery, hit testing, gesture conflicts, focus, IME and keyboard interaction                     |
+| A04 [x] | `startup-and-session-restoration`     | Cold/warm start, initialization dependencies, session/draft recovery and reconciliation                 |
+| A05 [x] | `state-ownership-and-data-flow`       | UI/server/navigation/persistent state, derived state, UDF, state machines and effects                   |
+| A06 [x] | `rendering-and-frame-scheduling`      | Render/layout/mount, invalidation, frame deadlines, framework-specific models                           |
+| A07 [x] | `input-gestures-focus-and-keyboard`   | Event delivery, hit testing, gesture conflicts, focus, IME and keyboard interaction                     |
 | A08 [ ] | `memory-and-resource-lifetimes`       | GC, ARC, ownership, retain cycles, listeners and native resources                                       |
 | A09 [ ] | `time-money-and-data-representation`  | Wall/monotonic clocks, timestamps, timezone/DST, decimal precision, Unicode                             |
+
+A01 evidence (2026-10-16): [EN](../content/foundations/en/mobile-runtime-and-sandbox.mdx) and [VI](../content/foundations/vi/mobile-runtime-and-sandbox.mdx) explain OS/process/thread/runtime roles, Android/iOS access boundaries, four framework models, and resource ownership through an image-import design. Fifteen primary sources were reviewed; the localized SVG includes a prose equivalent. Both versions publish together and link to A03 and selected comparisons. Lint/typecheck, 212 tests, the 696-page Webpack build, and strict built-content reporting pass. Chrome checked both locales, two widths, and both themes, including figure labels, search, keyboard navigation, locale switching, contextual links, and existing routes. No executable snippet or device behavior is claimed. See the [A01 log](FOUNDATIONS-LOG.md#a01--mobile-runtime-and-sandbox--2026-10-16). A02 is next.
+
+A02 evidence (2026-10-16): [EN](../content/foundations/en/application-and-screen-lifecycle.mdx) and [VI](../content/foundations/vi/application-and-screen-lifecycle.mdx) distinguish process, Activity/scene, destination, component, and operation lifetimes. Nineteen primary sources support the platform/framework boundaries; a localized retained-editor trace and prose equivalent explain an application-specific eligibility policy without a universal callback sequence. Both versions publish together and link to A01/A03. Lint/typecheck, 214 tests, the 698-page Webpack build, strict built-content reporting, and eight Chrome locale/theme/viewport combinations pass, including mobile table keyboard scrolling. See the [A02 log](FOUNDATIONS-LOG.md#a02--application-and-screen-lifecycle--2026-10-16). A03 is already complete; A04 is next.
+
+A04 evidence (2026-10-16): [EN](../content/foundations/en/startup-and-session-restoration.mdx) and [VI](../content/foundations/vi/startup-and-session-restoration.mdx) explain startup reuse, first-frame versus application readiness, dependency ordering, distinct session outcomes, scoped draft reads, reconciliation, and stale bootstrap results. Fourteen primary sources and a localized dependency graph support the explanation; recovery and access policies are explicitly proposed application choices. Both locales publish together. Lint/typecheck, 216 tests, the 700-page Webpack build, strict built-content reporting, and eight Chrome locale/theme/viewport combinations pass, including search and mobile table keyboard scrolling. See the [A04 log](FOUNDATIONS-LOG.md#a04--startup-and-session-restoration--2026-10-16). A05 is next.
+
+A05 evidence (2026-10-16): [EN](../content/foundations/en/state-ownership-and-data-flow.mdx) and [VI](../content/foundations/vi/state-ownership-and-data-flow.mdx) distinguish ownership, observation, and persistence across UI, working, committed, server, and navigation state. Fifteen primary sources and a localized event/I/O loop support derived-state, UDF, framework boundaries, and an explicitly proposed save state machine. The D42 trace preserves dirty state when an older save finishes after a new edit. Both locales publish together. Lint/typecheck, 218 tests, the 702-page Webpack build, strict built-content reporting, and eight Chrome locale/theme/viewport combinations pass, including search, contextual links, and mobile table keyboard scrolling. See the [A05 log](FOUNDATIONS-LOG.md#a05--state-ownership-and-data-flow--2026-10-16). A06 is next.
+
+A06 evidence (2026-10-16): [EN](../content/foundations/en/rendering-and-frame-scheduling.mdx) and [VI](../content/foundations/vi/rendering-and-frame-scheduling.mdx) distinguish UI description, geometry, host updates, graphics, and presentation. Fourteen primary sources and a localized conceptual dependency diagram support phase-specific invalidation, 60/90/120 Hz intervals, pipeline latency, deadline failures, and framework differences. D42's preview investigation is an explanatory design, not a native benchmark. Both locales publish together. Lint/typecheck, 220 tests, the 704-page Webpack build, strict built-content reporting, and eight Chrome locale/theme/viewport combinations pass. A settled-paint recheck confirms the English mobile table renders fully and scrolls correctly. See the [A06 log](FOUNDATIONS-LOG.md#a06--rendering-and-frame-scheduling--2026-10-16). A07 is next.
+
+A07 evidence (2026-10-16): [EN](../content/foundations/en/input-gestures-focus-and-keyboard.mdx) and [VI](../content/foundations/vi/input-gestures-focus-and-keyboard.mdx) distinguish pointer delivery, gesture recognition/cancellation, keyboard focus, text/selection/composition, and domain commands. Thirteen primary sources and a localized two-path input diagram support framework-specific arbitration, stable focus ownership, IME-safe editing, and keyboard layout/dismissal boundaries. Both locales publish together. Lint/typecheck, 222 tests, the 706-page Webpack build, strict built-content reporting, and eight Chrome locale/theme/viewport combinations pass. Existing browser scripts were reused with font/paint settlement before screenshots. The requested 15–20 minute target was exceeded; measured phase durations and blocking tool waits are recorded in the [A07 log](FOUNDATIONS-LOG.md#a07--input-gestures-focus-and-keyboard--2026-10-16). A08 is next.
 
 ### Wave 2: concurrency, networking, and persistence
 

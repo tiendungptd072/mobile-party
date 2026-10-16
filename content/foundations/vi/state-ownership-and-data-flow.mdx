@@ -1,0 +1,101 @@
+## Mỗi dữ kiện cần có owner rõ ràng
+
+Một trình soạn báo cáo có thể đồng thời chứa UI state cục bộ, buffer đang sửa, draft đã commit, revision trên server và destination điều hướng. Gọi chung tất cả là “state” sẽ che khuất trách nhiệm khác nhau. Owner tiếp nhận thay đổi của một dữ kiện; giá trị observable báo cho UI khi nào cần đọc lại; lưu trữ bền vững quyết định dữ liệu nào sống sót khi process mất. Đây là những hợp đồng riêng biệt.
+
+**Single source of truth áp dụng cho từng dữ kiện**, không nhất thiết cho toàn ứng dụng. React khuyến nghị một owner cho mỗi phần state dùng chung. Hướng dẫn data layer của Android cũng xác định source of truth cho từng repository; repository có thể hòa giải nhiều nguồn dữ liệu bên dưới. Cả hai đều không yêu cầu đưa mọi vị trí con trỏ và record từ xa vào một global store. <Citation source="react-sharing" /> <Citation source="android-data-layer" />
+
+Bài này đề xuất một trình soạn report `D42` của account `A`. Các policy và chuỗi event dùng để giải thích thiết kế, không phải snippet thực thi hay bảo đảm đã kiểm chứng trên thiết bị. API của các framework hỗ trợ mục tiêu ownership **tương tự**, nhưng hợp đồng quan sát, vòng đời và mutation **khác nhau**.
+
+| Dữ kiện                        | Owner và ý nghĩa trong thiết kế                               | Điều chưa được chứng minh                        |
+| ------------------------------ | ------------------------------------------------------------- | ------------------------------------------------ |
+| Con trỏ và mục đang mở rộng    | Owner UI cục bộ của trình soạn.                               | Draft đã được lưu.                               |
+| Văn bản đang sửa               | Working buffer của trình soạn hiện tại.                       | Trình soạn khác hoặc server đã chấp nhận nó.     |
+| Draft đã commit cục bộ         | Repository theo account và hợp đồng lưu trữ của nó.           | Đồng bộ từ xa đã hoàn tất.                       |
+| Revision được server chấp nhận | Response và hợp đồng hòa giải của server.                     | Chỉnh sửa cục bộ hiện tại giống hệt revision đó. |
+| Destination hiện tại           | Owner điều hướng, ưu tiên định danh `D42`.                    | `D42` tồn tại hoặc hiện được phép truy cập.      |
+| Validation và chỉ báo dirty    | Suy ra từ input hiện tại và version đã được xác nhận.         | Cần thêm một bản sao mutable riêng.              |
+| Pha của thao tác save          | Coordinator chịu trách nhiệm cho thao tác của trình soạn này. | Trình soạn khác không thể ghi cùng report.       |
+
+Buffer và record đã commit cố ý biểu diễn hai dữ kiện khác nhau. Giữ cả hai không giống lỗi nhân đôi khi hai giá trị mutable độc lập cùng tự nhận là văn bản đang sửa hiện tại. Hai cửa sổ soạn cũng có thể có buffer khác nhau; repository cần policy xung đột rõ ràng. Source of truth trong bộ nhớ của repository vẫn không trở thành dữ liệu bền vững chỉ nhờ tên gọi kiến trúc đó. <Citation source="android-data-layer" />
+
+## Suy ra giá trị thay vì đồng bộ các bản sao
+
+Tính validation đơn giản từ văn bản hiện tại. Tìm item được chọn bằng ID và collection hiện tại thay vì lưu thêm bản sao item có thể sửa độc lập. Hướng dẫn cấu trúc state của React cảnh báo về state dư thừa, trùng lặp và các tổ hợp mâu thuẫn. Hướng dẫn Effect khuyên tính dữ liệu suy ra phục vụ render ngay khi render, thay vì dùng Effect chép nó sang một state khác. <Citation source="react-structure" /> <Citation source="react-no-effect" />
+
+Trong trình soạn được đề xuất, `workingVersion` tăng sau mỗi chỉnh sửa được chấp nhận. `committedVersion` ghi nhận version gần nhất mà save coordinator xử lý tuần tự đã xác nhận. Chỉ báo dirty là `workingVersion != committedVersion`. Nó có nghĩa “working version mới nhất chưa được xác nhận”, không phải “văn bản khác nhau từng byte”. Gõ rồi undo vẫn có thể cần xác nhận theo policy này. Sản phẩm muốn xét nội dung bằng nhau cần policy so sánh riêng, rõ ràng.
+
+Không biến mọi phép tính thành cache. `derivedStateOf` của Compose dành cho trường hợp input thay đổi thường xuyên hơn mức UI cần cập nhật, chẳng hạn chuyển nhiều thay đổi vị trí scroll thành một ngưỡng. Nó có chi phí và không cần thiết chỉ để ghép những giá trị phải cập nhật cùng tần suất. Đây không phải API tương ứng phổ quát với mọi cách memoization của React. <Citation source="compose-effects" />
+
+## Gửi event tới owner và render state của nó
+
+Trong luồng đề xuất, UI gửi `TextChanged` hoặc `SaveRequested` tới owner. Owner kiểm tra event, tính state tiếp theo và quyết định có cần thao tác bên ngoài hay không. UI render state mới. Bộ thực thi I/O chạy thao tác được yêu cầu rồi trả result event về đúng owner đó.
+
+Android mô tả unidirectional data flow là state đi tới UI và event đi về state holder. ViewModel ở phạm vi màn hình là một lựa chọn; logic UI đơn giản có thể dùng class thường hoặc state cục bộ. Chỉ hoist đến phạm vi mà các nơi đọc và ghi thực sự cần. <Citation source="android-ui-layer" />
+
+<Figure
+  id="state-flow"
+  src="/illustrations/foundations/state-ownership-and-data-flow/state-flow-vi.svg"
+  alt="Event người dùng đi vào state owner. Owner tính snapshot UI mới và khi cần tạo yêu cầu I/O kèm version đã chụp và operation ID. UI render mà không commit lưu trữ. I/O trả event thành công hoặc thất bại về owner để kiểm tra kết quả còn thuộc thao tác hiện tại hay không."
+  caption="Vòng event và kết quả được đề xuất. Sơ đồ tự biên soạn; mũi tên thể hiện trách nhiệm, không thể hiện thread, thứ tự scheduling hay lưu trữ tự động."
+  sources={["react-reducer", "android-ui-layer"]}
+/>
+
+Hai nhánh là hai công việc khác nhau: render hiển thị snapshot, còn I/O có thể thay đổi dữ liệu bên ngoài. Kết quả quay lại qua owner thay vì sửa thẳng một nhãn. Hàm chuyển state thuần có thể mô tả quyết định mà không thực hiện storage hoặc network bên trong. Hợp đồng reducer của React yêu cầu reducer thuần trả state tiếp theo; phải thay object state thay vì mutate nó. <Citation source="react-reducer" />
+
+“Effect” ở đây là thao tác bên ngoài. Không có nghĩa mọi button handler phải kích hoạt React `useEffect`. React khuyên giữ logic riêng của tương tác tại tương tác đã gây ra nó và dùng Effect để đồng bộ với hệ thống bên ngoài. Render lại trình soạn không được submit cùng report lần nữa chỉ vì nó đang dirty. <Citation source="react-no-effect" />
+
+## Mô hình hóa pha save và kết quả đến muộn
+
+Dùng một pha save như `Idle`, `Saving(operationId, capturedVersion)` hoặc `Failed(error)` thay cho các boolean độc lập `isSaving`, `hasFailed`, `hasSucceeded` cho phép tổ hợp mâu thuẫn. Giữ working buffer riêng: thiết kế này cho phép tiếp tục sửa trong khi save. Hướng dẫn cấu trúc state của React hỗ trợ tránh tổ hợp bất khả thi; tên pha và policy save cụ thể ở đây do ứng dụng chọn. <Citation source="react-structure" />
+
+Coordinator này cho phép **một save đang chạy trên mỗi draft của trình soạn**. Yêu cầu save thứ hai khi đang save được từ chối hoặc gộp theo policy UI rõ ràng; nó không bắt đầu ghi đồng thời. Giới hạn này không tuần tự hóa cửa sổ hay thiết bị khác. Repository phải thực thi hợp đồng thứ tự hoặc xung đột giữa các trình soạn nếu cần.
+
+| Event                                             | Chuyển state trong trình soạn đề xuất                                       |
+| ------------------------------------------------- | --------------------------------------------------------------------------- |
+| Ban đầu                                           | Working version 17, committed version 16, pha `Idle`; dirty là true.        |
+| `SaveRequested`                                   | Bắt đầu `R1`, chụp version 17 và payload của nó; chuyển sang `Saving`.      |
+| `TextChanged` trong khi `R1` chạy                 | Working version thành 18; payload đã chụp cho `R1` vẫn là version 17.       |
+| `SaveSucceeded(R1, 17)` khớp thao tác             | Committed version thành 17, pha thành `Idle`; dirty vẫn true vì 18 khác 17. |
+| Thay vào đó nhận `SaveFailed(R1)` khớp thao tác   | Giữ working buffer và committed version trước đó; hiển thị lỗi và retry.    |
+| Retry sau lỗi                                     | Bắt đầu operation ID mới và chụp working payload mới nhất.                  |
+| Kết quả từ owner/account/thao tác đã hết hiệu lực | Từ chối áp dụng vào UI hiện tại; không ghi đè state hiện tại.               |
+
+Các version này là xác nhận cục bộ của trình soạn, không phải thứ tự toàn cục trên server. Thành công phải có nghĩa hợp đồng lưu trữ đã chọn hoàn tất, không chỉ là đã xếp write vào hàng đợi. Nếu lỗi có thể khiến kết quả bên ngoài chưa rõ, hãy thể hiện sự chưa chắc chắn và hòa giải thay vì giả định record chưa từng được ghi. Từ chối kết quả UI cũ không hoàn tác write bên ngoài đã xảy ra.
+
+Event handler của React quan sát snapshot state của lần render đã tạo ra nó. Set state lên lịch render sau; không thay đổi biến mà handler đã giữ. Hãy chủ động chụp payload và đưa operation identity vào completion event. Closure không chứng minh input đã giữ vẫn hiện hành khi công việc bất đồng bộ hoàn tất. <Citation source="react-snapshot" />
+
+## Bốn framework đặt ownership khác nhau
+
+### React Native
+
+Mô hình shared state của React nâng ownership lên ancestor chung phù hợp gần nhất rồi truyền giá trị và handler xuống. `useReducer` có thể biểu diễn chuyển đổi cho các state liên quan mà không biến chúng thành global. Reducer không tự thực hiện I/O; nâng state hoặc dispatch action đều không lưu draft bền vững. Đây là hợp đồng React dùng trong React Native, không phải nhận định về DOM của browser. <Citation source="react-sharing" /> <Citation source="react-reducer" />
+
+Child có thể được owner điều khiển trong khi vẫn giữ UI state cục bộ không liên quan. Tránh chép giá trị editable nhận vào sang owner thứ hai rồi cố đồng bộ hai chiều sau mỗi render.
+
+### Flutter
+
+Flutter phân biệt ephemeral state và application state, nhưng nêu rõ ranh giới phụ thuộc ứng dụng. Tab được chọn có thể ở cục bộ cho đến khi có nơi thực sự cần dùng chung. Shared state không tự động là persistent state. <Citation source="flutter-state-scope" />
+
+`ChangeNotifier` cung cấp thông báo cho listener; ứng dụng vẫn chọn owner, method mutation và vòng đời của nó. `ValueNotifier` thông báo khi giá trị được gán so sánh khác bằng `==`. Mutate list bên trong giá trị hiện có không tự kích hoạt thông báo. Thay bằng giá trị immutable có thể giúp quan sát thay đổi; nó không cung cấp validation, storage hay xử lý xung đột giữa các trình soạn. <Citation source="flutter-change-notifier" /> <Citation source="flutter-value-notifier" />
+
+### Jetpack Compose
+
+Hướng dẫn hoisting của Compose xét cả ancestor chung thấp nhất đọc state lẫn nơi cao nhất ghi state; các state cùng thay đổi do một nhóm event có thể cần hoist cùng nhau. Truyền state xuống và event lên làm rõ trách nhiệm. Collection mutable thông thường không tự trở thành observable state, nên mutation phải dùng biểu diễn observable phù hợp hoặc thay bằng giá trị immutable. <Citation source="compose-state" />
+
+State holder của màn hình có thể cung cấp snapshot UI immutable trong khi repository sở hữu record. `derivedStateOf` điều khiển quan sát giá trị suy ra phù hợp; nó không phải cơ chế lưu trữ. Phạm vi ViewModel không tương đương một JavaScript store toàn process hay lưu trữ bền vững. <Citation source="android-ui-layer" /> <Citation source="compose-effects" />
+
+### SwiftUI
+
+Trên iOS/iPadOS 17+, SwiftUI hỗ trợ model data dựa trên Observation. Model `@Observable` cung cấp property được theo dõi; các lần đọc trong body của view thiết lập dependency liên quan. `@State` có thể giữ model instance được sở hữu ở phạm vi view đã chọn; chia sẻ qua hierarchy không đòi tạo owner mới cho mỗi child. Deployment target cũ hơn cần API observation tương ứng. <Citation source="swiftui-model" />
+
+`Binding` đọc và ghi giá trị do source of truth ở nơi khác sở hữu; nó không lưu bản sao riêng. Kết nối hai chiều này phù hợp với một owner duy nhất. Dùng domain command rõ ràng khi write phải bảo đảm quy tắc, thay vì mặc định mọi binding ghi được đều kiểm tra nghiệp vụ. Binding và Observation đều không bảo đảm persistence hay mutation an toàn giữa các thread. <Citation source="swiftui-binding" />
+
+## Chủ động chọn feedback, restoration và phạm vi global
+
+Thông báo tạm thời có thể nằm trong UI state, kèm ID và acknowledgement event xóa đúng thông báo. Hướng dẫn UI event của Android mô tả chuyển event thành state và xác nhận thông báo đã hiển thị. Đây không phải bảo đảm giao đúng một lần và bền vững cho thanh toán hay submit. <Citation source="android-ui-events" />
+
+Khôi phục trình soạn là dựng lại state; không tự động phát lại `SaveRequested`. Thao tác bên ngoài đang pending cần hợp đồng hòa giải riêng. [Startup và khôi phục session](/vi/foundations/startup-and-session-restoration) giải thích đổi account và kết quả chưa rõ; [Process death và khôi phục state](/vi/foundations/process-death-and-state-restoration) giải thích ranh giới sống sót của dữ liệu.
+
+Bắt đầu bằng owner nhỏ nhất phục vụ được các nơi đọc và tiếp nhận thay đổi hợp lệ. Nâng nó lên khi consumer thực sự dùng chung một dữ kiện. Global store có thể hữu ích cho state thực sự dùng chung, nhưng mở rộng trách nhiệm vòng đời và invalidation; nó không thay thế quyết định ownership. [Vòng đời ứng dụng và màn hình](/vi/foundations/application-and-screen-lifecycle) giải thích vì sao màn hình hiển thị, owner được giữ lại và thao tác đang chạy có thể có vòng đời khác nhau.
+
+Kiểm tra chuyển đổi bằng tình huống cụ thể: sửa trong khi save, save lỗi nhưng văn bản còn nguyên, yêu cầu save trùng, đổi account trước khi hoàn tất và mở lại không phát lại command. Kiểm tra nhãn dirty theo version đã xác nhận và giá trị suy ra không lệch input. [So sánh derived state](/vi/compare/derived-state) và [so sánh side effects](/vi/compare/side-effects) cung cấp ví dụ API tập trung; coordinator trong bài vẫn là thiết kế ứng dụng.

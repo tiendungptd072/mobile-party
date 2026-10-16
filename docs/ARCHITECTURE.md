@@ -154,6 +154,13 @@ The search index is generated from validated content during the build. Search
 and keyboard navigation run client-side over the static index. The MVP does not
 use an external service or search endpoint.
 
+Foundations uses a separate published-only metadata projection containing slug,
+topic, localized title, description, and keywords. Its small client search filters
+topic groups locally and supports Vietnamese without diacritics. Article bodies,
+references, validation, and highlighting remain on the server. Dictionary search
+keeps its existing concept index and behavior. Sitemap entries and contextual
+Dictionary links use the same published article collection.
+
 ## Validation and failure behavior
 
 Content validation must fail the build for missing required fields, invalid

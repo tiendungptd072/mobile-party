@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="480" height="880" viewBox="0 0 480 880" role="img" aria-labelledby="title desc">
+<title id="title">Events, state, and I/O</title><desc id="desc">User events enter an owner; UI rendering and I/O are separate branches. I/O results return to the owner.</desc>
+<defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0L8 4L0 8Z" fill="#475569"/></marker></defs>
+<rect width="480" height="880" rx="16" fill="#f8fafc"/>
+<g font-family="system-ui,sans-serif" fill="#0f172a" text-anchor="middle">
+<text x="240" y="38" font-size="24" font-weight="700">Events, state, and I/O</text>
+<rect x="16" y="64" width="448" height="108" rx="12" fill="#e0f2fe" stroke="#0284c7"/>
+<text x="240" y="100" font-size="22" font-weight="700">User event</text>
+<text x="240" y="132" font-size="20" font-weight="400">TextChanged / SaveRequested</text>
+<rect x="16" y="228" width="448" height="144" rx="12" fill="#e0f2fe" stroke="#0284c7"/>
+<text x="240" y="264" font-size="22" font-weight="700">State owner</text>
+<text x="240" y="296" font-size="20" font-weight="400">Validate event; compute next state</text>
+<text x="240" y="328" font-size="20" font-weight="400">Choose UI state and I/O intent</text>
+<rect x="16" y="438" width="216" height="144" rx="12" fill="#e0f2fe" stroke="#0284c7"/>
+<text x="124" y="474" font-size="22" font-weight="700">Render UI</text>
+<text x="124" y="506" font-size="20" font-weight="400">Current snapshot</text>
+<text x="124" y="538" font-size="20" font-weight="400">No storage write</text>
+<rect x="248" y="438" width="216" height="144" rx="12" fill="#e0f2fe" stroke="#0284c7"/>
+<text x="356" y="474" font-size="22" font-weight="700">Run I/O</text>
+<text x="356" y="506" font-size="20" font-weight="400">Captured version</text>
+<text x="356" y="538" font-size="20" font-weight="400">R1 / draft D42</text>
+<rect x="16" y="654" width="448" height="144" rx="12" fill="#e0f2fe" stroke="#0284c7"/>
+<text x="240" y="690" font-size="22" font-weight="700">Result event</text>
+<text x="240" y="722" font-size="20" font-weight="400">SaveSucceeded / SaveFailed</text>
+<text x="240" y="754" font-size="20" font-weight="400">R1 + captured version</text>
+<text x="240" y="850" font-size="20">Render does not commit data</text>
+</g>
+<g fill="none" stroke="#475569" stroke-width="2" marker-end="url(#arrow)">
+<path d="M240 172V228"/><path d="M180 372V404H124V438"/><path d="M300 372V404H356V438"/>
+<path d="M356 582V654"/><path d="M464 726H474V300H464"/>
+</g></svg>

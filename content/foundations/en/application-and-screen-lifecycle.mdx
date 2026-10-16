@@ -1,0 +1,119 @@
+## Leaving a screen does not identify what ended
+
+A user editing report `D42` opens an attachment screen, returns to the editor, and then goes to the device's Home screen. “The editor closed” is too imprecise to decide what to save or stop. The editor may still be in a navigation stack, its components may still exist, and its process may still be alive. React Navigation documents stack transitions where the previous screen stays mounted. That is a navigation-library behavior, not a universal OS rule. <Citation source="react-navigation-lifecycle" />
+
+This article separates the lifetimes of a process, a platform UI host, a navigation destination, and a framework component. It then derives a resource policy for a hypothetical preview in `D42`. The scenario explains decisions; it is not executable code or a claim of device verification. Detailed persistence and process reconstruction belong to the existing state-restoration article.
+
+## Name the owner and the observation
+
+Lifecycle has two distinct uses: an owner's existence and the changing conditions under which that owner should work. An object can exist while its UI is hidden. A visible interface can temporarily lose interaction. Neither observation alone says that the process ended.
+
+| Owner or signal                         | What it describes                                                   | What it does not establish                               |
+| --------------------------------------- | ------------------------------------------------------------------- | -------------------------------------------------------- |
+| Application process                     | The current execution instance and in-memory owners                 | That a particular destination is visible or interactive. |
+| Android Activity or iOS scene           | A platform-managed UI host and its transitions                      | A one-to-one mapping to every app-defined screen.        |
+| Navigation destination                  | A route's membership, focus, or coverage according to its navigator | That its component is removed when another route opens.  |
+| Component, composable, or view identity | Framework-owned UI state and work                                   | That the app has foreground execution rights.            |
+| Subscription or asynchronous operation  | A resource with its own owner and cancellation policy               | That creating it grants process survival.                |
+
+Android process importance considers its active components; it is not determined by one screen label. UIKit scene-enabled apps receive lifecycle events per scene, so different scenes can have different states. These contracts prevent a single app-wide boolean from answering every UI ownership question. <Citation source="android-process-lifecycle" /> <Citation source="ios-lifecycle" />
+
+## Android: an Activity instance is not the application
+
+An Activity progresses through creation, starting, resuming, pausing, stopping, and destruction. Visibility and interaction differ: a paused Activity can still be visible, while stopping means it is no longer visible. Choose a resource's activation threshold according to its needs, rather than treating every loss of interaction as disappearance. <Citation source="android-activity-lifecycle" />
+
+Normal Activity destruction can follow finishing or configuration-driven recreation. Losing the instance therefore does not identify the fate of the whole process. Conversely, system process termination can occur without `onDestroy()`. A resource-cleanup callback is not a reliable final transaction boundary for valuable application data. <Citation source="android-activity-lifecycle" /> <Citation source="android-process-lifecycle" />
+
+For the proposed editor, this means tracking the relevant host and destination separately. If multiple app screens share a host, the Activity can remain interactive while navigation moves from editor to attachments. Code scoped only to that host has not yet been told that editor-specific work is unwanted.
+
+## iOS: scene state and process lifetime are separate
+
+With scene support on iOS 13+, UIKit delivers UI lifecycle events to scene delegates. A scene represents a UI instance, and multiple scenes can have different foreground/background states. UIKit can disconnect a background or suspended scene to reclaim resources. Disconnection is not a statement that every scene and the application process disappeared. <Citation source="ios-lifecycle" />
+
+For ordinary app execution, suspension means execution pauses; it is different from terminating the process and losing its memory. UIKit can suspend an app after it moves to the background, and extra execution requires an applicable system-supported background mechanism. An app-switcher snapshot does not prove that code is running. <Citation source="ios-background" />
+
+Background and suspension also need different reasoning: a background transition offers an opportunity to quiet work; it is not a promise of indefinite execution. Apple's termination contract distinguishes background execution from suspension and does not supply a universal final callback for background-capable apps. Do not make that callback the sole save path. <Citation source="ios-termination" />
+
+The editor's resource policy should use the scene that contains its UI. Another active window does not make this editor visible. Returning to an active scene is an opportunity to check current needs and inputs, not proof that an old request completed.
+
+## App state, navigation, and component state in four frameworks
+
+These layers are related but **different**, with no general one-to-one callback mapping. Similar product behavior requires choosing each framework's appropriate observations, not substituting identically named states.
+
+### React Native
+
+`AppState` reports application foreground/background changes, with iOS `inactive` transitions. On Android, opening the notification drawer can emit `blur` without changing AppState. That signal is distinct from a navigator's screen blur. <Citation source="react-native-app-state" />
+
+For React Navigation, screen focus and component mounting are separate. `useFocusEffect` scopes an effect to focus and cleans up on blur, unmount, or dependency changes. Its cleanup is therefore not an exclusive “user left this screen” event for analytics. <Citation source="react-navigation-focus-effect" />
+
+React `useEffect` likewise cleans up old dependencies before replacement setup and on removal. Strict Mode adds a development-only setup/cleanup check. Repeated setup can reflect these contracts; it need not mean that the application restarted. <Citation source="react-effect" />
+
+### Flutter
+
+`AppLifecycleState` normalizes platform states. Flutter `inactive` and `paused` do not directly mean Android's identically discussed lifecycle stages; `hidden` can be synthesized on Android/iOS. Flutter explicitly warns that transitions can be skipped. A complete event log must not be a prerequisite for recovery. <Citation source="flutter-app-lifecycle" />
+
+A `State` object has its own tree lifetime: deactivation can be followed by reinsertion, while `dispose()` is terminal for that object. A rebuild is not another `initState()`. <Citation source="flutter-state-lifecycle" />
+
+Navigation adds another scope. `ModalRoute.maintainState` controls retaining an inactive route's hierarchy; setting it to false does not guarantee removal while the route remains visible. `RouteAware` observes navigator history changes such as another route being pushed above it. Neither is an app-wide foreground signal. <Citation source="flutter-route-retention" /> <Citation source="flutter-route-aware" />
+
+### Jetpack Compose
+
+A composable enters the Composition, can recompose, and leaves it. Recomposition is not Activity recreation. `DisposableEffect` cleans up when its keys change or its call leaves the Composition; registering a Lifecycle observer there gives the observer an owner but does not make composition membership equal Activity visibility. <Citation source="compose-lifecycle" /> <Citation source="compose-effects" />
+
+For Android UI flows, `collectAsStateWithLifecycle()` provides lifecycle-aware collection. It gates the UI's collection; whether an upstream producer keeps running depends on that producer's ownership and sharing policy. Inspect the actual Lifecycle owner and desired threshold instead of assuming the word “screen” selects both. <Citation source="compose-lifecycle-state" />
+
+### SwiftUI
+
+SwiftUI view values can be recreated while the view's identity continues. Apple ties view lifetime and associated state to that identity, not to the lifetime of one temporary struct value. Re-evaluating UI descriptions therefore does not imply a new scene or process. <Citation source="swiftui-identity" />
+
+Reading `scenePhase` inside a view reflects its enclosing scene; reading it at the App level gives an aggregate across scenes. For example, that aggregate can be active because another scene is active. It does not identify the focused navigation destination. <Citation source="swiftui-scene-phase" />
+
+The SwiftUI task modifier ties work to its modified view and cancels unfinished work when SwiftUI removes the view or changes its identity. This is a view-related contract, not a background execution grant. This article uses the current documented task modifier semantics and supplies no version-specific executable overload. <Citation source="swiftui-view-task" />
+
+## Follow a preview through one possible navigation trace
+
+The hypothetical editor shows a live preview. This design deliberately retains the editor while an attachment route covers it. The app remains in one process until the final possible termination; another navigator or a platform picker could produce different events.
+
+<Figure
+  id="lifetime-trace"
+  src="/illustrations/foundations/application-and-screen-lifecycle/lifetime-trace-en.svg"
+  alt="One possible trace: the editor is interactive and mounted; an attachment route covers the retained editor and its preview stops; returning reuses that editor and reconciles the preview; going Home changes app activity without proving component removal; possible process termination loses every in-memory owner without a guaranteed final callback."
+  caption="A proposed retained-editor trace, not a universal OS state machine. Self-authored diagram; ordinary transitions and possible process loss have different guarantees."
+  sources={["react-navigation-lifecycle", "android-process-lifecycle"]}
+/>
+
+The diagram shows three observations changing independently: whether this editor is wanted, whether its owner still exists, and whether its process exists. The dashed final arrow is a possibility, not a required step after Home. There is no arrow that revives the same object after process loss.
+
+1. **Open the editor.** The design creates an editor identity and subscribes to the inputs needed for its preview. Valuable edits follow the application's normal save policy, not a future departure callback.
+2. **Cover it with attachments.** The editor remains retained in this example. Navigation observation changes the preview's eligibility even though component cleanup may not run. The preview releases transient resources; draft ownership remains separate.
+3. **Return.** The design recalculates eligibility and reacquires resources if still needed. It checks current permission, input identity, and content revision before accepting work; it does not assume the world stayed unchanged while hidden.
+4. **Go Home.** The app/host observation can now disable work that navigation focus alone would leave enabled. The design accepts that this transition might be the last observation delivered to this process.
+5. **Possibly lose the process.** All its in-memory editor and operation owners disappear. A future launch reconstructs from surviving data as described in A03; it does not resume the old subscription or require its cleanup to have run.
+
+These steps are the application's policy for this example, not an assertion that every OS delivers the same event order. A platform picker may change app state differently from an in-app route. Record what actually owns the work rather than inferring that owner from a screen's name.
+
+## Derive eligibility instead of counting callbacks
+
+For this preview, define eligibility as the conjunction of four current facts: its owner exists, the editor destination should show the preview, the host is in the chosen interaction state, and access/input are valid. The exact host threshold is a product and resource decision. A visible read-only feed can reasonably use a different threshold from an exclusive interactive preview.
+
+When eligibility becomes false, this design stops preview work and releases its transient resources. When it becomes true, it checks whether equivalent work is already active before starting. Changes to the document or operation identity replace outdated work. This makes repeated observations safe without pretending that a missed exit notification can be recovered by counting starts and stops.
+
+| Symptom in the example                  | Boundary to inspect                               | Proposed response                                                |
+| --------------------------------------- | ------------------------------------------------- | ---------------------------------------------------------------- |
+| Preview runs behind attachments         | Destination eligibility versus component presence | Observe route coverage/focus as well as owner lifetime.          |
+| Preview runs after Home                 | Host/app state versus navigation focus            | Recompute the combined eligibility rule.                         |
+| Two subscriptions appear after return   | Setup, cleanup, and effect identity               | Make activation idempotent and match each resource to its owner. |
+| An old result overwrites new content    | Operation identity versus callback arrival        | Reject stale results before updating the current editor.         |
+| Valuable edits vanish after termination | Durable data versus lifecycle notification        | Check the completed save path and reconstruction inputs.         |
+
+Stopping UI collection does not necessarily stop the data source, and cancellation does not roll back a completed storage or server operation. Those are separate policies. Choosing a longer-lived owner may reduce restarts, but it also keeps work and resources alive longer. Choose that lifetime because the product needs it, not to avoid understanding cleanup.
+
+## Observations are evidence, not a universal clock
+
+For diagnosis, this design logs a process-run identifier, host/scene identifier, route key, component/effect identity, operation ID, and observed transition. These are proposed diagnostic fields, not required platform APIs. They help distinguish a new process from a retained route, or a replaced effect from a new screen.
+
+Review traces for ordinary navigation, temporary interruption, configuration changes where applicable, Home/return, and process replacement separately. A development-only effect check is not a user navigation trace. An absence of crash logs is not proof that all finalizers or callbacks ran. These are verification boundaries for the explanation, not exercises assigned to the reader.
+
+> A lifecycle notification describes one owner or observation. It does not commit user data, authorize background work, or prove that a different owner disappeared.
+
+Read [Mobile Runtime and Sandbox](/en/foundations/mobile-runtime-and-sandbox) for execution boundaries and [Process Death and State Restoration](/en/foundations/process-death-and-state-restoration) for reconstruction. The [lifecycle comparison](/en/compare/lifecycle) and [Android Activity lifecycle comparison](/en/compare/android-activity-lifecycle) provide narrower API examples; their similar purposes do not make all framework and platform lifetimes equivalent.

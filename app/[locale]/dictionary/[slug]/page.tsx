@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Container } from "@/components/ui/container";
 import { getConceptBySlug, getConcepts } from "@/lib/content/concepts";
+import { getFoundationArticles } from "@/lib/content/foundations";
 import { getTechnologies } from "@/lib/content/technologies";
 import { isLocale, LOCALES } from "@/lib/i18n/locale";
 import { getMessages } from "@/lib/i18n/messages";
@@ -47,6 +48,9 @@ export default async function LocaleDictionaryDetailPage({
   if (!concept) notFound();
 
   const messages = getMessages(locale);
+  const articles = getFoundationArticles(locale).filter((article) =>
+    article.metadata.relatedConcepts.includes(concept.slug),
+  );
 
   return (
     <Container className="flex-1 py-12 sm:py-16">
@@ -120,6 +124,31 @@ export default async function LocaleDictionaryDetailPage({
         </h2>
         <p className="mt-3 leading-7 text-muted">{concept.mentalModel}</p>
       </section>
+      {articles.length > 0 && (
+        <section
+          className="mt-10 max-w-4xl"
+          aria-labelledby="foundations-title"
+        >
+          <h2 id="foundations-title" className="text-2xl font-semibold">
+            {messages.foundations.title}
+          </h2>
+          <ul className="mt-4 grid gap-4">
+            {articles.map((article) => (
+              <li key={article.metadata.slug}>
+                <Link
+                  className="font-medium text-accent hover:underline"
+                  href={`/${locale}/foundations/${article.metadata.slug}`}
+                >
+                  {article.localized.title}
+                </Link>
+                <p className="mt-2 leading-7 text-muted">
+                  {article.localized.description}
+                </p>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
     </Container>
   );
 }

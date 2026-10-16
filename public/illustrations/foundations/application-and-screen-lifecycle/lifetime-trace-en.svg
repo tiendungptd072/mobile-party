@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 920" role="img" aria-labelledby="title description">
+<title id="title">One possible trace</title>
+<desc id="description">T0 · Editor interactive; Editor mounted; Preview running; Process alive. T1 · Attachments cover editor; Editor retained; Preview stopped; Process alive. T2 · Return to editor; Same retained owner; Reconcile preview needs; Process alive. T3 · Go Home; Component may remain; Preview stopped; Process survival not promised. T4 · Process ends; In-memory owners lost; No guaranteed final callback.</desc>
+<defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0 8 4 0 8" fill="none" stroke="#2563eb" stroke-width="1.5"/></marker></defs>
+<rect width="480" height="920" rx="12" fill="#f8fafc"/>
+<g font-family="system-ui, sans-serif" fill="#111827">
+<text x="24" y="38" font-size="25" font-weight="700">One possible trace</text>
+<rect x="16" y="64" width="448" height="132" rx="10" fill="#eff6ff" stroke="#526071" stroke-width="2"/>
+<text x="32" y="96" font-size="22" font-weight="700">T0 · Editor interactive</text>
+<text x="32" y="126" font-size="21">Editor mounted</text>
+<text x="32" y="156" font-size="21">Preview running</text>
+<text x="32" y="186" font-size="21">Process alive</text>
+<path d="M240 196V230" fill="none" stroke="#2563eb" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="16" y="230" width="448" height="132" rx="10" fill="#eff6ff" stroke="#526071" stroke-width="2"/>
+<text x="32" y="262" font-size="22" font-weight="700">T1 · Attachments cover editor</text>
+<text x="32" y="292" font-size="21">Editor retained</text>
+<text x="32" y="322" font-size="21">Preview stopped</text>
+<text x="32" y="352" font-size="21">Process alive</text>
+<path d="M240 362V396" fill="none" stroke="#2563eb" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="16" y="396" width="448" height="132" rx="10" fill="#eff6ff" stroke="#526071" stroke-width="2"/>
+<text x="32" y="428" font-size="22" font-weight="700">T2 · Return to editor</text>
+<text x="32" y="458" font-size="21">Same retained owner</text>
+<text x="32" y="488" font-size="21">Reconcile preview needs</text>
+<text x="32" y="518" font-size="21">Process alive</text>
+<path d="M240 528V562" fill="none" stroke="#2563eb" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="16" y="562" width="448" height="132" rx="10" fill="#eff6ff" stroke="#526071" stroke-width="2"/>
+<text x="32" y="594" font-size="22" font-weight="700">T3 · Go Home</text>
+<text x="32" y="624" font-size="21">Component may remain</text>
+<text x="32" y="654" font-size="21">Preview stopped</text>
+<text x="32" y="684" font-size="21">Process survival not promised</text>
+<path d="M240 694V764" fill="none" stroke="#2563eb" stroke-width="2.5" stroke-dasharray="6 5" marker-end="url(#arrow)"/>
+<rect x="16" y="764" width="448" height="132" rx="10" fill="#fff" stroke="#526071" stroke-width="2"/>
+<text x="32" y="796" font-size="22" font-weight="700">T4 · Process ends</text>
+<text x="32" y="826" font-size="21">In-memory owners lost</text>
+<text x="32" y="856" font-size="21">No guaranteed final callback</text>
+<text x="256" y="735" font-size="20">Possible process loss</text>
+</g></svg>

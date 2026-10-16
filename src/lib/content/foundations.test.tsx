@@ -73,15 +73,66 @@ beforeAll(async () => {
 });
 
 describe("Foundations reader", () => {
+  test.each([
+    ["en", "mobile-runtime-and-sandbox", "execution-boundaries"],
+    ["vi", "mobile-runtime-and-sandbox", "execution-boundaries"],
+    ["en", "application-and-screen-lifecycle", "lifetime-trace"],
+    ["vi", "application-and-screen-lifecycle", "lifetime-trace"],
+    ["en", "startup-and-session-restoration", "startup-dependencies"],
+    ["vi", "startup-and-session-restoration", "startup-dependencies"],
+    ["en", "state-ownership-and-data-flow", "state-flow"],
+    ["vi", "state-ownership-and-data-flow", "state-flow"],
+    ["en", "rendering-and-frame-scheduling", "frame-pipeline"],
+    ["vi", "rendering-and-frame-scheduling", "frame-pipeline"],
+    ["en", "input-gestures-focus-and-keyboard", "input-ownership"],
+    ["vi", "input-gestures-focus-and-keyboard", "input-ownership"],
+  ] as const)(
+    "renders the published %s %s article with localized figure, sources, and related discovery",
+    async (locale, slug, figureId) => {
+      const article = getFoundationArticle(slug, locale)!;
+      const html = await new Response(
+        await renderToReadableStream(
+          await FoundationPage({ params: Promise.resolve({ locale, slug }) }),
+        ),
+      ).text();
+      expect(article.metadata.status).toBe("published");
+      expect(article.body.foundation.figures).toHaveLength(1);
+      expect(article.body.foundation.snippets).toEqual([]);
+      expect(html).toContain(
+        `/illustrations/foundations/${slug}/${figureId}-${locale}.svg`,
+      );
+      expect(html).toContain(
+        `href="/${locale}/foundations/process-death-and-state-restoration"`,
+      );
+      for (const reference of article.metadata.references)
+        expect(html).toContain(`id="source-${reference.id}"`);
+      const ids = [...html.matchAll(/\sid="([^"]+)"/g)].map(
+        (match) => match[1],
+      );
+      expect(new Set(ids).size).toBe(ids.length);
+      for (const match of html.matchAll(/href="#([^"]+)"/g))
+        expect(ids).toContain(match[1]);
+      expect(
+        getFoundationArticle(slug, "en")!.body.foundation.headings.map(
+          (heading) => heading.level,
+        ),
+      ).toEqual(
+        getFoundationArticle(slug, "vi")!.body.foundation.headings.map(
+          (heading) => heading.level,
+        ),
+      );
+    },
+  );
+
   test.each(["en", "vi"] as const)(
-    "validates and renders the real %s pilot at publication readiness while keeping it unpublished",
+    "validates and renders the published %s pilot",
     async (locale) => {
       const pilot = foundationDefinitions.find(
         (entry) =>
           entry.metadata.slug === "process-death-and-state-restoration",
       )!;
-      expect(pilot.metadata.status).toBe("draft");
-      expect(getFoundationArticle(pilot.metadata.slug, locale)).toBeUndefined();
+      expect(pilot.metadata.status).toBe("published");
+      expect(getFoundationArticle(pilot.metadata.slug, locale)).toBeDefined();
       const definitions = validateFoundationDefinitions(
         [{ ...pilot, metadata: { ...pilot.metadata, status: "published" } }],
         new Set(getConcepts().map((concept) => concept.slug)),
@@ -206,7 +257,7 @@ describe("Foundations reader", () => {
       expect(html).not.toContain('id="topic-concurrency"');
       const empty = await new Response(
         await renderToReadableStream(
-          await FoundationsPage({ params: Promise.resolve({ locale }) }),
+          <FoundationIndex articles={[]} locale={locale} />,
         ),
       ).text();
       expect(empty).toContain(getMessages(locale).foundations.empty);
@@ -222,7 +273,22 @@ describe("Foundations reader", () => {
   );
 
   test("does not generate fixture paths and rejects unknown articles/locales", async () => {
-    expect(generateStaticParams()).toEqual([]);
+    expect(generateStaticParams()).toEqual([
+      { locale: "en", slug: "mobile-runtime-and-sandbox" },
+      { locale: "en", slug: "application-and-screen-lifecycle" },
+      { locale: "en", slug: "process-death-and-state-restoration" },
+      { locale: "en", slug: "startup-and-session-restoration" },
+      { locale: "en", slug: "state-ownership-and-data-flow" },
+      { locale: "en", slug: "rendering-and-frame-scheduling" },
+      { locale: "en", slug: "input-gestures-focus-and-keyboard" },
+      { locale: "vi", slug: "mobile-runtime-and-sandbox" },
+      { locale: "vi", slug: "application-and-screen-lifecycle" },
+      { locale: "vi", slug: "process-death-and-state-restoration" },
+      { locale: "vi", slug: "startup-and-session-restoration" },
+      { locale: "vi", slug: "state-ownership-and-data-flow" },
+      { locale: "vi", slug: "rendering-and-frame-scheduling" },
+      { locale: "vi", slug: "input-gestures-focus-and-keyboard" },
+    ]);
     for (const locale of ["en", "vi", "fr"]) {
       const props = {
         params: Promise.resolve({ locale, slug: "pipeline-fixture" }),
@@ -300,8 +366,28 @@ describe("Foundations MDX pipeline", () => {
         collection.getArticle("pipeline-fixture", "en")!,
       ),
     ).toEqual([]);
-    expect(getFoundationArticles("en")).toEqual([]);
-    expect(getFoundationArticles("vi")).toEqual([]);
+    expect(
+      getFoundationArticles("en").map((article) => article.metadata.slug),
+    ).toEqual([
+      "mobile-runtime-and-sandbox",
+      "application-and-screen-lifecycle",
+      "process-death-and-state-restoration",
+      "startup-and-session-restoration",
+      "state-ownership-and-data-flow",
+      "rendering-and-frame-scheduling",
+      "input-gestures-focus-and-keyboard",
+    ]);
+    expect(
+      getFoundationArticles("vi").map((article) => article.metadata.slug),
+    ).toEqual([
+      "mobile-runtime-and-sandbox",
+      "application-and-screen-lifecycle",
+      "process-death-and-state-restoration",
+      "startup-and-session-restoration",
+      "state-ownership-and-data-flow",
+      "rendering-and-frame-scheduling",
+      "input-gestures-focus-and-keyboard",
+    ]);
     expect(getFoundationArticle("pipeline-fixture", "en")).toBeUndefined();
   });
 

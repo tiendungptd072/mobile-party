@@ -2,6 +2,7 @@ import type { MetadataRoute } from "next";
 import { getConcepts } from "@/lib/content/concepts";
 import { getRoadmapLessonLocations, getRoadmaps } from "@/lib/content/roadmaps";
 import { getRecipes } from "@/lib/content/recipes";
+import { getFoundationArticles } from "@/lib/content/foundations";
 import { SITE_URL } from "@/lib/site";
 import { LOCALES } from "@/lib/i18n/locale";
 
@@ -11,6 +12,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "/bookmarks",
     "/compare",
     "/dictionary",
+    "/foundations",
     "/recipes",
   ];
   const lessons = getRoadmaps().flatMap((roadmap) =>
@@ -26,6 +28,9 @@ export default function sitemap(): MetadataRoute.Sitemap {
       `/dictionary/${concept.slug}`,
     ]),
     ...getRecipes().map((recipe) => `/recipes/${recipe.slug}`),
+    ...getFoundationArticles("en").map(
+      (article) => `/foundations/${article.metadata.slug}`,
+    ),
     ...lessons,
   ];
 

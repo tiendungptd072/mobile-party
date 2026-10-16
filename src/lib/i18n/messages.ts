@@ -110,6 +110,10 @@ const messages = {
       description:
         "How mobile applications work: mechanisms, platform boundaries, failure cases, and tradeoffs.",
       empty: "No articles have been published yet.",
+      search: "Search articles",
+      placeholder: "Search process death, SavedStateHandle, storage…",
+      noResults: "No matching articles. Try another term.",
+      results: "Articles found: {count}",
       breadcrumbs: "Breadcrumbs",
       home: "Home",
       contents: "On this page",
@@ -313,6 +317,10 @@ const messages = {
       description:
         "Cách ứng dụng di động hoạt động: cơ chế, ranh giới nền tảng, tình huống lỗi và đánh đổi.",
       empty: "Chưa có bài viết được xuất bản.",
+      search: "Tìm bài viết",
+      placeholder: "Tìm process death, SavedStateHandle, lưu trữ…",
+      noResults: "Không tìm thấy bài viết. Thử từ khóa khác.",
+      results: "Số bài tìm thấy: {count}",
       breadcrumbs: "Đường dẫn điều hướng",
       home: "Trang chủ",
       contents: "Trong bài viết",
