@@ -1,6 +1,6 @@
 import "server-only";
 import { readFileSync } from "node:fs";
-import { isAbsolute, relative, resolve } from "node:path";
+import { isAbsolute, relative, resolve, win32 } from "node:path";
 import { ContentValidationError } from "@/lib/content/validation";
 import type { LessonStage } from "@/types/roadmap";
 import type { CodeLanguage, Technology } from "@/types/technology";
@@ -125,6 +125,7 @@ function readSnippetPath(path: string): string | undefined {
 
   if (
     isAbsolute(path) ||
+    win32.isAbsolute(path) ||
     relativePath.startsWith("..") ||
     isAbsolute(relativePath)
   ) {

@@ -57,5 +57,5 @@ jobs:
           java-version: "17"
       - uses: gradle/actions/setup-gradle@0723195856401067f7a2779048b490ace7a47d7c # v5
       - name: Install Android compilation tools
-        run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
+        run: '"$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-35" "build-tools;35.0.0"'
       - run: bun run verify:android

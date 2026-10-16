@@ -103,14 +103,18 @@ describe("snippet resolution", () => {
     );
   });
 
-  test.each(["../outside.tsx", "../../outside.tsx"])(
-    "rejects escaping paths: %s",
-    (path) => {
-      expect(() => loadSnippet(source, "react-native", "tsx", path)).toThrow(
-        /snippet path must stay inside content\/snippets/,
-      );
-    },
-  );
+  test.each([
+    "../outside.tsx",
+    "../../outside.tsx",
+    "/outside.tsx",
+    "C:\\outside.tsx",
+    "C:/outside.tsx",
+    "\\\\server\\share\\outside.tsx",
+  ])("rejects escaping paths: %s", (path) => {
+    expect(() => loadSnippet(source, "react-native", "tsx", path)).toThrow(
+      /snippet path must stay inside content\/snippets/,
+    );
+  });
 
   test("gives every Kotlin file a unique package and hides it from display", () => {
     const packages = new Set<string>();
