@@ -1,0 +1,110 @@
+## Memory lifetime and resource lifetime are separate
+
+An editor can disappear while a listener still retains its model, a preview buffer remains cached, or a native image handle remains open. Removing visible UI does not identify which owner is still holding those things. Likewise, reclaiming an object is not the same operation as unsubscribing, closing a stream, or releasing a resource under its API contract.
+
+This article proposes report `D42` with editor owner `E1`, a preview buffer, a change subscription, and a caller-owned image handle. Its ownership and teardown policies are explanatory designs, not executable snippets or memory measurements. React Native, Flutter, Jetpack Compose, and SwiftUI have **similar** needs for bounded ownership but **different** memory management and cleanup boundaries.
+
+| Thing               | What keeps it alive or active?                                         | What ends the intended use?                                          |
+| ------------------- | ---------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| Editor model        | References from navigation, state holders, callbacks, or other owners. | Its chosen owner relinquishes the model when that scope ends.        |
+| Change subscription | Registration with the event source.                                    | The registration owner unsubscribes using that source's contract.    |
+| Timer               | Its scheduling/registration and references.                            | Its owner stops it through the timer API.                            |
+| Preview buffer      | References from the editor, a task, or a cache.                        | Consumers release references; the cache follows its eviction policy. |
+| Native image handle | A handle claiming an underlying resource.                              | The handle owner releases its claim; other claims can remain.        |
+| Committed report    | The repository/storage contract.                                       | Explicit data policy, not UI teardown or garbage collection.         |
+
+The last row matters: closing D42's editor must not delete its committed report. [State Ownership and Data Flow](/en/foundations/state-ownership-and-data-flow) covers the data authority; this article covers the objects and resources used to display and edit it.
+
+## Automatic memory management cannot choose product lifetimes
+
+Android's managed runtime reclaims unused managed objects through garbage collection (GC). Allocation churn can still add collection cost. This is not a contract that every native allocation, file, or device resource is closed when a Kotlin reference goes out of local scope. The Android discussion here concerns Kotlin/Java managed objects on Android, not every Kotlin target. <Citation source="android-memory" />
+
+Flutter's memory guide describes reachability through retaining paths from roots. An unneeded object can remain reachable through a listener or closure; GC cannot infer that the application no longer wants it. A live event service retaining E1 is therefore an ownership problem even when automatic collection works correctly. <Citation source="flutter-memory" />
+
+Swift uses automatic reference counting (ARC) for class instances. Strong references keep instances alive; a class storing a closure that strongly captures the same instance can form a retain cycle. `weak` references do not retain and become nil after deallocation. `unowned` requires a valid lifetime relationship; accessing it after deallocation is an error. These are not interchangeable fixes. <Citation source="swift-arc" />
+
+The distinction is practical. An unreachable group of objects is collectible in the reachability model; a pure strong-reference cycle can keep Swift class instances alive under ARC. In both models, an active external registry can retain an object long after its visible screen is gone. Do not replace every strong reference with a weak one: something must own work that is still required.
+
+## Find the reference that outlives its purpose
+
+For the proposed D42 subscription, the event service outlives E1. It retains a callback, the callback captures E1, and E1 retains a large preview buffer. Leaving the editor without removing the registration keeps that entire path reachable. Setting one local variable to null or nil does not remove the service's reference.
+
+<Figure
+  id="retaining-path"
+  src="/illustrations/foundations/memory-and-resource-lifetimes/retaining-path-en.svg"
+  alt="A long-lived event service retains a registered callback. The callback retains editor owner E1, which retains a preview buffer. A red annotation marks unsubscribe at the service-to-callback edge. Removing that registration cuts this path, but other owners or an ARC retain cycle can still keep objects alive. Releasing a native handle is a separate cleanup responsibility."
+  caption="One proposed retaining path, not a complete heap graph. Self-authored diagram; arrows represent strong retention, and cutting one edge does not prove that all references or native claims are gone."
+  sources={["flutter-memory", "swift-arc"]}
+/>
+
+Follow the path from the long-lived source rather than only inspecting E1's fields. Unsubscribe removes the service's registration in this design. Another task, cache, or owner can still retain E1, so removal is evidence about one path rather than a universal proof of deallocation. If E1 also owns a closure that captures E1 in Swift, break that cycle according to the intended ownership relationship.
+
+A weak capture can stop a callback from extending an owner's lifetime, but the registration may remain active and retain other data. It also changes behavior when the owner disappears. Explicit deregistration and weak references solve different responsibilities.
+
+## Pair acquisition with a named release owner
+
+For D42, use one clearly identified owner for each subscription and handle. A child borrowing a shared image should not dispose another owner's handle. If ownership transfers, document when the old owner loses release responsibility. Use the resource API's actual sharing and thread rules rather than a generic “close everything” helper.
+
+Flutter's `Image.dispose()` releases that handle's claim and makes that handle unusable; the underlying image is disposed after all outstanding handles are disposed. A small wrapper and its graphics allocation therefore have different accounting and sharing boundaries. <Citation source="flutter-image" />
+
+For a block-scoped JVM Closeable, Kotlin's `use` closes the resource when the block finishes, including exceptional completion. That is an explicit resource-management contract, not a request to run GC. Longer-lived operations need a corresponding longer-lived owner. <Citation source="kotlin-use" />
+
+Foundation Timer has another contract: `invalidate()` removes it from its RunLoop, which releases its strong reference, possibly later; target/user-info references are also released when applicable. Apple requires invalidation from the installation thread. Do not assume every timer API shares this threading rule or that dropping a local reference unschedules it. <Citation source="apple-timer" />
+
+For the proposed coordinator, teardown rejects new callbacks, removes registrations, requests supported work cancellation, releases owned handles, and drops unnecessary references in an order compatible with those APIs. Cancellation does not prove an already queued callback or external write never occurred. Guard late results using current owner/operation identity, as in A05.
+
+Avoid duplicate release through the coordinator, without assuming every raw API is idempotent. If cleanup fails, record the failed resource and its remaining ownership state while performing other independent cleanup where safe. Do not report a handle as released merely because a close was attempted.
+
+## Four frameworks expose different cleanup scopes
+
+### React Native
+
+React Effect cleanup runs with old dependencies before replacement setup and on component removal. Strict Mode also exercises an extra setup/cleanup cycle in development. Cleanup should undo that Effect's registration; it is not proof that navigation blur unmounted a retained screen. <Citation source="react-effect" />
+
+A native module can outlive an individual React component. The current Native Modules Lifecycle guide describes Android TurboModule `initialize()`/`invalidate()` and iOS's additional `RCTInitializing`/`RCTInvalidating` protocols. Module teardown belongs to the native module's lifetime, not automatically to one screen's Effect. Verify the installed RN/module contract before implementing it. <Citation source="rn-native-lifecycle" />
+
+For D42, remove E1's subscription when its owning scope ends. Do not tear down a shared module while another screen still uses it, and do not assume a JavaScript heap snapshot accounts for every resource that module owns.
+
+### Flutter
+
+`State.dispose()` marks permanent removal of that State from the tree. The API documents subscribing during initialization, replacing subscriptions when the observed object changes, and unsubscribing at disposal. The state must not receive `setState` after disposal. Native removal of Flutter UI does not always dispose its retained widget tree. <Citation source="flutter-state-dispose" />
+
+Dispose an explicitly owned image handle separately from dropping a Dart wrapper reference. A borrowed/shared resource needs its actual ownership contract. The widget lifecycle, Dart reachability, and native-resource lifetime overlap but are not equivalent.
+
+### Jetpack Compose
+
+`DisposableEffect` pairs registration with cleanup when its keys change or it leaves composition. Key the effect to the owner/resource it actually observes. Recomposition by itself is not permanent removal, and a constant key must not accidentally retain an obsolete registration. <Citation source="compose-effects" />
+
+A ViewModel follows its ViewModelStoreOwner and can survive UI-host recreation. `onCleared()` is its dependency-cleanup boundary when the owner clears it. Do not use a longer-lived ViewModel to retain a shorter-lived screen View or leaking UI Context. A composable, ViewModel, and repository need separate ownership decisions. <Citation source="android-viewmodel" />
+
+### SwiftUI
+
+SwiftUI's Observation model on iOS/iPadOS 17+ lets a chosen view store an observable model with State and share model references through the hierarchy or environment. Sharing does not make the model a disposable copy per body evaluation. Observation tracks data dependencies; it does not remove retain cycles in class/closure relationships. <Citation source="swiftui-model" />
+
+For D42, identify the actual class owning the callback or timer. If that class remains retained by the callback it intended to release during deinitialization, waiting for deinitialization cannot break the cycle that prevents it. Use explicit stop/unregister boundaries and appropriate captures; a SwiftUI view value is not a native resource handle.
+
+## Finalization is not a last-save scheduler
+
+Dart's ordinary `Finalizer` makes no promise that its callback will ever run. It is unsuitable as the sole mechanism for prompt subscription removal, required application actions, or a final durable save. A finalizer API's guarantees must be read individually; do not infer deterministic release from its name. <Citation source="dart-finalizer" />
+
+Flutter likewise documents that State disposal is not guaranteed during application shutdown. Memory pressure or sudden termination can end the process without the application's desired cleanup sequence. Explicit normal teardown improves behavior while the process runs; it cannot establish a reliable last-save callback. <Citation source="flutter-state-dispose" />
+
+[Process Death and State Restoration](/en/foundations/process-death-and-state-restoration) explains durable recovery. Resource cleanup and persistence are separate obligations. Closing a stream or cancelling a timer also does not roll back a server action that already completed.
+
+## Distinguish leaks, bloat, and temporary peaks
+
+For this proposed investigation, a leak is unwanted retention beyond the intended lifetime; bloat is excessive memory still intentionally owned; a temporary peak is a bounded spike during work. These hypotheses need different evidence. A preview cache can remain intentionally reachable while exceeding its budget; that is not automatically a forgotten listener.
+
+| Observation while repeating D42 open/close            | Question to investigate                          | Evidence to seek                                            |
+| ----------------------------------------------------- | ------------------------------------------------ | ----------------------------------------------------------- |
+| Retired E1 owners accumulate                          | Which registration, task, or cache retains them? | Retaining paths and owner counts after expected teardown.   |
+| Owner count stabilizes but memory stays high          | Which retained previews are still wanted?        | Cache entries, sizes, budgets, and eviction.                |
+| Large spike during image processing                   | Are multiple decoded buffers temporarily needed? | Concurrent operations and peak native/graphics allocations. |
+| Callbacks continue after closing the editor           | Did the correct registration actually stop?      | Subscription tokens, owner identity, and late-event logs.   |
+| A handle appears closed but underlying memory remains | Are other claims or allocations still active?    | Resource-specific ownership and handle diagnostics.         |
+
+Flutter DevTools provides snapshot diffs and instance/retaining-path analysis. Compare equivalent application states and inspect survivors, rather than treating every upward heap chart segment as a leak. Its memory view distinguishes heap and external allocations, so include the relevant native/graphics evidence too. <Citation source="flutter-memory" />
+
+In this design, instrument acquisition/release counts, operation IDs, and active owners without logging private report text. Repeat a representative interaction, allow expected asynchronous teardown to settle, and investigate the retained objects. One forced collection or a single flat counter does not prove all ownership paths correct.
+
+Bounding previews and caches reduces retained memory but can increase recomputation. Narrower listener scopes reduce retention but may require re-registration when returning. Choose those tradeoffs from actual product lifetime and measurements. Read [Application and Screen Lifecycle](/en/foundations/application-and-screen-lifecycle) for visibility versus owner lifetime, and the [lifecycle/cleanup comparison](/en/compare/lifecycle) and [side effects comparison](/en/compare/side-effects) for focused APIs. No device memory result or native compilation is claimed by this article.

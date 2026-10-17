@@ -1,0 +1,127 @@
+## A scalar does not explain its meaning
+
+Report `D42` records when an expense happened, a reminder for tomorrow, how long saving took, an amount, and a title. A number or string alone cannot tell the reader which clock, unit, currency, calendar, or text rule applies. Rendering a plausible label can hide a corrupted value.
+
+This article proposes explicit contracts for those fields. The contracts and diagnostic cases are explanatory designs, not executable mobile snippets. React Native, Flutter, Jetpack Compose, and SwiftUI have **similar** representation problems but **different** numeric types, clocks, and string semantics. A shared wire schema does not make their runtime values interchangeable.
+
+| Domain fact        | Required meaning in the proposed contract                              | Separate display choice                           |
+| ------------------ | ---------------------------------------------------------------------- | ------------------------------------------------- |
+| Event instant      | A point on the timeline, accepted timestamp profile and precision.     | Viewer timezone and date/time format.             |
+| Calendar date      | A date in the chosen calendar, without inventing a time of day.        | Localized date label.                             |
+| Recurring reminder | Local date/time intent, named zone, and gap/overlap policy.            | A human-readable schedule.                        |
+| Save duration      | Elapsed amount, unit, clock origin/scope, and sleep behavior.          | Rounded milliseconds or seconds.                  |
+| Money              | Currency, exact quantity, scale, supported range, and rounding policy. | Currency symbol, grouping, and decimal separator. |
+| Title              | Unicode text, comparison/normalization policy, and length budgets.     | Glyphs, wrapping, and truncation.                 |
+| Opaque identifier  | Exact identity and permitted string grammar.                           | Usually no numeric formatting.                    |
+
+[State Ownership and Data Flow](/en/foundations/state-ownership-and-data-flow) establishes which value is authoritative. Here, authority includes what that value actually means and which transformations preserve it.
+
+## Separate canonical values from display projections
+
+For D42, validate an incoming value before constructing the domain value. Serialize it under an explicit contract when storing or sending it; derive localized labels at the display boundary. A label such as `1,234` cannot safely communicate an amount without a locale and numeric contract.
+
+<Figure
+  id="representation-boundaries"
+  src="/illustrations/foundations/time-money-and-data-representation/representation-boundaries-en.svg"
+  alt="Four stages run downward: input or wire values, contract validation, domain values, and localized display. Validation checks units, ranges, zones, and text rules. Domain values include an instant, money, and text. A final note says to persist canonical values rather than display labels. This is a conceptual boundary, not a required extra architecture layer."
+  caption="A proposed representation boundary for D42. Self-authored diagram: standards constrain timestamps and numbers, while the application defines its domain policy. Formatting produces a projection, not a general inverse serialization format."
+  sources={["rfc3339", "rfc8259"]}
+/>
+
+Do not treat a TypeScript interface or a successful JSON parse as runtime validation. Check units, grammar, supported range, missing fields, and allowed precision. A round-trip test should encode a valid domain value, decode it, and compare the intended meaning; separately test rejection of malformed or out-of-range input. Do not require arbitrary display text to round-trip through the storage decoder.
+
+## Choose a clock for the question being asked
+
+A wall clock answers a civil-time question. Android documents that `System.currentTimeMillis()` can jump when the user or network adjusts time. Subtracting two wall readings can therefore give a misleading operation duration. `SystemClock.uptimeMillis()` is monotonic and excludes deep sleep; `elapsedRealtime()` is monotonic and includes it. Both have a boot-relative origin. <Citation source="android-clock" />
+
+These distinctions are separate: monotonic means the clock does not move backward, while sleep behavior determines which intervals it counts. A clock's fine resolution does not prove equal measurement accuracy. An elapsed reading is also not an event timestamp that another machine can interpret.
+
+For D42, measure one save operation with readings from the same selected clock and scope. Do not compare unrelated clocks or persist a boot-relative reading as a permanent deadline. After restart, reconstruct a persisted civil deadline under the product's time policy. [Process Death and State Restoration](/en/foundations/process-death-and-state-restoration) explains the persistence boundary; the clock cannot restore a missing operation.
+
+A timer callback is an opportunity to recheck the deadline, not evidence that execution occurred exactly on it. Clock choice alone supplies neither background execution nor a trusted clock for access control across devices. Offline expiry policy needs an explicit decision about user-adjusted wall time.
+
+## Keep instants, dates, and schedules distinct
+
+RFC 3339 represents an instant with a date/time and UTC offset, for example `2026-10-17T02:56:00Z`. A numeric offset relates that local reading to UTC; it does not identify a region's future timezone rules. For D42, accept a documented subset and fractional precision rather than assuming every parser accepts every possible timestamp. If using an epoch integer instead, name the epoch and seconds/milliseconds unit explicitly. <Citation source="rfc3339" />
+
+The IANA timezone database describes regional offset histories and changes as authorities alter timezone boundaries and daylight-saving rules. A named zone such as `America/New_York` expresses rules that a fixed `-04:00` offset cannot replace. Devices with different timezone database revisions may resolve future schedules differently. <Citation source="iana-zones" />
+
+For the proposed reminder, retain local calendar intent and the zone identifier. Decide what to do when a local time is skipped during a forward transition or occurs twice during a backward transition: reject it, move it, or select an occurrence under a documented policy. Do not silently accept whichever default a library happens to choose.
+
+For example, under the timezone rules used in the author check, `2026-11-01T05:30:00Z` and `2026-11-01T06:30:00Z` both display as 01:30 in New York, with offsets `-04:00` and `-05:00` respectively. The same clock label can identify two different instants. Store an instant for an event that already happened; retain schedule intent when future recurrence is the requirement.
+
+A birth date is another kind of fact: converting a date-only field to midnight UTC can change the displayed calendar day elsewhere. Likewise, “tomorrow at 09:00” is calendar arithmetic, not necessarily “24 elapsed hours later.” Dart documents that the difference between local midnights can be shorter than 24 hours across a DST change; `Duration.inDays` counts whole elapsed days. <Citation source="dart-datetime" />
+
+## Give money exact units and an explicit rounding rule
+
+Binary floating point cannot represent every decimal fraction exactly. ECMAScript `Number` uses IEEE 754 binary64; `0.1 + 0.2` evaluates to `0.30000000000000004`. Rounding the display does not repair an already incorrect stored or accumulated value. <Citation source="ecma-values" />
+
+For the proposed D42 expense, the tuple currency `USD`, integer units `1999`, and scale `2` means 19.99 USD. This is one application contract, not a claim that all currencies or business calculations use two fractional digits. Validate supported currency/scale combinations, checked arithmetic, and limits before conversion.
+
+Decimal arithmetic is another option. JVM `BigDecimal` represents an unscaled integer and scale; constructing it from binary `double` 0.1 preserves that approximation, while constructing it from decimal text `"0.1"` preserves the intended decimal value. A decimal type still cannot finitely represent every quotient, such as one third. Choose division scale and a `RoundingMode` explicitly. <Citation source="java-decimal" />
+
+For this design, allocating 1000 integer units among three recipients produces `334`, `333`, and `333`, with the remainder assigned by a stable recipient order. The sum stays 1000. Rounding three independent shares to 333 would lose a unit. This allocation policy is an example; the product must select its own rounding point, tie behavior, and remainder rule.
+
+Treat formatting as a final projection. Parsing a user-entered amount is a separate locale-aware input operation with ambiguity and validation rules. Do not strip punctuation from a displayed currency label and assume the result is canonical decimal text.
+
+## Preserve exact values across JSON boundaries
+
+JSON allows numeric syntax without requiring every consumer to retain arbitrary precision. RFC 8259 identifies integers from `-(2^53) + 1` through `(2^53) - 1` as exactly interoperable for implementations using binary64. Parsing `9007199254740993` as a JavaScript Number loses its exact identity; the author check produces `9007199254740992`. <Citation source="rfc8259" />
+
+For D42, use strings for opaque IDs and canonical decimal strings for exact quantities that exceed the agreed numeric range. This is a proposed wire policy, not a JSON requirement. Define allowed signs, leading zeros, decimal places, and maximum magnitude; validate before numeric coercion. Merely quoting a value does not make its grammar or range valid.
+
+A native integer type does not fix a lossy intermediate JavaScript receiver. Dart documents 64-bit integer behavior on its default implementation and different representability when compiled to JavaScript. Keep the transport guarantee independent of the widest local type. <Citation source="dart-int" />
+
+## Count text using the unit the feature promises
+
+A code unit, Unicode scalar/code point, grapheme cluster, and encoded byte are different units. ECMAScript String length counts UTF-16 code units. Unicode's extended grapheme clusters approximate user-perceived characters; a cluster can contain multiple code points. Neither unit supplies a universal byte budget. <Citation source="ecma-values" /> <Citation source="unicode-segmentation" />
+
+| Exact text                          | UTF-16 code units | Unicode code points | Extended grapheme clusters | UTF-8 bytes |
+| ----------------------------------- | ----------------- | ------------------- | -------------------------- | ----------- |
+| `é` as U+00E9                       | 1                 | 1                   | 1                          | 2           |
+| `e` + U+0301 combining acute accent | 2                 | 2                   | 1                          | 3           |
+| `😀` as U+1F600                     | 2                 | 1                   | 1                          | 4           |
+
+For the proposed title limit, count and truncate at grapheme boundaries so a combining sequence is not split. Separately enforce storage/request byte limits. Unicode rules evolve, so test the agreed segmentation behavior on supported runtimes instead of assuming every device implements the same Unicode revision.
+
+Normalization is also a policy. NFC can give the two `é` representations a common canonical form. NFKC additionally applies compatibility transformations that can remove distinctions a field needs. Choose normalization for a comparison key when appropriate, preserve the intended original text, and avoid silently rewriting signed payloads or opaque identifiers. Normalization alone is not case folding. <Citation source="unicode-normalization" />
+
+JavaScript's two raw representations compare unequal before normalization. Swift String equality instead uses canonical equivalence, and its `count` counts Character values based on extended grapheme clusters. Do not export a string index from one encoding/runtime and apply it as an index in another. Agree on comparison and offset units at the boundary. <Citation source="swift-strings" />
+
+## Four frameworks expose different representation tools
+
+### React Native
+
+JavaScript Number and String retain the ECMAScript semantics described above. Type annotations do not change numeric precision or UTF-16 indexing. For D42, keep exact wire quantities and opaque IDs intact, validate them, and select an actual decimal or integer strategy before arithmetic. Do not assume a native bridge will recover precision already lost during JavaScript parsing. <Citation source="ecma-values" />
+
+### Flutter
+
+Dart DateTime is UTC or local; its core representation is not an arbitrary named-zone schedule. `Stopwatch` measures elapsed ticks while running, pauses when stopped, and resumes when started again. Do not infer portable sleep/reboot guarantees that this API's documentation does not state. Choose a named-zone solution according to the actual scheduling requirement. <Citation source="dart-datetime" /> <Citation source="dart-stopwatch" />
+
+For D42, separate a DateTime event, a calendar reminder policy, and a measured duration. Validate exact-money ranges and the intended native/web target; an integer amount contract still needs checked arithmetic and a transport policy. <Citation source="dart-int" />
+
+### Jetpack Compose
+
+Compose UI does not select a clock or monetary rounding rule for the domain. On Android, choose uptime or elapsed realtime according to whether deep sleep should count. On the JVM, create BigDecimal from exact input and select rounding before a lossy division. These are platform/language choices beneath the composable boundary, not reasons to put parsing into recomposition. <Citation source="android-clock" /> <Citation source="java-decimal" />
+
+### SwiftUI
+
+Swift `ContinuousClock` counts system sleep, while `SuspendingClock` stops during system sleep; both are available on iOS/iPadOS 16+. System sleep is not the same as a view disappearing or an application task being suspended. Their instants serve local elapsed measurement rather than portable civil timestamps. <Citation source="swift-continuous" /> <Citation source="swift-suspending" />
+
+Foundation Decimal represents base-10 numbers; that fact does not choose a currency, unlimited precision, or a business rounding policy. Keep conversion and supported limits explicit. Swift's Character-based text model also differs from JavaScript code-unit length, so a shared title contract needs the same intended text unit on both sides. <Citation source="apple-decimal" /> <Citation source="swift-strings" />
+
+## Diagnose the boundary that lost meaning
+
+| Failure in D42                                            | Boundary to inspect                                                 | Acceptance evidence for the proposed design                      |
+| --------------------------------------------------------- | ------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| Save duration becomes negative after a clock adjustment   | Wall clock used for elapsed measurement.                            | Same-clock duration test under simulated wall-time changes.      |
+| Deadline is wrong after reboot                            | Boot-relative reading persisted as civil time.                      | Restart test reconstructing the intended persisted deadline.     |
+| Reminder fires at an unexpected DST occurrence            | Local schedule resolved without a gap/overlap policy.               | Both transition cases and the selected policy are tested.        |
+| Expense total drifts or a split loses a unit              | Binary conversion, rounding point, overflow, or remainder handling. | Exact sums, boundary ranges, and deterministic allocation tests. |
+| Two report IDs collapse to one                            | Numeric JSON parsing before identity validation.                    | Exact string round-trip and out-of-range numeric rejection.      |
+| Title truncation damages an accent or emoji               | Code-unit slicing used for a grapheme limit.                        | Combining/emoji cases plus an independent UTF-8 byte budget.     |
+| Canonically equivalent text behaves differently by client | Comparison/normalization contract differs.                          | Shared input fixtures and agreed normalized comparison keys.     |
+
+These are proposed mobile acceptance cases, not claims that this repository compiles or runs four native implementations. The author checked the arithmetic, JSON, text-unit examples, and the stated New York transition with the available JavaScript runtime. Source review establishes API meaning; it does not replace target-device tests.
+
+Keep the canonical value typed and validated, then derive the label. Read the [data classes comparison](/en/compare/data-classes) for modeling values and the [text input comparison](/en/compare/text-input) for editing boundaries. A localized label is useful evidence of presentation, while exact round-trip and domain tests establish preserved meaning.

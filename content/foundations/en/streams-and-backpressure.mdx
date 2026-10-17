@@ -1,0 +1,127 @@
+## A sequence needs a delivery contract
+
+Report `D42` displays upload progress while reading an attachment's file chunks. A slow UI may safely skip intermediate progress percentages and show the current one. A file decoder cannot discard arbitrary chunks and still reconstruct the same attachment. Both inputs are sequences, but they require different loss, ordering, and retention policies.
+
+This article proposes those policies. Its diagram and acceptance cases are explanatory designs, not executable mobile snippets or throughput measurements. React Native, Flutter, Jetpack Compose, and SwiftUI have **similar** observation needs but **different** subscription, sharing, replay, and flow-control contracts. A snapshot store, broadcast stream, StateFlow, and AsyncStream are not interchangeable event logs.
+
+| Contract dimension | Question for D42                                                    | Independent decision                                     |
+| ------------------ | ------------------------------------------------------------------- | -------------------------------------------------------- |
+| Production         | Does each subscription start work, or observe an existing producer? | Which owner starts/stops the producer.                   |
+| Distribution       | One consumer or multiple subscribers?                               | Whether slow consumers affect each other.                |
+| Replay             | What does a newly arriving subscriber receive?                      | In-memory history versus durable recovery.               |
+| Capacity           | How many waiting values or bytes can be retained?                   | Work already processing and queues outside this adapter. |
+| Overflow           | Suspend, reject, drop old, drop new, or coalesce?                   | Whether the source actually supports slowing down.       |
+| Termination        | How are completion, error, and cancellation represented?            | Cleanup and reconnection policy.                         |
+
+A useful contract names all of these. “Reactive” or “asynchronous” alone does not establish bounded memory, event delivery after the screen returns, or persistence.
+
+## Separate production lifetime from subscriber count
+
+A cold production recipe can run separately for each collector. Kotlin SharedFlow's documentation contrasts its independently existing hot instance with a regular `flow` builder started anew for each collector. Subscribing twice to a cold network recipe can therefore create two operations unless sharing is explicitly selected. Hot means the instance exists independently of collectors; it does not mean its upstream resource must run forever. <Citation source="kotlin-shared-flow" />
+
+Dart distinguishes single-subscription and broadcast streams. A single-subscription stream can be listened to only once; it is not automatically the same thing as a reusable cold Flow recipe. A broadcast stream permits listeners to come and go, but that distribution choice does not supply replay or a current-value snapshot. Read the producer/controller contract separately. <Citation source="dart-streams" />
+
+For D42, the repository owns one chosen upload producer, while each screen owns its subscription. A second screen may observe the same upload rather than start another. When the last screen leaves, the product must decide whether the upload continues, stops, or becomes recoverable work under another owner. Merely changing the stream type does not make that decision.
+
+[Task Ownership and Cancellation](/en/foundations/task-ownership-and-cancellation) explains work lifetime and cleanup. Keep subscriber lifetime, shared producer lifetime, retained value lifetime, and committed data lifetime distinct.
+
+## Current state can skip transitions; required data cannot
+
+Kotlin StateFlow always has a current value, replays the latest value to a new subscriber, and conflates rapid updates for slow collectors. Its equality-based conflation also suppresses equal values. It is suitable for a current UI projection; it is not a promise that every intermediate transition will be observed. Use meaningful immutable values rather than silently mutating an emitted object and expecting a new observation. <Citation source="kotlin-state-flow" />
+
+For this design, progress values 25%, 50%, and 75% arrive before the UI reads again. A latest-value projection may retain only 75%. By contrast, attachment chunks C1, C2, and C3 must preserve order and content. If a two-item buffer contains C1 and C2, a cooperative producer must wait before adding C3 under the selected no-drop policy.
+
+<Figure
+  id="delivery-policies"
+  src="/illustrations/foundations/streams-and-backpressure/delivery-policies-en.svg"
+  alt="Two proposed delivery policies are shown separately. Upload progress 25, 50, and 75 percent becomes one pending latest value, 75 percent, so the UI may skip intermediate updates. Required file chunks C1, C2, and C3 use a capacity-two queue containing C1 and C2; C3 waits for space, and the consumer reads all chunks in order. The waiting path assumes a cooperative source and is not a universal callback guarantee."
+  caption="D42's proposed state versus ordered-data policies. Self-authored diagram: conflation is deliberate information loss, while bounded no-drop delivery needs source cooperation. Neither path is a durable event log or a measured timeline."
+  sources={["kotlin-state-flow", "kotlin-buffer"]}
+/>
+
+The progress path is valid only because the consumer needs the current percentage. If a transition requires an acknowledgement, audit record, or exactly one external action, dropping intermediate values changes the requirement. Model required work with an explicit acknowledgement/retention protocol rather than assuming a UI observer saw every state change.
+
+Conflation is not cancellation of work already processing a previous value. It changes which pending values remain available. Likewise, replay for a newly arriving subscriber is separate from buffering for an already subscribed slow consumer. Those policies can use related storage but answer different questions.
+
+## Backpressure must reach a producer that can respond
+
+Backpressure is a feedback mechanism that limits production/admission when downstream capacity is insufficient. Buffering absorbs a temporary burst; it does not eliminate a sustained rate mismatch. If a source keeps producing faster than the consumer drains, a finite buffer eventually needs its overflow policy.
+
+Kotlin Flow `buffer` separates upstream and downstream execution with a channel. Its default SUSPEND overflow policy suspends the producer coroutine when the channel fills; DROP_OLDEST and DROP_LATEST instead discard different values. A separate coroutine does not by itself mean a separate physical thread. Explicit capacity is preferable to assuming an unspecified default meets the product's memory budget. <Citation source="kotlin-buffer" />
+
+That suspension only controls the boundary that participates in it. An external callback can continue producing into another queue while the adapter's coroutine is suspended. Trace the complete path: device/server source, native callback queue, adapter, downstream buffer, consumer, and rendering. A bounded middle buffer is not proof that the whole pipeline is bounded.
+
+For D42, an illustrative buffer of 32 payloads averaging 2 KiB accounts for about 64 KiB of payload alone. It excludes object overhead, variable-size payloads, in-progress work, duplicate buffers, and other subscribers. Bound bytes or payload size as well as item count when sizes vary. These numbers are planning arithmetic, not heap measurements.
+
+| Proposed policy        | Retains when capacity is full          | Cost or condition                                          |
+| ---------------------- | -------------------------------------- | ---------------------------------------------------------- |
+| Suspend/cooperate      | Existing items, while admission waits. | Source must honor the feedback; waiting increases latency. |
+| Drop oldest            | Newer pending values.                  | Older required information is lost.                        |
+| Drop newest            | Existing pending values.               | Consumer may stay behind current state.                    |
+| Conflate latest        | One current pending projection.        | Intermediate transitions are deliberately skipped.         |
+| Reject/fail explicitly | No silent acceptance of the new value. | Caller/source needs an overflow recovery contract.         |
+
+Moving loss upstream can save CPU, while buffering after expensive decoding retains its cost. Choose the boundary from the semantic requirement and resource budget, not only from which operator is shortest.
+
+## No subscribers is a separate delivery case
+
+SharedFlow replay determines what later subscribers receive. With no subscribers, only the replay values are retained; extra buffer capacity does not become an offline backlog, and SUSPEND does not make an emitter wait for a future subscriber. A default MutableSharedFlow has no replay: its `tryEmit` can succeed with no subscribers while the value is immediately lost. Success here is not delivery acknowledgement. <Citation source="kotlin-shared-flow" />
+
+Dart StreamController.broadcast likewise drops events/errors added with no listeners. A paused subscribed listener is different: that listener buffers events independently while other listeners can continue. Do not infer StateFlow-style current-value replay from the word broadcast. <Citation source="dart-broadcast" />
+
+For the proposed progress UI, resubscription reads a fresh current snapshot or the producer's explicit latest-state mechanism. For required data missed during absence, use an authoritative reload, cursor/checkpoint recovery, or a deliberately durable backlog with acknowledgement. Adding replay to a transient notification can also repeat an action when the screen returns; choose event identity and consumption policy explicitly.
+
+[Process Death and State Restoration](/en/foundations/process-death-and-state-restoration) explains why an in-memory replay cache cannot recover data lost with the process. [State Ownership and Data Flow](/en/foundations/state-ownership-and-data-flow) identifies the authoritative current state.
+
+## Four frameworks expose different observation tools
+
+### React Native
+
+React `useSyncExternalStore` reads an external store through subscribe/getSnapshot. The subscription returns an unsubscribe function; snapshots must be immutable and cached when unchanged. This makes a current external snapshot available to React, rather than creating a producer, replay log, or backpressure protocol for every upstream event. <Citation source="react-external-store" />
+
+For D42, the app-owned store can expose current upload progress while a separate producer owner manages the upload. If its native event source outpaces JavaScript handling, snapshot rendering alone does not bound that event queue. Choose coalescing, admission, or explicit resource limits at the appropriate source/adapter boundary. Resubscription should read current state, not depend on having received every notification.
+
+### Flutter
+
+Dart streams carry data, error, and done events. An await-for loop ends when the stream is done and throws on an error; other stream consumption contracts can handle error events differently. Select that behavior rather than assuming an error is always a final stream event. <Citation source="dart-streams" />
+
+StreamSubscription.pause stops that subscription's delivery, buffering incoming events until resume. A non-broadcast source is usually informed so it can stop generating events, but that is not a universal guarantee that a remote source or every adapter pauses. Pausing a broadcast listener can grow its local buffer; if intermediate events do not matter, the API suggests cancelling and listening again instead. That alternative needs a current-state/recovery policy for the absence gap. <Citation source="dart-pause" />
+
+For D42, distinguish a fresh stream factory from listening twice to one single-subscription instance. For broadcast observation, define initial state and producer onListen/onCancel behavior explicitly. Broadcast itself does not cache the latest progress or restart required file data safely. <Citation source="dart-broadcast" />
+
+### Jetpack Compose
+
+StateFlow represents current state; SharedFlow provides configurable replay and buffering for shared emissions. Neither normally completes or directly signals terminal failure as a stream close; materialize required loading/error/completion information as domain values. Do not interpret a retained last value as evidence that an upstream producer is still healthy. <Citation source="kotlin-state-flow" /> <Citation source="kotlin-shared-flow" />
+
+Android recommends `collectAsStateWithLifecycle` for lifecycle-aware Flow-to-Compose-State collection. That subscriber policy is separate from the shared upstream's policy. `SharingStarted.WhileSubscribed` starts sharing with the first subscriber and, by default, stops sharing immediately after the last leaves while retaining replay indefinitely. Its stop timeout and replay expiration are separate controls; replay expiration resets stateIn to its original initial value. These defaults are not automatically the right account/cache lifetime. <Citation source="android-compose-state" /> <Citation source="kotlin-while-subscribed" />
+
+For D42, decide how long an off-screen upload should continue independently of collection. Cancellation of the sharing coroutine must still reach the actual producer/registration to release resources. A stopped collector does not prove an external callback source stopped. The [Flow/StateFlow comparison](/en/compare/flow-and-stateflow) covers the narrower snapshot/shared-state mapping.
+
+### SwiftUI
+
+Swift AsyncStream adapts callback-style production into an AsyncSequence. The documented default buffer is unbounded; a consumer using for-await does not automatically slow a callback calling continuation.yield. Yield returns immediately rather than blocking for consumption, and reports a YieldResult. Observe unsuccessful delivery according to the adapter's contract instead of treating every call as acknowledgement. <Citation source="swift-async-stream" /> <Citation source="swift-yield" />
+
+Choose buffering explicitly: bufferingNewest retains the newest values by discarding the oldest when full; bufferingOldest retains the oldest by discarding newly arriving values. Those are deliberate loss policies, not cooperative suspension of the callback source. AsyncStream and these APIs have documented iOS/iPadOS 13+ availability; verify the installed Swift/SDK contract when implementing the adapter. <Citation source="swift-buffer-newest" /> <Citation source="swift-buffer-oldest" />
+
+Combine has a different mechanism: Subscription.request tells a publisher it may send more values. That demand contract does not, by itself, prove an external sensor/native callback is physically rate-controlled; its publisher/adapter must bridge the demand correctly. Do not assume every AsyncSequence or callback wrapper implements Combine-style demand. <Citation source="combine-demand" />
+
+SwiftUI's id-based task modifier can own sequence consumption and cancels/restarts when id changes, with documented iOS/iPadOS 15+ availability. AsyncStream's callback-adapter example uses onTermination to stop its source. Keep the consumer task, stream termination, and source registration's cleanup responsibilities explicit; cancellation is not durable recovery. <Citation source="swiftui-task" /> <Citation source="swift-async-stream" />
+
+## Define completion, recovery, and observation evidence
+
+For this design, the progress state contains upload identity, current progress, status, and any actionable error. Required chunks have ordering and integrity checks. An error value in current state, a stream error, normal completion, subscription cancellation, and source disconnection are different observations; each needs a chosen response.
+
+A transient disconnect might trigger a controlled reconnection and authoritative reload. Reconnection can duplicate values or leave gaps, so carry identity/version/cursor information where the source supports it. An in-memory buffer alone does not establish exactly-once delivery. Do not silently show a frozen last percentage as a healthy live upload.
+
+| Proposed acceptance case                           | Evidence needed for D42                                                                               |
+| -------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| Producer bursts while the UI is slow               | Current progress is correct; intentional skipped updates and peak capacity are observable.            |
+| Required chunks fill the buffer                    | No silent loss; cooperative waiting or explicit overflow/failure follows the contract.                |
+| Listener arrives after emissions                   | Initial snapshot/replay/absence behavior matches the selected source.                                 |
+| One subscriber pauses while another remains active | Per-subscriber buffering and producer behavior match the actual API.                                  |
+| Last subscriber leaves, then returns               | Stop timeout, replay expiry, restart, and current-state recovery are checked separately.              |
+| State is updated with an equal value               | Equality/conflation behavior is expected; required events are not encoded as indistinguishable state. |
+| Stream fails or completes                          | UI status and source cleanup reflect the actual terminal or recoverable condition.                    |
+| Consumer is cancelled or process terminates        | Registration cleanup and persisted recovery obligations are verified separately.                      |
+
+Trace produced, admitted, observed, dropped/coalesced, buffered, and acknowledged counts as distinct metrics. Rendering a value is not the same as acknowledging every producer event. Use controlled sources and slow consumers for policy tests, then measure real adapters and devices independently. The [flow-composition comparison](/en/compare/flow-composition) gives focused derivation/error examples, and [Races and Request Coordination](/en/foundations/races-and-request-coordination) covers request admission and stale publication. No four-framework native compilation or throughput result is claimed here.

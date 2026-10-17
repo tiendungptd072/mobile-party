@@ -1,0 +1,130 @@
+## Thứ tự hoàn tất không phải thứ tự ý định người dùng
+
+Editor `E1` tìm attachment cho báo cáo `D42`. Người dùng nhập `cat`, bắt đầu request `Q1`, rồi nhập `car`, bắt đầu `Q2`. Q2 trả về trước; Q1 về sau. Nếu công bố mọi response thành công, kết quả car hiện tại sẽ bị thay bằng cat lỗi thời, dù từng callback chạy mà không truy cập bộ nhớ đồng thời.
+
+Bài viết đề xuất request coordinator cho tình huống này. Timeline và trường hợp acceptance là thiết kế minh họa, không phải snippet mobile thực thi hoặc số đo latency. React Native, Flutter, Jetpack Compose và SwiftUI có nhu cầu điều phối **tương tự**, nhưng contract cancellation, stream, timer và isolation **khác nhau**. Chọn scheduler không quyết định kết quả nào có thẩm quyền.
+
+| Quyết định                 | Câu hỏi được trả lời                                         | Trách nhiệm vẫn riêng                            |
+| -------------------------- | ------------------------------------------------------------ | ------------------------------------------------ |
+| Chính sách công bố         | Kết quả nào được cập nhật state này?                         | Công việc lỗi thời có thật sự dừng không.        |
+| Debounce/throttle          | Event đầu vào nào bắt đầu công việc, lúc nào?                | Thứ tự response và thời điểm hoàn tất chính xác. |
+| Gộp request đang chạy      | Caller tương đương có thể dùng chung thao tác pending không? | Độ mới cache kết quả và vòng đời caller.         |
+| Giới hạn concurrency       | Bao nhiêu thao tác được còn active?                          | Bao nhiêu công việc đang chờ bắt đầu.            |
+| Chính sách queue/admission | Công việc pending nào được giữ, thay hoặc từ chối?           | Tác động server đã thực hiện.                    |
+
+Ví dụ Effect tải dữ liệu của React chặn kết quả từ Effect đã hết hiệu lực vì response có thể về sai thứ tự. Đây là bảo vệ công bố, không chứng minh request lỗi thời chưa bao giờ hoàn tất. <Citation source="react-effect" />
+
+## Xác định kết quả thắng trước khi chọn operator
+
+Với search đề xuất, **ý định mới nhất thắng**. Mỗi thay đổi đầu vào liên quan tăng intent generation ngay, trước mọi khoảng chờ debounce. Request ghi nhận owner identity, account scope, generation và request key. Success, error và cập nhật loading cuối chỉ được công bố nếu danh tính đã ghi nhận còn khớp thao tác hiện tại.
+
+<Figure
+  id="request-order"
+  src="/illustrations/foundations/races-and-request-coordination/request-order-vi.svg"
+  alt="Bốn event từ trên xuống. Đầu tiên, ý định cat generation 1 bắt đầu Q1. Thứ hai, ý định car generation 2 bắt đầu Q2. Thứ ba, Q2 hoàn tất và được nhận vì generation 2 hiện tại. Thứ tư, Q1 hoàn tất và bị bỏ vì generation 1 lỗi thời. Ghi chú cuối yêu cầu guard success, error và loading cleanup. Đây là thứ tự event đề xuất, không phải số đo thời gian."
+  caption="Chính sách ý định mới nhất cho D42 được đề xuất. Timeline event tự biên soạn; thứ tự response đến không cấp quyền công bố. Hủy Q1 có thể tiết kiệm công việc nhưng không thay kiểm tra generation."
+  sources={["react-effect", "swift-actors"]}
+/>
+
+Generation đổi khi ý định đổi, không chỉ khi request trì hoãn được launch. Nếu không, Q1 có thể về trong khoảng debounce sau khi người dùng đã nhập car mà vẫn được nhận. Có thể giữ kết quả đã nhận trước đó với dấu hiệu stale/pending rõ ràng; không gắn response lỗi thời vừa về thành kết quả truy vấn hiện tại.
+
+Chỉ so sánh query text chưa đủ. Trong `cat → car → cat`, response cat rất cũ có thể trùng text hiện tại nhưng thuộc ý định trước. Generation phân biệt các thao tác đó. Owner/account identity cũng quan trọng: owner mới không được nhận response cũ chỉ vì bộ đếm cục bộ khởi động lại cùng giá trị.
+
+Thực hiện kiểm tra độ liên quan và cập nhật state thành một bước được bảo vệ trong execution context của state owner, không suspend ở giữa. Nếu công bố là thao tác database/ghi bất đồng bộ, ranh giới commit riêng cần contract version/condition; kiểm tra phía UI không phải server transaction.
+
+Handler `finally` của request cũ cũng là bên công bố. Nó không được xóa loading hoặc error của thao tác mới hơn. Cũng phải giữ trường cục bộ độc lập: refresh hợp lệ không được xóa bookmark đã chọn khi request đang chạy. [So sánh refresh/bookmark](/vi/compare/refresh-bookmark-races) minh họa trách nhiệm merge riêng này.
+
+## Latest, sequential và first-active giải quyết bài toán khác nhau
+
+| Workload đề xuất                             | Chính sách chọn                                             | Đánh đổi                                                   |
+| -------------------------------------------- | ----------------------------------------------------------- | ---------------------------------------------------------- |
+| Tìm attachment                               | Thay ý định pending; chỉ nhận generation hiện tại.          | Query trung gian có thể không bao giờ hiển thị.            |
+| Chỉnh sửa có thứ tự cho một entity           | Serialize thao tác theo write contract rõ ràng.             | Một thao tác chậm trì hoãn các chỉnh sửa phụ thuộc sau.    |
+| Refresh lặp khi read tương đương còn pending | Join thao tác đó hoặc từ chối trigger thêm theo chính sách. | Caller join dùng chung kết quả/lỗi và quy tắc vòng đời.    |
+| Đọc thumbnail độc lập                        | Cho phép số thao tác active có giới hạn.                    | Thứ tự xong có thể khác thứ tự hiển thị.                   |
+| Append page phụ thuộc cursor                 | Nhận cursor dự kiến cho collection generation hiện tại.     | Append lỗi thời không được trộn vào collection đã refresh. |
+
+Đây là lựa chọn ứng dụng, không phải mặc định thư viện chung. “Response cuối thắng” khác “ý định mới nhất thắng”. “First active wins” có thể chủ ý bỏ trigger mới. Payment hoặc lần ghi có thứ tự không được âm thầm dùng chính sách bỏ input lỗi thời của search. Cancellation cũng không hoàn tác tác động bên ngoài đã commit; [Quyền sở hữu task và cancellation](/vi/foundations/task-ownership-and-cancellation) giải thích ranh giới này.
+
+## Debounce và throttle điều khiển admission, không bảo đảm đúng
+
+Trailing debounce chờ một khoảng yên lặng sau input gần nhất. Gõ liên tục có thể hoãn admission vô hạn nếu không có chính sách maximum-wait riêng. Throttle nhận event được chọn trong các khoảng; contract phải nói rõ giữ event đầu, mới nhất hay trailing, cửa sổ bắt đầu khi nào và điều gì xảy ra lúc completion/cancellation.
+
+Với trailing debounce 300 ms đề xuất, input ở 0, 100 và 250 ms chỉ nhận giá trị cuối tại mốc danh nghĩa 550 ms nếu không có input mới. Đây là số học của mô hình scheduler, không hứa callback mobile chạy chính xác lúc đó. Throttle hoặc periodic sampler có thể cho chuỗi khác từ cùng input.
+
+Kotlin Flow `debounce` lọc giá trị có giá trị mới hơn theo sau trong timeout. Các overload hiện tại được đánh dấu FlowPreview. `sample` phát giá trị mới nhất trong chu kỳ sampling và có thể bỏ giá trị cuối không nằm vừa cửa sổ. Không coi sample là thay thế chính xác mọi contract throttle leading/trailing. <Citation source="kotlin-debounce" /> <Citation source="kotlin-sample" />
+
+Combine `debounce` và `throttle` cũng có publisher contract khác nhau. Tham số `latest` của throttle chọn phần tử mới nhất hoặc đầu tiên trong khoảng. Cả hai API được tài liệu hóa cho iOS/iPadOS 13+, có scheduler tường minh. Chi tiết đó quan trọng hơn việc khớp tên operator giữa framework. <Citation source="combine-debounce" /> <Citation source="combine-throttle" />
+
+Đổi account, rời owner hoặc xóa query phải vô hiệu hóa admission pending lẫn quyền công bố response cũ. Chỉ debounce đầu vào không gộp request từ hai caller và không ngăn response về sai thứ tự.
+
+## Dùng chung read đang chạy với ownership rõ ràng
+
+Với coordinator này, deduplication key gồm account/permission scope, thao tác, query parameter canonical và dạng response. Hai lời gọi chỉ được dùng chung read pending khi key biểu đạt công việc tương đương. Không chia sẻ giữa account chỉ vì URL path giống nhau, và không log credential thô làm key. Generation sau có được join read cùng key từ trước hay không là quyết định độ mới: yêu cầu read mới hoặc thêm freshness/revision epoch khi công việc không tương đương.
+
+Registry đề xuất cài entry trước khi bắt đầu công việc theo cách caller đồng thời không thể cùng bỏ sót nó. Caller tương đương join cùng entry đó. Khi nó settle, chỉ xóa nếu registry vẫn trỏ đến đúng entry ấy; completion muộn của thao tác cũ không được xóa entry thay thế.
+
+Join cũng cần chính sách cancellation. Một subscriber rời đi thường chỉ nên tách subscriber đó, thay vì abort request mà subscriber khác còn cần. Owner bên dưới có thể hủy khi không còn subscriber, hoặc tiếp tục theo chính sách cache-warming có chủ ý. Mỗi subscriber vẫn kiểm tra độ liên quan công bố riêng. Dùng chung Promise/Future không biến mọi consumer thành một vòng đời UI.
+
+In-flight registry không phải cache kết quả hoàn tất. Giữ kết quả complete cần quy tắc độ mới, invalidation, kích thước và vòng đời account. Entry pending bị lỗi không được giữ caller tương lai trong thao tác thất bại vĩnh viễn, trừ khi đó là chính sách negative cache được chọn riêng.
+
+Mutation payload giống nhau không tự là read tương đương: hai lần ghi có chủ ý có thể đều cần thiết. Gộp request trong một process không xác lập idempotency phía server hoặc tác động exactly-once. Thuật toán shared entry ở đây là thiết kế đề xuất, không khẳng định map hay task type của ngôn ngữ tự triển khai nó.
+
+## Giới hạn riêng công việc active và pending
+
+Với thumbnail loader đề xuất, chọn tối đa hai read active và bốn job queued. Các số này minh họa contract, không phải cấu hình tối ưu đã đo. Lấy capacity trước khi bắt đầu thao tác; giữ đến ranh giới terminal thật, release trên mọi nhánh completion success/error/cancellation được hỗ trợ.
+
+Timeout cục bộ hoặc yêu cầu cancellation không luôn chứng minh công việc bên dưới đã kết thúc. Release capacity chỉ vì caller ngừng chờ có thể khiến request được cho là có giới hạn tích tụ. Ghi nhận thao tác còn đang dừng và quy định deadline/phục hồi theo adapter, thay vì âm thầm bỏ chúng khỏi active count.
+
+Semaphore coroutine Kotlin cung cấp permit: acquire có thể suspend đến khi có permit. Giữ permit qua toàn bộ thao tác in-flight dự kiến nếu đó là tài nguyên cần giới hạn. Chỉ semaphore không giới hạn số coroutine chờ hoặc payload queued. <Citation source="kotlin-semaphore" />
+
+Dispatcher `limitedParallelism` giới hạn thread thực thi song song, không giới hạn số coroutine concurrent. Thao tác có thể suspend, nhường execution slot trong khi request mạng vẫn in-flight. Vì vậy nó không thay giới hạn request đang chạy hoặc mutex. <Citation source="kotlin-limited-parallelism" />
+
+Chọn overflow policy rõ ràng: từ chối việc mới, thay search queued lỗi thời hoặc chờ trong producer protocol có giới hạn. Tránh tạo một task chờ cho mỗi phần tử của collection vô hạn rồi gọi hệ thống “bounded” vì chỉ hai task giữ permit. Tính cả bộ nhớ payload, fairness, owner removal và cancellation job queued.
+
+## Bốn framework cần ranh giới điều phối khác nhau
+
+### React Native
+
+Effect có thể bỏ quyền công bố kết quả khi dependency đổi; coordinator có thể thêm generation và ownership shared read. Chặn response bằng cleanup không triển khai deduplication hoặc concurrency queue cho component khác. Giữ success, error và loading update dưới cùng operation identity. <Citation source="react-effect" />
+
+`useDeferredValue` hoãn cập nhật một phần UI, không có debounce delay cố định và không tự ngăn request mạng bổ sung. Dùng nó cho bài toán rendering được tài liệu hóa, không coi nó là request throttle ngầm. Admission request vẫn cần chính sách timer/operator/coordinator riêng. <Citation source="react-deferred" />
+
+### Flutter
+
+Timer có thể triển khai debounce policy đã chọn. Cancel Timer Dart ngăn callback của timer đó và gọi lặp không gây tác động thêm, nhưng không hủy request mà callback đã bắt đầu. Sở hữu timer và độ liên quan request riêng, rồi ngừng cả hai tại ranh giới vòng đời đã chọn. <Citation source="dart-timer-cancel" />
+
+Dart Stream `asyncMap` chờ Future trả về xong trước khi tiếp tục event sau. Điều này tạo thứ tự cho chuỗi conversion đó; không chọn query mới nhất hoặc chứng minh queue của producer có giới hạn. Với D42, chỉ chọn serialization khi muốn giữ từng input được nhận; giữ kiểm tra generation nếu ý định sau có thể làm kết quả queued lỗi thời. <Citation source="dart-async-map" />
+
+### Jetpack Compose
+
+Khi có giá trị upstream mới, Flow `collectLatest` hủy action block của giá trị trước. Đặt công việc cancellable liên quan trong action và giữ cancellation qua API của nó. Nếu action launch detached work hoặc gọi nguồn bỏ qua cancellation, operator không xác lập công việc bên ngoài đã dừng. Publication identity vẫn hữu ích tại các ranh giới đó. <Citation source="kotlin-collect-latest" />
+
+Vị trí debounce trong pipeline quan trọng: nếu debounce upstream input trước, collectLatest chưa thấy ý định mới cho đến khi nó được phát. Trong thiết kế này, state owner bỏ quyền công bố cũ ngay khi input đổi. Chọn FlowPreview opt-in có chủ ý cho debounce/sample được tài liệu hóa, và dùng permit giới hạn thao tác thay vì giả định dispatcher parallelism thực thi giới hạn đó. <Citation source="kotlin-debounce" /> <Citation source="kotlin-sample" />
+
+### SwiftUI
+
+Task modifier SwiftUI có id hủy/restart khi id đổi; modifier được tài liệu hóa có trên iOS/iPadOS 15+. Đây là cơ chế vòng đời, không chứng minh công việc non-cooperative không thể xong muộn. Gắn kết quả với ý định và state owner đã chọn. <Citation source="swiftui-task" />
+
+Actor bảo vệ state isolated, nhưng SE-0306 giải thích công việc actor khác có thể interleave khi một hàm suspend. Vì vậy, check trước await rồi write vô điều kiện sau await vẫn có thể công bố response lỗi thời. Kiểm tra lại độ liên quan rồi công bố trên owner actor mà không suspend ở giữa. Actor isolation không tự tạo chính sách latest-request. <Citation source="swift-actors" />
+
+Khi dùng Combine, chọn scheduler cùng ngữ nghĩa debounce/throttle rõ ràng. Khi điều phối task trực tiếp, giữ in-flight registry và admission state dưới một owner, chỉ bổ sung slot còn trống trong thiết kế worker bounded. Actor lẫn task group đều không tự tạo giới hạn queue ứng dụng. <Citation source="combine-debounce" /> <Citation source="combine-throttle" />
+
+## Kiểm tra thứ tự event, không dựa delay may mắn
+
+| Trường hợp acceptance đề xuất                    | Bằng chứng chính sách D42 mong đợi                                        |
+| ------------------------------------------------ | ------------------------------------------------------------------------- |
+| Q2 xong trước Q1 và thứ tự ngược lại             | Chỉ ý định hiện tại công bố; loading/error hiện tại nhất quán.            |
+| Input đổi khi debounce pending                   | Generation cũ mất quyền công bố ngay.                                     |
+| Query quay lại text trước                        | Kết quả cũ cùng text vẫn trượt kiểm tra generation.                       |
+| Owner/account đổi với bộ đếm tái sử dụng         | Owner/account identity đã ghi ngăn công bố qua vòng đời khác.             |
+| Request cũ lỗi hoặc chạy finally sau success mới | Không thay error/result mới hoặc xóa loading mới.                         |
+| Hai subscriber read tương đương chồng lấn        | Một lần start bên dưới; một subscriber rời không dừng việc của người kia. |
+| Shared entry cũ settle sau replacement           | Xóa có kiểm tra identity giữ entry mới.                                   |
+| Burst vượt giới hạn active và pending            | Peak active count, queue size và overflow theo contract đã chọn.          |
+| Thao tác đã yêu cầu hủy bỏ qua yêu cầu           | Theo dõi in-flight thật và chặn công bố lỗi thời vẫn đúng.                |
+| Refresh chồng với bookmark hoặc page append      | Local overlay hiện tại và collection generation/cursor được giữ.          |
+
+Dùng deferred completion được điều khiển cùng timer/scheduler điều khiển được để tạo thứ tự tất định. Đo hành vi thiết bị target riêng; chỉ sleep giả có thể che race mà test muốn tìm. Trace owner/generation/key ID, admission, join, start, rejection và completion mà không ghi query riêng tư.
+
+Đây là các trường hợp acceptance mobile đề xuất, không phải bốn implementation đã compile. [So sánh pagination](/vi/compare/pagination) giải thích ranh giới append state hẹp hơn. [Quyền sở hữu task và cancellation](/vi/foundations/task-ownership-and-cancellation) giải thích dừng/cleanup; [Process death và khôi phục state](/vi/foundations/process-death-and-state-restoration) giải thích vì sao coordinator trong bộ nhớ không phải phục hồi bền vững. Điều phối admission, ownership và publication thành trách nhiệm riêng.

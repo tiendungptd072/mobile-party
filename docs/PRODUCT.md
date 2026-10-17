@@ -74,8 +74,16 @@ session/draft recovery. A05 explains state ownership, derived values,
 unidirectional data flow, and save-result coordination. A06 explains rendering
 phases, invalidation, frame deadlines, and measured performance diagnosis.
 A07 explains input delivery, gesture conflicts, focus, IME composition, and
-keyboard interaction. A01-A07 are published in both locales, with 41 articles
-remaining in the editorial
+keyboard interaction. A08 explains memory/resource lifetimes, unwanted
+retention, GC versus ARC, and explicit cleanup ownership. A09 explains clock
+semantics, timezone/DST, exact money, JSON precision, and Unicode representation.
+A10 explains concurrency, suspension/blocking, CPU/I/O placement, event loops,
+dispatchers, executors, and isolate boundaries. A11 explains task ownership,
+structured concurrency, cooperative cancellation, cleanup, and remote-effect
+limits. A12 explains stale responses, admission policies, debounce/throttle,
+shared in-flight requests, and active/queued work limits. A13 explains stream
+production/sharing, replay, conflation, buffering, backpressure, and lifecycle-aware
+observation. A01-A13 are published in both locales, with 35 articles remaining in the editorial
 backlog. Drafts remain excluded from public
 discovery and their reader routes return 404. Test fixtures are not published
 knowledge articles.

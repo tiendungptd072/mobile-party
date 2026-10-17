@@ -1,0 +1,130 @@
+## Completion order is not user intent order
+
+Report editor `E1` searches attachments for `D42`. The user enters `cat`, starting request `Q1`, then enters `car`, starting `Q2`. Q2 returns first; Q1 returns later. Publishing every successful response would replace the current car results with obsolete cat results even if each callback executes without simultaneous memory access.
+
+This article proposes a request coordinator for that scenario. Its timeline and acceptance cases are explanatory designs, not executable mobile snippets or latency measurements. React Native, Flutter, Jetpack Compose, and SwiftUI have **similar** coordination needs but **different** cancellation, stream, timer, and isolation contracts. Choosing a scheduler does not choose which result is authoritative.
+
+| Decision                | Question it answers                                    | What remains separate                            |
+| ----------------------- | ------------------------------------------------------ | ------------------------------------------------ |
+| Publication policy      | Which result may update this state?                    | Whether obsolete work actually stops.            |
+| Debounce/throttle       | Which input events should start work, and when?        | Response ordering and exact completion time.     |
+| In-flight deduplication | Can equivalent callers share one pending operation?    | Completed-result freshness and caller lifetimes. |
+| Concurrency bound       | How many operations may remain active?                 | How much work is waiting to start.               |
+| Queue/admission policy  | Which pending work is retained, replaced, or rejected? | Server-side effects already performed.           |
+
+React's data-fetching Effect example suppresses results from a retired Effect because responses can arrive out of order. That is a publication defense, rather than proof that an obsolete request never completed. <Citation source="react-effect" />
+
+## Define the winner before choosing an operator
+
+For the proposed search, **latest intent wins**. Each relevant input change advances an intent generation immediately, before any debounce delay. A request captures owner identity, account scope, generation, and request key. Its success, error, and final loading-state update may publish only if that captured identity still matches the current operation.
+
+<Figure
+  id="request-order"
+  src="/illustrations/foundations/races-and-request-coordination/request-order-en.svg"
+  alt="Four events run downward. First, cat intent generation 1 starts Q1. Second, car intent generation 2 starts Q2. Third, Q2 completes and is accepted because generation 2 is current. Fourth, Q1 completes and is rejected because generation 1 is obsolete. A final note says to guard success, errors, and loading cleanup. This is a proposed event order, not measured timing."
+  caption="A proposed latest-intent policy for D42. Self-authored event timeline; response arrival order does not grant publication authority. Cancelling Q1 may save work but does not replace the generation check."
+  sources={["react-effect", "swift-actors"]}
+/>
+
+Generation changes when intent changes, not only when the delayed request launches. Otherwise Q1 could return during the debounce interval after the user has already entered car and still be accepted. It is valid to keep previously accepted results visible with an explicit stale/pending indication; do not label a newly arriving obsolete response as the current query's result.
+
+Comparing query text alone is insufficient. In `cat → car → cat`, a very old cat response can match the current text while belonging to an earlier intent. A generation distinguishes those operations. Owner/account identity also matters: a newly created owner must not accept an old response just because its local counter restarted at the same value.
+
+Perform the relevance check and state update as one protected step in the state owner's execution context, without a suspension between them. If publication is an asynchronous database/write operation, its own commit boundary needs a version/condition contract; a UI-side check is not a server transaction.
+
+An old request's `finally` handler is another publisher. It must not clear the loading state or error of a newer operation. Preserve independent local fields too: a valid refresh must not erase a bookmark selected while it was in flight. The [refresh/bookmark comparison](/en/compare/refresh-bookmark-races) demonstrates that separate merge responsibility.
+
+## Latest, sequential, and first-active policies solve different problems
+
+| Proposed workload                                     | Selected policy                                                  | Tradeoff                                                    |
+| ----------------------------------------------------- | ---------------------------------------------------------------- | ----------------------------------------------------------- |
+| Attachment search                                     | Replace pending intent; accept only the current generation.      | Intermediate queries may never display.                     |
+| Ordered edits for one entity                          | Serialize operations under an explicit write contract.           | One slow operation delays later dependent edits.            |
+| Repeated refresh while one equivalent read is pending | Join that operation or reject an extra trigger by policy.        | Joined callers share its result/failure and lifetime rules. |
+| Independent thumbnail reads                           | Allow a bounded number of active operations.                     | Completion order can differ from display order.             |
+| Cursor-dependent page append                          | Admit the expected cursor for the current collection generation. | A stale append must not contaminate a refreshed collection. |
+
+These are application choices, not universal library defaults. “Last response wins” differs from “latest intent wins.” “First active wins” can deliberately ignore a later trigger. A payment or ordered write must not silently adopt search's drop-obsolete-input policy. Cancellation also does not undo committed external effects; [Task Ownership and Cancellation](/en/foundations/task-ownership-and-cancellation) covers that boundary.
+
+## Debounce and throttle control admission, not correctness
+
+A trailing debounce waits for a quiet interval after the most recent input. Continuous typing can postpone admission indefinitely unless a separate maximum-wait policy is defined. A throttle admits selected events within intervals; the contract must say whether it keeps the first, latest, or a trailing event, when windows begin, and what happens on completion or cancellation.
+
+For a proposed trailing debounce of 300 ms, inputs at 0, 100, and 250 ms admit only the last value at a nominal 550 ms if no more input arrives. This is scheduler-model arithmetic, not a promise that a mobile callback runs at precisely that time. A throttle or periodic sampler could produce a different sequence from the same inputs.
+
+Kotlin Flow `debounce` filters values followed by newer values within the timeout. Its current overloads are marked FlowPreview. `sample` emits the latest value in a sampling period and can omit a final value that does not fit a window. Do not treat sample as an exact replacement for every leading/trailing throttle contract. <Citation source="kotlin-debounce" /> <Citation source="kotlin-sample" />
+
+Combine `debounce` and `throttle` likewise have distinct publisher contracts. The throttle `latest` argument selects the most recent or first element in an interval. Both APIs are documented for iOS/iPadOS 13+, with an explicit scheduler. Those details matter more than matching the operator's name across frameworks. <Citation source="combine-debounce" /> <Citation source="combine-throttle" />
+
+Changing an account, leaving the owner, or clearing a query must invalidate pending admission as well as old response publication. Debouncing input alone neither deduplicates requests from two callers nor prevents responses from arriving out of order.
+
+## Share an in-flight read with explicit ownership
+
+For this coordinator, a deduplication key includes the account/permission scope, operation, canonical query parameters, and response representation. Two calls may share a pending read only when that key represents equivalent work. Do not share across accounts just because the URL path matches, and do not log raw credentials as a key. Whether a later generation may join an earlier same-key read is a freshness decision: require a new read or include a freshness/revision epoch when the work is not equivalent.
+
+The proposed registry installs an entry before starting work in a way that concurrent callers cannot both miss it. Equivalent callers join that same entry. When it settles, remove it only if the registry still points to that exact entry; a late completion from an old operation must not delete its replacement.
+
+Joining also needs a cancellation policy. One subscriber leaving should normally detach that subscriber, rather than abort a request still needed by another. The underlying owner can cancel when no subscribers remain, or continue for a deliberate cache-warming policy. Each subscriber still checks its own publication relevance. Sharing a Promise/Future does not make all consumers one UI lifetime.
+
+An in-flight registry is not a completed-result cache. Keeping completed results requires freshness, invalidation, size, and account-lifetime rules. A failed pending entry must not trap future callers into a permanently failed operation unless that is a separately chosen negative-cache policy.
+
+Identical mutation payloads are not automatically equivalent reads: two intentional writes may both be required. Request deduplication in one process does not establish server-side idempotency or exactly-once effects. This article's shared-entry algorithm is a proposed design, not a claim that the language's map or task type implements it automatically.
+
+## Bound active work and pending work separately
+
+For the proposed thumbnail loader, choose at most two active reads and at most four queued jobs. These numbers illustrate a contract, not measured optimal settings. Acquire capacity before starting an operation; retain it until the operation's actual terminal boundary, releasing it on every supported success/error/cancellation completion path.
+
+A local timeout or cancellation request does not always prove underlying work ended. Releasing capacity merely because a caller stopped waiting can let supposedly bounded requests accumulate. Record operations that are still stopping and define an adapter-specific deadline/recovery policy instead of silently excluding them from the active count.
+
+Kotlin's coroutine Semaphore supplies permits: acquire can suspend until a permit is available. Hold the permit across the intended in-flight operation if that is the resource being limited. A semaphore alone does not bound the number of waiting coroutines or queued payloads. <Citation source="kotlin-semaphore" />
+
+Dispatcher `limitedParallelism` limits parallel thread execution, not the number of concurrent coroutines. An operation can suspend, freeing an execution slot while its network request remains in flight. It is therefore not a substitute for an in-flight request limit or a mutex. <Citation source="kotlin-limited-parallelism" />
+
+Choose an overflow policy explicitly: reject new work, replace obsolete queued search work, or wait within a bounded producer protocol. Avoid creating one waiting task per item in an unbounded collection and then calling the system “bounded” because only two tasks hold permits. Account for payload memory, fairness, owner removal, and queued-job cancellation.
+
+## Four frameworks require different coordination boundaries
+
+### React Native
+
+An Effect can retire its result publication on dependency changes; a coordinator can add generation and shared-read ownership. Cleanup-based response suppression does not implement deduplication or a concurrency queue for other components. Keep success, error, and loading updates under the same operation identity. <Citation source="react-effect" />
+
+`useDeferredValue` defers updating part of the UI, has no fixed debounce delay, and does not by itself prevent additional network requests. Use it for the rendering problem it documents, not as an implicit request throttle. Request admission still needs its own timer/operator/coordinator policy. <Citation source="react-deferred" />
+
+### Flutter
+
+A timer can implement the selected debounce policy. Dart Timer cancellation prevents that timer's callback and is harmless when repeated, but it does not cancel a request that the callback already started. Own the timer and request relevance separately, and retire both at the chosen lifetime boundary. <Citation source="dart-timer-cancel" />
+
+Dart Stream `asyncMap` waits for a returned Future before continuing with further events. This gives that conversion sequence ordering; it does not select the latest query or prove the producer's queue is bounded. For D42, choose serialization only when retaining each admitted input is intended; keep generation checks if later intent can invalidate a queued result. <Citation source="dart-async-map" />
+
+### Jetpack Compose
+
+Flow `collectLatest` cancels the previous action block when a new upstream value arrives. Put the relevant cancellable work inside that action and preserve cancellation through its APIs. If the action launches detached work or calls a source that ignores cancellation, the operator does not establish that external work stopped. Publication identity remains useful at those boundaries. <Citation source="kotlin-collect-latest" />
+
+The location of debounce in a pipeline matters: if upstream input is debounced first, collectLatest does not see the new intent until it is emitted. In this design, the state owner invalidates old publication immediately on input change. Choose FlowPreview opt-in deliberately for the documented debounce/sample APIs, and use permits for an operation limit instead of assuming dispatcher parallelism enforces it. <Citation source="kotlin-debounce" /> <Citation source="kotlin-sample" />
+
+### SwiftUI
+
+SwiftUI's id-based task modifier cancels/restarts when the id changes; the documented modifier is available on iOS/iPadOS 15+. This is a lifetime mechanism rather than a proof that non-cooperative work cannot finish late. Associate results with the selected intent and state owner. <Citation source="swiftui-task" />
+
+Actors protect isolated state, but SE-0306 explains that other actor work can interleave while a function is suspended. A check-before-await followed by an unconditional write-after-await can therefore still publish an obsolete response. Recheck relevance and publish without an intervening suspension on the owner actor. Actor isolation is not an automatic latest-request policy. <Citation source="swift-actors" />
+
+When using Combine, select scheduler and debounce/throttle semantics explicitly. When coordinating tasks directly, keep the in-flight registry and admission state under one owner, and refill only available slots in a bounded worker design. Neither an actor nor a task group creates an application queue limit by itself. <Citation source="combine-debounce" /> <Citation source="combine-throttle" />
+
+## Test event orders, not lucky delays
+
+| Proposed acceptance case                            | Expected D42 policy evidence                                                    |
+| --------------------------------------------------- | ------------------------------------------------------------------------------- |
+| Q2 completes before Q1, and the reverse order       | Only the current intent publishes; current loading/error state stays coherent.  |
+| Input changes while debounce is pending             | The old generation loses publication permission immediately.                    |
+| Query returns to earlier text                       | Old same-text results still fail the generation check.                          |
+| Owner/account changes with counters reused          | Captured owner/account identity prevents cross-lifetime publication.            |
+| Old request fails or runs finally after new success | It cannot replace the new error/result or clear the new loading state.          |
+| Two equivalent read subscribers overlap             | One underlying start; one subscriber leaving does not stop the other's work.    |
+| Old shared entry settles after replacement          | Identity-checked removal preserves the replacement.                             |
+| Burst exceeds active and pending limits             | Peak active count, queue size, and overflow behavior match the chosen contract. |
+| Cancelled operation ignores the request             | Actual in-flight accounting and obsolete publication remain correct.            |
+| Refresh overlaps a bookmark or page append          | Current local overlay and collection generation/cursor policy are preserved.    |
+
+Use controlled deferred completions and a controllable timer/scheduler for deterministic ordering. Separately measure target-device behavior; artificial sleeps alone can hide the race they intend to test. Trace owner/generation/key IDs, admission, join, start, rejection, and completion without private query content.
+
+These are proposed mobile acceptance cases, not four compiled implementations. The [pagination comparison](/en/compare/pagination) covers the narrower append-state boundary. [Task Ownership and Cancellation](/en/foundations/task-ownership-and-cancellation) explains stopping/cleanup, and [Process Death and State Restoration](/en/foundations/process-death-and-state-restoration) explains why an in-memory coordinator is not durable recovery. Coordinate admission, ownership, and publication as distinct responsibilities.

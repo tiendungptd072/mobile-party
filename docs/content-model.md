@@ -541,7 +541,7 @@ Entry points: [report and link audit](../src/lib/content/foundation-status.ts),
 
 ### F03 implementation entry points
 
-- [content registry](../content/foundations/index.ts): contains published, reviewed bilingual articles A01 (runtime/sandbox), A02 (application/screen lifecycle), A03 (state restoration), A04 (startup/session restoration), A05 (state ownership/data flow), A06 (rendering/frame scheduling), and A07 (input/gestures/focus/keyboard); synthetic fixtures remain outside the registry.
+- [content registry](../content/foundations/index.ts): contains published, reviewed bilingual articles A01 (runtime/sandbox), A02 (application/screen lifecycle), A03 (state restoration), A04 (startup/session restoration), A05 (state ownership/data flow), A06 (rendering/frame scheduling), A07 (input/gestures/focus/keyboard), A08 (memory/resource lifetimes), A09 (time/money/data representation), A10 (concurrency/execution contexts), A11 (task ownership/cancellation), A12 (races/request coordination), and A13 (streams/backpressure); synthetic fixtures remain outside the registry.
 - [server loader](../src/lib/content/foundations.ts): `getFoundationArticles(locale)`, `getFoundationArticle(slug, locale)`, and `getRelatedFoundationArticles(article)` expose published articles only.
 - [schema](../src/lib/content/foundation-schema.ts): `validateFoundationDefinitions` normalizes unknown inputs and checks supplied compiled bodies; its optional public-root argument supports isolated fixture validation.
 - [MDX plugin](../scripts/remark-foundations.mjs): assigns heading IDs and exports `foundation` data containing headings, citation IDs, figures, snippets, links, and a nonempty-body flag. H2/H3 headings form the TOC projection.

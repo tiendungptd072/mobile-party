@@ -1,0 +1,120 @@
+## Chờ và tính toán cần quyết định thực thi khác nhau
+
+Báo cáo `D42` tải attachment từ xa, parse nội dung rồi công bố preview. Request mạng có thể dành phần lớn vòng đời để chờ, còn parse dành thời gian chạy lệnh. Đặt cả hai trong hàm `async` chưa xác định CPU work chạy ở đâu hoặc chiếm context nhạy với UI bao lâu.
+
+Bài viết đề xuất pipeline tải → parse → công bố. Sơ đồ lập lịch và tình huống chẩn đoán là thiết kế minh họa, không phải snippet mobile thực thi hoặc benchmark thiết bị. React Native, Flutter, Jetpack Compose và SwiftUI có cách biểu đạt tiến trình bất đồng bộ **tương tự**, nhưng contract thực thi, isolation và truyền dữ liệu **khác nhau**. Promise, Future, coroutine và Swift task không phải thread handle hoán đổi được.
+
+| Thuật ngữ           | Ý nghĩa dùng ở đây                                                                         | Điều chưa được xác định                                                          |
+| ------------------- | ------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------- |
+| Concurrency         | Nhiều thao tác có thể tiến triển trong các vòng đời chồng lấn.                             | CPU thực thi đồng thời.                                                          |
+| Parallelism         | Công việc chạy cùng lúc trên tài nguyên xử lý hiện có.                                     | Mọi workload đều hoàn thành nhanh hơn.                                           |
+| Suspension          | Thao tác logic tạm dừng đến khi có thể tiếp tục, nhường tài nguyên thực thi cho việc khác. | Thread mới hoặc một frame UI chắc chắn.                                          |
+| Blocking            | Thread đang thực thi không thể xử lý việc khác trong khi lời gọi chờ hoặc chạy.            | Toàn bộ process đều bị chặn.                                                     |
+| Dispatcher/executor | Cơ chế lập lịch chọn nơi chạy công việc đủ điều kiện.                                      | Quyền sở hữu công việc, thực thi bền vững hoặc độc quyền mọi dữ liệu dùng chung. |
+| Isolate             | Thực thi Dart với state riêng và event loop riêng, giao tiếp qua message.                  | Object graph mutable dùng chung tùy ý.                                           |
+
+Hướng dẫn concurrency của Dart phân biệt tiến trình bất đồng bộ trên event loop với thực thi song song bằng isolate. Swift cũng tách hàm bất đồng bộ có thể suspend khỏi công việc song song. Các mô hình này hỗ trợ thuật ngữ trên; pipeline là chính sách ứng dụng. <Citation source="dart-concurrency" /> <Citation source="swift-concurrency" />
+
+## Xem từng đoạn giữa các điểm suspension
+
+Một thao tác bất đồng bộ vẫn có các đoạn đồng bộ: bắt đầu request, xử lý completion, parse dữ liệu và cập nhật model. Cú pháp nơi gọi có thể che công việc tốn kém trong các đoạn đó. Nếu parser D42 chạy trên context nhạy với UI, request mạng hoàn tất không khiến parser thành nonblocking.
+
+Trong ECMAScript, hàm async bắt đầu chạy thân hàm, còn Await bố trí continuation qua promise reaction. Promise constructor gọi trực tiếp executor của nó. Bọc parser đồng bộ trong Promise executor vì vậy không chuyển nó sang worker. Execution context của ngôn ngữ là khái niệm theo dõi trong specification, không phải thread hệ điều hành. <Citation source="ecma-async" />
+
+Event loop Dart xử lý từng event trong một isolate; đoạn đồng bộ dài trì hoãn các event tiếp theo. Await I/O bất đồng bộ cho phép Dart work khác tiến triển khi thao tác chờ, nhưng parse byte nhận về vẫn phải chạy ở một nơi cụ thể. Future ghi nhận completion về sau, không cam kết nơi đặt CPU work. <Citation source="dart-concurrency" />
+
+Hàm Kotlin suspend có thể suspend mà không chặn thread, nhưng cũng có thể gọi code blocking hoặc nặng CPU. Hướng dẫn Android giao trách nhiệm chuyển context cho lớp thực hiện blocking work để thao tác an toàn khi gọi từ main thread. Chỉ modifier `suspend` không thực hiện chuyển đổi đó. <Citation source="android-main-safe" />
+
+Xem `await` trong Swift là điểm có thể suspend. Mô hình concurrency Swift không hứa mọi async code đều tiếp tục trên cùng thread. Actor isolation ràng buộc cách thực thi được phép đối với state do actor sở hữu; chỉ thread ID chưa mô tả đầy đủ contract này. <Citation source="swift-concurrency" />
+
+## Tách tiến trình nhạy với UI khỏi parse tốn CPU
+
+Với luồng D42 đề xuất, ghi nhận danh tính attachment và đầu vào parser cần. Bắt đầu đọc bất đồng bộ, để UI context xử lý event không liên quan khi chờ, rồi chủ động lập lịch parse nặng CPU trên worker context phù hợp. Trả kết quả và công bố qua context mà UI model yêu cầu, sau khi kiểm tra nó vẫn thuộc thao tác hiện tại.
+
+<Figure
+  id="execution-handoff"
+  src="/illustrations/foundations/concurrency-and-execution-contexts/execution-handoff-vi.svg"
+  alt="Hai lane khái niệm thể hiện UI context và thực thi I/O hoặc worker. UI bắt đầu đọc, vẫn sẵn sàng trong lúc I/O chờ, chủ động chuyển parse và xử lý input khi CPU parse chạy ở nơi khác. Kết quả quay về UI context để kiểm tra và công bố. Các lane không khẳng định số thread cố định, thời gian chính xác hoặc API worker chung cho mọi framework."
+  caption="Một lần bàn giao thực thi D42 đề xuất. Sequence tự biên soạn, không phải timeline đo thực tế: chờ bất đồng bộ và bố trí CPU là hai quyết định riêng. I/O có thể dùng cơ chế nền tảng thay vì một thread chuyên chờ."
+  sources={["dart-concurrency", "android-main-safe"]}
+/>
+
+Lane bên phải chủ ý gộp hai trách nhiệm khái niệm: tiến trình I/O và tính toán worker. Nó không nói cùng thread làm cả hai. Trong lúc đọc, thao tác logic ban đầu còn pending; lúc parse, nó chờ kết quả worker. Input chỉ được xử lý khi UI context có cơ hội chạy và không bị công việc dài khác chiếm.
+
+Trả kết quả cũng có chi phí: queueing, validation, decode/copy khi cần, chuẩn bị model và rendering. Chuyển parser không chuyển toàn bộ việc phía sau. [Rendering và lập lịch frame](/vi/foundations/rendering-and-frame-scheduling) giải thích pipeline trình bày; bài này xét context cung cấp dữ liệu cho nó.
+
+Trong thiết kế này, kết quả mang request identity và dữ liệu immutable mà bên nhận cần. Bàn giao không chứng minh kết quả còn mới hoặc cho phép worker sửa UI. [Quyền sở hữu state và luồng dữ liệu](/vi/foundations/state-ownership-and-data-flow) giải thích thẩm quyền công bố. Owner công việc, execution context và owner dữ liệu là các lựa chọn riêng.
+
+## Android và iOS ràng buộc truy cập UI
+
+UI toolkit Android không thread-safe; hướng dẫn process/thread yêu cầu sửa UI trên UI thread. Thao tác dài ở đó trì hoãn input và drawing. Ứng dụng thông thường hay khởi động component trên main thread, nhưng điều đó không có nghĩa mọi callback hoặc thao tác thư viện đều chạy ở đó. Đọc contract callback/thread của API. <Citation source="android-threads" />
+
+Trên nền tảng Apple, MainActor là singleton actor có executor tương đương main dispatch queue. Dựa vào isolation đã khai báo của UI model, thay vì coi completion từ nền là quyền sửa model. Global actor là ranh giới isolation của ngôn ngữ, không phải dịch vụ hệ điều hành bền vững độc lập. <Citation source="apple-main-actor" />
+
+“Background worker” ở đây nghĩa là thực thi ngoài context nhạy với UI khi ứng dụng còn được chạy. Nó không cấp quyền hoạt động sau khi OS suspend hoặc process bị kết thúc. Nếu D42 cần phục hồi sau termination, phải có ý định đã persist và chính sách phục hồi; [Process death và khôi phục state](/vi/foundations/process-death-and-state-restoration) giải thích ranh giới này.
+
+## Bốn framework bố trí công việc khác nhau
+
+### React Native
+
+Hướng dẫn performance React Native phân biệt JavaScript thread và native main UI thread. Business logic thường chiếm JavaScript thread; chặn nó có thể trì hoãn tương tác do JS điều khiển dù native scrolling hoặc một số native animation vẫn chạy. Chuyển động nhìn thấy vì vậy không chứng minh JavaScript phản hồi tốt. Kiểm tra performance bằng release build vì công việc development làm thay đổi chi phí. <Citation source="rn-performance" />
+
+Với D42, Promise executor hoặc callback được hẹn chạy sau vẫn thực hiện tính toán JavaScript đồng bộ trên context chạy nó. Offload thật cần runtime riêng hoặc cơ chế thực thi native được hỗ trợ, có handoff đã ghi rõ. Không giả định mọi RN runtime có browser Web Workers hoặc lời gọi native đồng bộ giải phóng JS caller. Kiểm tra contract lập lịch và serialization của module đã cài. <Citation source="ecma-async" />
+
+Chia thành chunk có giới hạn có thể giảm một đoạn chạy liên tục khi offload không phù hợp. Nó không tạo parallelism, không tự giảm tổng CPU work và không bảo đảm lịch promise continuation cho phép render frame giữa các chunk. Đo độ trễ input/frame thực tế thay vì đếm từ khóa `await`.
+
+### Flutter
+
+Trên Dart Native, worker isolate có state riêng và giao tiếp bằng message. `Isolate.run`, có từ Dart 2.19, chạy một computation trong isolate mới; computation và kết quả phải sendable. API ghi rõ kết quả cuối được truyền qua isolate exit không copy, nên không khái quát rằng mọi handoff đều copy mọi byte. Closure capture cũng có thể giữ hoặc gửi nhiều state hơn dự kiến. <Citation source="dart-isolate-run" />
+
+Flutter `compute` chạy callback trong isolate riêng trên native, nhưng trên web chạy trên event loop hiện tại. Callback, input và output phải thỏa contract sendability. Vì vậy, dùng chung chỗ gọi `compute` không chứng minh mobile và web có parallelism tương đương. <Citation source="flutter-compute" />
+
+Với D42, chỉ gửi đầu vào parse cần thiết và trả kết quả có giới hạn. Isolate dùng một lần có chi phí khởi tạo/truyền; worker tái sử dụng có thể phân bổ chi phí khởi tạo cho nhiều việc nhưng cần message protocol, ownership và chính sách dừng. Đọc mạng bất đồng bộ không cần isolate mới chỉ vì nó chờ. <Citation source="dart-concurrency" />
+
+### Jetpack Compose
+
+Context coroutine chứa dispatcher và các thành phần khác như Job. Builder kế thừa context của scope trừ khi được đổi; coroutine không gắn với một physical thread và có thể tiếp tục trên thread khác. Vì vậy, tạo coroutine trong scope do UI sở hữu chưa phải offload CPU. <Citation source="kotlin-dispatchers" />
+
+Với thiết kế Android/JVM này, dùng CPU dispatcher phù hợp như `Dispatchers.Default` cho parse đáng kể và `Dispatchers.IO` cho blocking I/O. IO được mô tả là pool chung cho blocking I/O, không hứa một thread riêng cho mỗi lời gọi. Inject dispatcher đã chọn tại ranh giới thực hiện công việc để test điều khiển lịch chạy; caller không nên cần biết repository dùng blocking API bên trong. Suspend API vốn nonblocking không cần thêm IO wrapper chỉ vì nó truy cập mạng. <Citation source="kotlin-io" /> <Citation source="android-main-safe" />
+
+Giữ parse ngoài quá trình đánh giá composable. Trả kết quả theo context và quy tắc công bố của state owner; đổi dispatcher không quyết định screen, ViewModel hay owner dài hạn hơn nên giữ job sống.
+
+### SwiftUI
+
+Task tạo bằng `Task` kế thừa actor isolation xung quanh khi áp dụng; tạo trong context MainActor-isolated không phải cách đáng tin để chuyển CPU parse khỏi actor đó. Async code vẫn chứa các đoạn đồng bộ chạy liên tục. Actor ngoài main cũng có thể bị một đoạn dài chiếm; thay MainActor bằng actor khác không khiến công việc tự nhường theo cơ chế preemption. <Citation source="swift-concurrency" />
+
+Cách chạy hàm nonisolated async phụ thuộc phiên bản/cấu hình. SE-0461, triển khai trong Swift 6.2, mặc định chạy trên actor của caller khi bật `NonisolatedNonsendingByDefault`; `nonisolated(nonsending)` ghi rõ hành vi đó. `@concurrent` chủ động chuyển khỏi actor của caller. Ngữ nghĩa cũ khi không bật feature này khác. Kiểm tra compiler feature và khai báo isolation thay vì giả định từ `nonisolated` luôn nghĩa là background thread. <Citation source="swift-async-isolation" />
+
+Với D42, chọn ranh giới thực thi CPU tường minh được hỗ trợ, truyền giá trị được phép qua isolation boundary rồi quay lại actor đã khai báo của UI model để công bố. Chạy ngoài actor không hứa thread riêng hoặc được lập lịch ngay. Detached task còn đổi context inheritance và bài toán ownership; nó không phải lối tắt chung để làm mọi thao tác UI an toàn. <Citation source="apple-main-actor" />
+
+## Chọn độ lớn công việc theo workload
+
+| Workload D42                    | Quyết định đề xuất                                         | Chi phí hoặc giới hạn cần kiểm tra                          |
+| ------------------------------- | ---------------------------------------------------------- | ----------------------------------------------------------- |
+| Chờ đọc mạng nonblocking        | Suspend/await completion.                                  | Công việc callback completion và nhánh lỗi vẫn cần context. |
+| Biến đổi nhỏ có giới hạn        | Giữ gần bên dùng nếu số đo cho phép.                       | Tránh chi phí handoff lớn hơn công việc hữu ích.            |
+| Parse đáng kể bằng CPU          | Dùng ranh giới worker/executor/isolate tường minh phù hợp. | Thời gian queue, truyền, allocation và chuẩn bị kết quả.    |
+| Thao tác file/thư viện blocking | Dùng context phù hợp contract blocking đó.                 | Dung lượng thread/pool và thread affinity của API.          |
+| Nhiều parse độc lập             | Giới hạn lượng công việc được nhận và đo contention.       | Thêm task có thể tăng bộ nhớ, queueing và pin.              |
+| Một chuỗi phụ thuộc             | Giữ dependency thật sự cần thiết.                          | Launch song song không xóa được phụ thuộc dữ liệu thật.     |
+
+Đây là tiêu chí lựa chọn, không phải ngưỡng đã đo. Worker có thể cải thiện độ phản hồi UI nhưng tăng tổng thời gian hoàn thành. Parallelism bị giới hạn bởi phần cứng, quyết định scheduler, tài nguyên dùng chung và giới hạn ứng dụng; một nghìn task không có nghĩa một nghìn thao tác CPU chạy cùng lúc.
+
+Suspension mang tính cooperative cũng không cứu được đoạn không bao giờ nhường. Launch nhanh hơn tốc độ hoàn thành tạo queueing dù mỗi job dùng đúng dispatcher. Vòng đời/cancellation và điều phối request cần contract riêng; bài này giới thiệu các ranh giới đó mà không dùng lập lịch để thay thế chúng.
+
+## Chẩn đoán riêng thời gian chiếm, queue và handoff
+
+Với điều tra đề xuất, trace operation ID, phase, kích thước payload/kết quả và execution context mà không log nội dung attachment. Ghi thời điểm enqueue, bắt đầu, hoàn thành và công bố bằng elapsed clock cùng phạm vi phù hợp, như [Thời gian, tiền và biểu diễn dữ liệu](/vi/foundations/time-money-and-data-representation) giải thích. Thread name hỗ trợ chẩn đoán, nhưng không thay dispatcher/actor/isolate identity hoặc kiểm tra isolation.
+
+| Triệu chứng                            | Giả thuyết cần điều tra                                         | Bằng chứng cho acceptance check đề xuất                         |
+| -------------------------------------- | --------------------------------------------------------------- | --------------------------------------------------------------- |
+| Input khựng sau khi response về        | Parse hoặc chuẩn bị model chiếm context nhạy với UI.            | Trace phase cùng hành vi input/frame với payload lớn tiêu biểu. |
+| UI vẫn phản hồi nhưng kết quả đến muộn | Worker queue, I/O hoặc truyền kết quả chiếm phần lớn thời gian. | Đo riêng chờ queue, chạy, truyền và công bố.                    |
+| Flutter web vẫn khựng khi dùng compute | Callback chạy trên event loop hiện tại.                         | Test native/web riêng, không suy từ chỗ gọi chung.              |
+| Swift Task vẫn chiếm MainActor         | Isolation kế thừa hoặc async chạy trên actor caller.            | Cấu hình compiler feature, khai báo isolation và runtime trace. |
+| Worker xong nhưng UI state sai         | Context công bố sai hoặc thao tác đã lỗi thời.                  | Kiểm tra context/isolation và operation identity.               |
+| Thêm worker khiến app chậm hơn         | Contention, khởi tạo hoặc dữ liệu đang xử lý quá nhiều.         | So sánh workload có giới hạn, cả bộ nhớ và elapsed time.        |
+
+Xét cả nhánh lỗi tiêu biểu: I/O lỗi, parser lỗi, owner bị gỡ và restart. Worker thành công không chứng minh cancellation đã hoàn tác tác động bên ngoài hoặc công việc trong bộ nhớ sống qua termination. Không khẳng định native compilation hoặc số đo thiết bị ở đây; các trường hợp acceptance mô tả điều implementation phải chứng minh.
+
+[So sánh async work](/vi/compare/async) minh họa ranh giới lời gọi bất đồng bộ; [so sánh coroutine scope](/vi/compare/coroutine-scopes) giải thích ownership/cancellation. Giữ rõ ba câu hỏi: ai sở hữu công việc, từng đoạn chạy ở đâu và ai được công bố kết quả.

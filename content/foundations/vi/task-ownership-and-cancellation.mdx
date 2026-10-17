@@ -1,0 +1,121 @@
+## Task cần owner trước khi cần nút hủy
+
+Editor owner `E1` mở báo cáo `D42` và bắt đầu thao tác preview `P1`. P1 cần nội dung attachment và metadata; phải có cả hai trước khi công bố preview. Người dùng có thể đổi D42 hoặc rời editor khi một task con vẫn chạy. Ai yêu cầu hủy, quan sát lỗi, chờ cleanup và quyết định kết quả có được hiển thị?
+
+Bài viết đề xuất contract ownership cho luồng này. Cây task và tình huống chẩn đoán là thiết kế minh họa, không phải snippet mobile thực thi. React Native, Flutter, Jetpack Compose và SwiftUI có nhu cầu giới hạn công việc **tương tự**, nhưng contract scope, cancellation và lỗi **khác nhau**. Cây task của ngôn ngữ, abort signal và vòng đời widget không phải cơ chế tương đương.
+
+| Trách nhiệm               | Owner D42 đề xuất                   | Quyết định cần có                                          |
+| ------------------------- | ----------------------------------- | ---------------------------------------------------------- |
+| Bắt đầu preview           | E1 hoặc state holder đã chọn.       | Identity/key nào khiến preview này còn cần thiết?          |
+| Sở hữu task con bắt buộc  | P1.                                 | Một task con lỗi có làm toàn bộ preview thất bại?          |
+| Yêu cầu cancellation      | Owner không còn cần công việc.      | API task con nào quan sát yêu cầu đó?                      |
+| Giải phóng tài nguyên tạm | Owner task/tài nguyên.              | Cleanup nào phải xong trước khi thay thế hoặc tái sử dụng? |
+| Quan sát completion/lỗi   | Owner của P1.                       | Kết quả hoặc lỗi đi đâu sau khi E1 ngừng hoạt động?        |
+| Công bố preview state     | Nguồn state có thẩm quyền hiện tại. | Đây còn là owner và thao tác hiện tại?                     |
+| Sở hữu lần ghi đã commit  | Write owner được chọn riêng.        | Thao tác có chủ ý sống lâu hơn editor?                     |
+
+[Quyền sở hữu state và luồng dữ liệu](/vi/foundations/state-ownership-and-data-flow) giải thích thẩm quyền công bố. Task ownership thêm trách nhiệm vòng đời và completion; [Concurrency và ngữ cảnh thực thi](/vi/foundations/concurrency-and-execution-contexts) giải thích riêng nơi chạy các đoạn đồng bộ.
+
+## Structured concurrency gắn vòng đời task con với scope
+
+Trong Kotlin, cây Job truyền cancellation từ cha xuống con. Với parent Job thông thường, lỗi task con không phải cancellation còn hủy cha và các task con khác; supervision có thể đổi chính sách lỗi này. Job chỉ complete khi các task con complete; Job đã cancelled vẫn có thể đang hoàn tất công việc. <Citation source="kotlin-job" />
+
+Task group và `async let` của Swift tạo quan hệ cha-con có cấu trúc. Cha không thể quên chờ các task con có cấu trúc, và cancellation của cha truyền xuống chúng. Unstructured `Task` không tự có quan hệ cha đó chỉ vì được tạo trong một hàm hoặc kế thừa actor isolation. <Citation source="swift-concurrency" />
+
+Với P1, cả content lẫn metadata đều bắt buộc, nên thiết kế này coi lỗi của một nhánh bắt buộc là lỗi preview. Nó yêu cầu hủy task anh em và quan sát mọi completion trước khi giải phóng tài nguyên mà task con còn có thể truy cập. Đây là chính sách được chọn, không hứa mọi framework tự triển khai cây này.
+
+<Figure
+  id="cancellation-tree"
+  src="/illustrations/foundations/task-ownership-and-cancellation/cancellation-tree-vi.svg"
+  alt="Editor owner E1 sở hữu thao tác preview P1; P1 sở hữu task con nội dung C1 và metadata M1, cả hai bắt buộc. Ownership và cancellation truyền xuống. Panel ba bước riêng thể hiện yêu cầu cancellation, task con quan sát và cleanup, rồi xác nhận completion. Yêu cầu hủy chưa phải trạng thái complete cuối cùng và không hoàn tác lần ghi server."
+  caption="Cây ownership D42 và tiến trình cancellation riêng được đề xuất. Sơ đồ tự biên soạn; Kotlin và Swift hỗ trợ cây có cấu trúc, còn React Native và Flutter cần contract owner/API thực tế. Panel là khái niệm, không phải timeline scheduler cố định."
+  sources={["kotlin-job", "swift-concurrency"]}
+/>
+
+Khi E1 ngừng hoạt động, trước hết bỏ quyền công bố của P1, rồi yêu cầu cancellation qua API task con. P1 có thể còn sống đủ lâu để quan sát completion và cleanup cần thiết mà không tiếp tục cập nhật editor cũ. Trong thiết kế này, ngừng hoạt động và cleanup hoàn tất là hai trạng thái riêng.
+
+Owner dài hạn chỉ phù hợp khi công việc thật sự phải sống lâu hơn E1. Chuyển mọi thao tác sang global scope tránh một ranh giới cancellation nhưng làm mất kiểm soát vòng đời hữu ích. Nếu lần lưu phải tiếp tục, chọn owner từ lúc launch; không giả định có thể “cứu” an toàn thao tác đã bị hủy bằng cách chuyển handle.
+
+## Cancellation là giao thức yêu cầu, quan sát và hoàn tất
+
+Cancellation coroutine Kotlin mang tính cooperative. Vòng lặp CPU không suspend có thể kiểm tra coroutine context hiện tại bằng `ensureActive`; kiểm tra không thể quay ngược thời gian để ngắt lời gọi blocking opaque đang chạy. Đặt checkpoint giữa các đơn vị công việc có giới hạn và dùng adapter interruption/cancellation riêng của API khi hỗ trợ. <Citation source="kotlin-ensure-active" />
+
+Swift cũng dùng cancellation cooperative. `Task.checkCancellation()` ném lỗi khi task bị hủy; `Task.isCancelled` cho task chọn đường dừng/cleanup phù hợp. Chỉ đặt trạng thái cancellation không buộc mọi lệnh, lời gọi thư viện hoặc thao tác bên ngoài dừng lại. <Citation source="swift-concurrency" />
+
+AbortController cung cấp mô hình khác. DOM standard ghi rõ Promise không có cơ chế abort tích hợp: API nhận AbortSignal rồi xác định cách phản hồi. Caller abort controller không khiến Promise executor bất kỳ hoặc callback không liên quan trở thành cancellable. Signal phải đến từng thao tác cần quan sát nó. <Citation source="dom-abort" />
+
+Với D42, tách ba quan sát: owner đã yêu cầu hủy; task con đã nhận biết tại ranh giới được hỗ trợ; task con đã xong và giải phóng tài nguyên sở hữu. Nguồn bỏ qua cancellation vẫn có thể trả thành công muộn. Kiểm tra quyền công bố vẫn cần dù cancellation thường tiết kiệm được công việc.
+
+Kotlin `cancelAndJoin` yêu cầu hủy rồi suspend caller đến khi task đích complete. Bản thân lần chờ cũng cancellable, nên không bảo đảm vô điều kiện caller đã bị hủy sẽ chờ xong. Không thay lần chờ dùng suspension bằng blocking UI thread. <Citation source="kotlin-cancel-join" />
+
+## Chính sách lỗi tách khỏi chính sách cancellation
+
+Cây Job thông thường của Kotlin khác supervision. SupervisorJob cô lập lỗi task con khỏi supervisor và các task anh em, nhưng cancellation của supervisor vẫn truyền xuống con. Task con được supervise vẫn cần quan sát lỗi tường minh; supervision không biến lỗi thành thành công. <Citation source="kotlin-exceptions" />
+
+Với preview đề xuất, content và metadata cùng thất bại vì sản phẩm cần cả hai. Diagnostics tùy chọn có thể đi theo nhánh được supervise có chủ ý và quan sát độc lập. Không giấu lỗi content bắt buộc sau catch-all trả preview rỗng thành công chỉ để giữ cha sống.
+
+Trong Kotlin, CancellationException truyền đạt cancellation. Khi cần handler bắt lỗi rộng, giữ nguyên cancellation thay vì báo nó như lỗi thông thường có thể retry. Ở ranh giới owner ngoài cùng được chọn có chủ ý, phân loại kết quả cuối theo contract API: thành công, cancellation hoặc lỗi thật. Không giả định mọi lỗi xuất hiện gần thời điểm abort đều do abort gây ra. <Citation source="kotlin-exceptions" />
+
+Task owner còn phải quan sát lỗi sau khi đã yêu cầu hủy. Nguồn có thể lỗi lúc cleanup hoặc xong bình thường trước khi nhận biết yêu cầu. Ghi kết quả terminal thực tế và trách nhiệm tài nguyên còn lại, không chỉ event “đã bấm hủy”.
+
+## Bốn framework có ranh giới vòng đời khác nhau
+
+### React Native
+
+React Effect cleanup chạy với dependency cũ trước setup thay thế và khi component bị gỡ. Strict Mode development còn chạy thêm một vòng setup/cleanup. Đây là vòng đời registration, không tự tạo structured cancellation cho mọi Promise do Effect tạo ra. <Citation source="react-effect" />
+
+React Native có tài liệu về global AbortController, nhưng trang API ghi rõ chưa hoàn thiện. Dùng contract runtime/data source đã cài để hủy request; DOM standard xác lập ngữ nghĩa signal mà không chứng minh mọi native adapter có hành vi giống hệt. Với E1, tạo controller mới cho thao tác mới, truyền signal qua data layer, abort thao tác cũ tại ranh giới ownership và chặn công bố lỗi thời. Signal đã aborted biểu đạt cancellation, không phải vòng đời mới có thể tái sử dụng. <Citation source="rn-abort-controller" /> <Citation source="dom-abort" />
+
+Ví dụ Effect tải dữ liệu của React chặn riêng response muộn công bố từ Effect đã hết hiệu lực. Guard này bảo vệ state; nó không dừng request hay tạo asynchronous join cho mọi task con. Nếu dừng cần chờ cleanup, coordinator phải sở hữu completion đó ngoài contract Effect cleanup đồng bộ. Navigation blur cũng không nhất thiết nghĩa là component đã bị gỡ. <Citation source="react-effect" />
+
+### Flutter
+
+Future mô tả completion về sau; bỏ một lần chờ chưa chứng minh thao tác bên dưới dừng. Dart `Future.timeout` nói rõ source future có thể xong muộn trong khi timeout future bỏ qua kết quả đó. Dùng cancellation API riêng của thao tác hoặc giao thức cooperative rõ ràng khi công việc phải dừng. <Citation source="dart-future-timeout" />
+
+Flutter State disposal đánh dấu State bị gỡ vĩnh viễn. Contract mô tả unsubscribe khỏi nguồn event thay đổi; gọi setState sau disposal là lỗi. State vẫn mounted vẫn có thể đang chờ thao tác của báo cáo lỗi thời, nên chỉ `mounted` chưa phải kiểm tra operation identity. Disposal cũng không được bảo đảm lúc ứng dụng shutdown. <Citation source="flutter-dispose" />
+
+Dart `StreamSubscription.cancel()` dừng nhận event tiếp theo và trả Future complete khi stream cleanup xong. Đây là contract cleanup bất đồng bộ cụ thể, không phải cancellation method chung của mọi Future. Với D42, giữ nghĩa vụ completion ở owner có thể await nó, thay vì coi callback State disposal đồng bộ là bằng chứng cleanup bất đồng bộ đã xong. <Citation source="dart-subscription-cancel" />
+
+### Jetpack Compose
+
+LaunchedEffect launch coroutine khi vào composition, hủy khi rời và hủy/restart khi key đổi. `rememberCoroutineScope` là scope gắn composition khác cho công việc launch từ event. Không contract nào nói mọi recomposition đều là removal hoặc ở trong composition đồng nghĩa thời gian người dùng nhìn thấy màn hình. <Citation source="compose-effects" />
+
+Hướng dẫn lifecycle Android tách công việc gắn composition khỏi `viewModelScope`, nơi job bị hủy khi ViewModel được clear. ViewModel được giữ lại vì vậy có thể sở hữu công việc qua vòng đời UI ngắn hơn. Chọn scope thật của E1 theo vòng đời sản phẩm; chuyển sang worker dispatcher không đổi owner đó. Nội dung được compose ngoài màn hình vẫn có thể có LaunchedEffect đang sống. <Citation source="android-lifecycle-scopes" />
+
+Trong coroutine scope đã chọn, truyền cancellation qua suspend API và thêm kiểm tra context hiện tại vào phase CPU dài. Dùng `finally` cho teardown sở hữu; nếu cleanup thật sự cần vùng non-cancellable, giới hạn nó hẹp và giữ báo lỗi. Màn hình đã bị hủy không nên chạy business work vô hạn trong cleanup. Hướng dẫn exception Kotlin minh họa cha có thể vẫn phải chờ cleanup của con. <Citation source="kotlin-ensure-active" /> <Citation source="kotlin-exceptions" />
+
+### SwiftUI
+
+Task modifier SwiftUI có `id` hủy và restart task khi giá trị đó đổi; SwiftUI có thể tự hủy công việc chưa xong sau khi view biến mất. API được tài liệu hóa có trên iOS/iPadOS 15+. Dùng key đại diện thao tác cần thiết; cancellation vẫn cooperative, không phải dừng tức thì đúng lúc disappearance. <Citation source="swiftui-task" />
+
+Trong thao tác có owner đó, structured task group hoặc `async let` gắn vòng đời task con bắt buộc. Thay bằng unstructured Task hoặc detached task làm đổi contract ownership: kế thừa actor isolation không tạo structured parent, và bỏ handle không phải yêu cầu cancellation. Lưu và quản lý unstructured handle khi mô hình đó thật sự cần. <Citation source="swift-concurrency" />
+
+Với D42, kiểm tra cancellation ở ranh giới parser phù hợp, return/rethrow theo contract kết quả của task và công bố qua đúng state owner. [Concurrency và ngữ cảnh thực thi](/vi/foundations/concurrency-and-execution-contexts) giải thích bố trí actor/executor; cancellation không cấp quyền truy cập state của actor khác một cách an toàn.
+
+## Cleanup và tác động từ xa có ranh giới hoàn tất khác nhau
+
+Với P1, buffer tạm và subscription sở hữu phải theo API tài nguyên. Cleanup cần dừng delivery mới khi hỗ trợ, giải phóng tài nguyên sở hữu và báo lỗi. Không giả định mọi close/cancel method đều idempotent hoặc mượn tài nguyên có nghĩa được quyền release. [Bộ nhớ và vòng đời tài nguyên](/vi/foundations/memory-and-resource-lifetimes) giải thích các nghĩa vụ này.
+
+Giờ xét một lần ghi D42 riêng trong hệ thống đề xuất: server commit revision `R8`, rồi E1 yêu cầu cancellation trước khi nhận response. Dừng lần chờ phía client không xác lập R8 đã rollback. Nếu thiếu contract server chứng minh điều ngược lại, client có kết quả chưa biết, không phải bằng chứng chưa ghi gì.
+
+Thiết kế phục hồi có thể truy vấn thao tác/kết quả và đối chiếu state có thẩm quyền hiện tại. Compensating action, khi hỗ trợ, là thao tác riêng có nhánh lỗi riêng. Không biến “đã hủy cục bộ” thành retry vô điều kiện một lần ghi có thể đã commit. Tình huống minh họa ranh giới này; không khẳng định cancellation API triển khai transaction hoặc durable retry.
+
+Tương tự, task scope trong bộ nhớ không sống qua process replacement. Persist ý định bắt buộc và dữ liệu đã commit theo chính sách phục hồi rõ ràng thay vì dựa vào callback cancellation cuối. [Process death và khôi phục state](/vi/foundations/process-death-and-state-restoration) giải thích dựng lại sau ranh giới này.
+
+## Xác minh toàn bộ đường dừng
+
+| Trường hợp acceptance D42                        | Bằng chứng implementation đề xuất cần có                                                 |
+| ------------------------------------------------ | ---------------------------------------------------------------------------------------- |
+| E1 ngừng hoạt động khi cả hai task con chờ       | Cả hai nhận cancellation hỗ trợ, công bố lỗi thời bị chặn và completion được quan sát.   |
+| Task con bỏ qua cancellation rồi thành công muộn | Không preview nào đến owner cũ/thao tác hiện tại khác; công việc còn chạy được theo dõi. |
+| CPU parse không có suspension tự nhiên           | Checkpoint có giới hạn chứng minh stop latency chấp nhận được trên target.               |
+| Content bắt buộc lỗi khi metadata chờ            | Chính sách fail-fast đã chọn yêu cầu hủy task anh em và quan sát cả hai kết quả.         |
+| Task con tùy chọn được supervise bị lỗi          | Preview bắt buộc theo chính sách riêng; lỗi tùy chọn vẫn được quan sát.                  |
+| Subscription cleanup chậm hoặc lỗi               | Ghi completion/trạng thái tài nguyên; thay thế không giả định cleanup đã thành công.     |
+| Caller bị hủy trong lúc join                     | Coordinator xử lý cancellation của chính nó và nghĩa vụ completion còn lại rõ ràng.      |
+| Lần ghi commit trước cancellation cục bộ         | Phục hồi đối chiếu server state thật thay vì giả định rollback.                          |
+| Process termination bỏ qua teardown              | Phục hồi từ persistence hoạt động mà không cần callback cuối chắc chắn.                  |
+
+Trace operation/owner ID, thời điểm yêu cầu cancellation, điểm nhận biết, kết quả terminal và cleanup completion mà không log nội dung báo cáo riêng tư. Phân biệt task còn đang dừng với leak hoặc cancellation đã hoàn tất. Dùng elapsed clock phù hợp cho stop latency; không có cam kết cancellation luôn mất không thời gian.
+
+Đây là các trường hợp acceptance mobile đề xuất, không phải kết quả compiler/thiết bị từ bốn ứng dụng native. [So sánh coroutine scope](/vi/compare/coroutine-scopes), [so sánh async work](/vi/compare/async) và [so sánh side effects](/vi/compare/side-effects) cung cấp ví dụ API hẹp hơn. Chọn ownership trước, truyền cancellation được hỗ trợ, quan sát completion và giữ rõ công bố cùng phục hồi tác động từ xa.

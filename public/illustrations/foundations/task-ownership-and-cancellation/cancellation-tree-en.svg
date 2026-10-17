@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="480" height="920" viewBox="0 0 480 920" role="img" aria-labelledby="title desc">
+<title id="title">Ownership and cancellation</title>
+<desc id="desc">D42 · proposed hierarchy. Not a server rollback protocol.</desc>
+<defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0L8 4L0 8Z" fill="#475569"/></marker></defs>
+<rect width="480" height="920" rx="20" fill="#f8fafc"/>
+<text x="28" y="48" font-family="system-ui,sans-serif" font-size="25" font-weight="700" fill="#0f172a">Ownership and cancellation</text>
+<text x="28" y="80" font-family="system-ui,sans-serif" font-size="17" font-weight="400" fill="#0f172a">D42 · proposed hierarchy</text>
+<rect x="50" y="120" width="380" height="70" rx="10" fill="#dbeafe" stroke="#64748b"/>
+<text x="64" y="149" font-family="system-ui,sans-serif" font-size="19" font-weight="700" fill="#0f172a">Editor owner E1</text>
+<text x="64" y="174" font-family="system-ui,sans-serif" font-size="17" font-weight="400" fill="#0f172a">Owns the preview lifetime</text>
+<rect x="50" y="245" width="380" height="70" rx="10" fill="#dbeafe" stroke="#64748b"/>
+<text x="64" y="274" font-family="system-ui,sans-serif" font-size="19" font-weight="700" fill="#0f172a">Preview operation P1</text>
+<text x="64" y="299" font-family="system-ui,sans-serif" font-size="17" font-weight="400" fill="#0f172a">Both child results are required</text>
+<rect x="28" y="370" width="194" height="95" rx="10" fill="#dbeafe" stroke="#64748b"/>
+<text x="42" y="399" font-family="system-ui,sans-serif" font-size="18" font-weight="700" fill="#0f172a">Content C1</text>
+<text x="42" y="424" font-family="system-ui,sans-serif" font-size="16" font-weight="400" fill="#0f172a">Required child</text>
+<rect x="258" y="370" width="194" height="95" rx="10" fill="#dbeafe" stroke="#64748b"/>
+<text x="272" y="399" font-family="system-ui,sans-serif" font-size="18" font-weight="700" fill="#0f172a">Metadata M1</text>
+<text x="272" y="424" font-family="system-ui,sans-serif" font-size="16" font-weight="400" fill="#0f172a">Required child</text>
+<path d="M240 193V235" fill="none" stroke="#475569" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M240 318V340H125V360" fill="none" stroke="#475569" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M240 340H355V360" fill="none" stroke="#475569" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="28" y="520" font-family="system-ui,sans-serif" font-size="20" font-weight="700" fill="#0f172a">Cancellation progress</text>
+<rect x="28" y="545" width="424" height="80" rx="10" fill="#fef3c7" stroke="#64748b"/>
+<text x="44" y="576" font-family="system-ui,sans-serif" font-size="21" font-weight="700" fill="#0f172a">1. Request cancellation</text>
+<text x="44" y="605" font-family="system-ui,sans-serif" font-size="17" font-weight="400" fill="#0f172a">Work may still be running</text>
+<path d="M240 627V645" fill="none" stroke="#475569" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="28" y="655" width="424" height="80" rx="10" fill="#e2e8f0" stroke="#64748b"/>
+<text x="44" y="686" font-family="system-ui,sans-serif" font-size="21" font-weight="700" fill="#0f172a">2. Observe + clean up</text>
+<text x="44" y="715" font-family="system-ui,sans-serif" font-size="17" font-weight="400" fill="#0f172a">Cooperative stopping points</text>
+<path d="M240 737V755" fill="none" stroke="#475569" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="28" y="765" width="424" height="80" rx="10" fill="#d1fae5" stroke="#64748b"/>
+<text x="44" y="796" font-family="system-ui,sans-serif" font-size="21" font-weight="700" fill="#0f172a">3. Confirm completion</text>
+<text x="44" y="825" font-family="system-ui,sans-serif" font-size="17" font-weight="400" fill="#0f172a">Join/await under the API contract</text>
+<text x="28" y="891" font-family="system-ui,sans-serif" font-size="17" font-weight="400" fill="#0f172a">Not a server rollback protocol.</text>
+</svg>

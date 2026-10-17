@@ -1,0 +1,110 @@
+## Vòng đời bộ nhớ và tài nguyên là hai việc riêng
+
+Trình soạn có thể biến mất trong khi listener vẫn giữ model, preview buffer còn trong cache hoặc native image handle chưa đóng. Xóa UI hiển thị không xác định owner nào vẫn giữ những thứ đó. Tương tự, thu hồi object không phải cùng thao tác với unsubscribe, đóng stream hay giải phóng tài nguyên theo hợp đồng API của nó.
+
+Bài này đề xuất report `D42` với owner trình soạn `E1`, preview buffer, change subscription và image handle do bên gọi sở hữu. Policy ownership và teardown dùng để giải thích thiết kế, không phải snippet thực thi hay số đo bộ nhớ. React Native, Flutter, Jetpack Compose và SwiftUI có nhu cầu ownership giới hạn **tương tự**, nhưng cơ chế quản lý bộ nhớ và ranh giới cleanup **khác nhau**.
+
+| Thành phần          | Điều gì giữ nó sống hoặc hoạt động?                              | Điều gì kết thúc nhu cầu sử dụng?                                   |
+| ------------------- | ---------------------------------------------------------------- | ------------------------------------------------------------------- |
+| Model trình soạn    | Reference từ navigation, state holder, callback hoặc owner khác. | Owner đã chọn bỏ model khi scope đó kết thúc.                       |
+| Change subscription | Registration với event source.                                   | Owner registration unsubscribe theo hợp đồng của source.            |
+| Timer               | Scheduling/registration và các reference.                        | Owner dừng nó qua timer API.                                        |
+| Preview buffer      | Reference từ editor, task hoặc cache.                            | Consumer bỏ reference; cache áp dụng policy eviction.               |
+| Native image handle | Handle giữ quyền sử dụng tài nguyên bên dưới.                    | Owner handle bỏ quyền của mình; quyền khác có thể còn.              |
+| Report đã commit    | Hợp đồng repository/storage.                                     | Data policy rõ ràng, không phải UI teardown hay garbage collection. |
+
+Dòng cuối rất quan trọng: đóng trình soạn D42 không được xóa report đã commit. [State ownership và luồng dữ liệu](/vi/foundations/state-ownership-and-data-flow) giải thích authority dữ liệu; bài này giải thích object và tài nguyên dùng để hiển thị, chỉnh sửa nó.
+
+## Quản lý bộ nhớ tự động không chọn lifetime sản phẩm
+
+Managed runtime của Android thu hồi managed object không còn dùng bằng garbage collection (GC). Allocation churn vẫn có thể tăng chi phí collection. Đây không phải hợp đồng đóng mọi native allocation, file hay device resource khi Kotlin reference ra khỏi local scope. Phần Android ở đây nói về Kotlin/Java managed object trên Android, không phải mọi Kotlin target. <Citation source="android-memory" />
+
+Hướng dẫn memory của Flutter mô tả reachability qua retaining path từ root. Object không còn cần vẫn có thể reachable qua listener hoặc closure; GC không suy ra ứng dụng không muốn giữ nó nữa. Vì vậy event service còn sống giữ E1 là vấn đề ownership, ngay cả khi bộ thu hồi tự động hoạt động đúng. <Citation source="flutter-memory" />
+
+Swift dùng automatic reference counting (ARC) cho class instance. Strong reference giữ instance sống; class lưu closure capture mạnh chính instance đó có thể tạo retain cycle. Reference `weak` không retain và thành nil sau deallocation. `unowned` đòi quan hệ lifetime hợp lệ; truy cập sau deallocation là lỗi. Hai cách này không thay thế tùy ý cho nhau. <Citation source="swift-arc" />
+
+Khác biệt có ý nghĩa thực tế. Một nhóm object unreachable có thể được thu hồi theo mô hình reachability; strong-reference cycle thuần có thể giữ Swift class instance sống dưới ARC. Với cả hai mô hình, external registry đang hoạt động có thể giữ object rất lâu sau khi màn hình biến mất. Không thay mọi strong reference bằng weak: công việc còn cần vẫn phải có owner.
+
+## Tìm reference sống lâu hơn mục đích của nó
+
+Trong subscription D42 được đề xuất, event service sống lâu hơn E1. Nó giữ callback, callback capture E1, còn E1 giữ preview buffer lớn. Rời trình soạn mà không gỡ registration giữ toàn bộ path này reachable. Gán một local variable thành null hoặc nil không xóa reference của service.
+
+<Figure
+  id="retaining-path"
+  src="/illustrations/foundations/memory-and-resource-lifetimes/retaining-path-vi.svg"
+  alt="Event service sống lâu giữ callback đã đăng ký. Callback giữ owner trình soạn E1; E1 giữ preview buffer. Chú thích đỏ đánh dấu unsubscribe tại cạnh từ service tới callback. Gỡ registration cắt path này, nhưng owner khác hoặc retain cycle của ARC vẫn có thể giữ object sống. Giải phóng native handle là trách nhiệm cleanup riêng."
+  caption="Một retaining path đề xuất, không phải heap graph đầy đủ. Sơ đồ tự biên soạn; mũi tên là strong retention, cắt một cạnh không chứng minh đã hết reference hay native claim."
+  sources={["flutter-memory", "swift-arc"]}
+/>
+
+Theo path từ source sống lâu thay vì chỉ xem field của E1. Trong thiết kế này, unsubscribe gỡ registration của service. Task, cache hoặc owner khác vẫn có thể giữ E1, nên việc gỡ là bằng chứng về một path, không phải chứng minh deallocation phổ quát. Nếu E1 còn sở hữu closure capture E1 trong Swift, phá cycle đó theo quan hệ ownership mong muốn.
+
+Weak capture có thể ngăn callback kéo dài lifetime owner, nhưng registration vẫn có thể hoạt động và giữ dữ liệu khác. Nó cũng đổi hành vi khi owner biến mất. Deregistration rõ ràng và weak reference giải quyết các trách nhiệm khác nhau.
+
+## Mỗi acquisition cần owner release được chỉ định
+
+Với D42, chỉ định rõ một owner cho mỗi subscription và handle. Child mượn image dùng chung không được dispose handle của owner khác. Nếu chuyển ownership, ghi rõ lúc owner cũ hết trách nhiệm release. Dùng quy tắc sharing và thread thực tế của resource API thay vì helper chung “đóng tất cả”.
+
+`Image.dispose()` của Flutter bỏ quyền sử dụng của handle đó và làm nó không còn dùng được; image bên dưới được dispose sau khi mọi handle còn mở đều được dispose. Vì vậy wrapper nhỏ và graphics allocation có ranh giới accounting, sharing khác nhau. <Citation source="flutter-image" />
+
+Với JVM Closeable có phạm vi block, `use` của Kotlin đóng resource khi block kết thúc, kể cả khi có exception. Đây là hợp đồng quản lý tài nguyên rõ ràng, không phải yêu cầu chạy GC. Thao tác sống lâu hơn cần owner có lifetime tương ứng. <Citation source="kotlin-use" />
+
+Foundation Timer có hợp đồng khác: `invalidate()` gỡ nó khỏi RunLoop; RunLoop bỏ strong reference, có thể vào lúc sau; reference tới target/user-info cũng được bỏ khi áp dụng. Apple yêu cầu invalidate từ thread đã cài timer. Không giả định mọi timer API có cùng quy tắc thread hoặc bỏ local reference sẽ unschedule timer. <Citation source="apple-timer" />
+
+Trong coordinator đề xuất, teardown từ chối callback mới, gỡ registration, yêu cầu hủy công việc nếu được hỗ trợ, release handle do mình sở hữu và bỏ reference không cần theo thứ tự phù hợp API. Cancellation không chứng minh callback đã xếp hàng hoặc external write chưa từng xảy ra. Chặn kết quả muộn bằng identity owner/thao tác hiện tại, như A05.
+
+Ngăn release trùng qua coordinator, nhưng không giả định mọi raw API idempotent. Nếu cleanup lỗi, ghi nhận resource lỗi và ownership state còn lại, đồng thời thực hiện cleanup độc lập khác khi an toàn. Không báo handle đã release chỉ vì đã thử close.
+
+## Bốn framework có cleanup scope khác nhau
+
+### React Native
+
+Cleanup của React Effect chạy với dependency cũ trước setup thay thế và khi component bị gỡ. Strict Mode còn chạy thêm chu kỳ setup/cleanup trong development. Cleanup nên hoàn tác registration của Effect đó; nó không chứng minh navigation blur đã unmount màn hình được giữ lại. <Citation source="react-effect" />
+
+Native module có thể sống lâu hơn một React component. Hướng dẫn Native Modules Lifecycle hiện tại mô tả `initialize()`/`invalidate()` của Android TurboModule và protocol bổ sung `RCTInitializing`/`RCTInvalidating` trên iOS. Module teardown thuộc lifetime native module, không tự thuộc Effect của một màn hình. Xác minh hợp đồng RN/module đã cài trước khi triển khai. <Citation source="rn-native-lifecycle" />
+
+Với D42, gỡ subscription của E1 khi scope sở hữu nó kết thúc. Không teardown module dùng chung khi màn hình khác còn dùng; không giả định JavaScript heap snapshot bao phủ mọi resource module sở hữu.
+
+### Flutter
+
+`State.dispose()` đánh dấu State bị gỡ vĩnh viễn khỏi tree. API mô tả subscribe khi khởi tạo, thay subscription khi object được quan sát đổi và unsubscribe khi dispose. Không được gọi `setState` sau disposal. Gỡ Flutter UI bằng native API không phải lúc nào cũng dispose widget tree được giữ lại. <Citation source="flutter-state-dispose" />
+
+Dispose image handle do mình sở hữu riêng với việc bỏ Dart wrapper reference. Resource được mượn/dùng chung cần hợp đồng ownership thực tế. Widget lifecycle, Dart reachability và native-resource lifetime chồng lấp nhưng không tương đương.
+
+### Jetpack Compose
+
+`DisposableEffect` ghép registration với cleanup khi key đổi hoặc rời composition. Đặt key theo owner/resource thực sự được quan sát. Bản thân recomposition không phải gỡ vĩnh viễn; constant key không được vô tình giữ registration cũ. <Citation source="compose-effects" />
+
+ViewModel theo ViewModelStoreOwner và có thể sống qua việc tạo lại UI host. `onCleared()` là ranh giới cleanup dependency khi owner clear nó. Không dùng ViewModel sống lâu hơn để giữ screen View sống ngắn hoặc UI Context gây leak. Composable, ViewModel và repository cần quyết định ownership riêng. <Citation source="android-viewmodel" />
+
+### SwiftUI
+
+Mô hình Observation của SwiftUI trên iOS/iPadOS 17+ cho phép view đã chọn lưu observable model bằng State và chia sẻ model reference qua hierarchy hoặc environment. Chia sẻ không biến model thành bản sao cần dispose sau mỗi lần tính body. Observation theo dõi data dependency; nó không xóa retain cycle trong quan hệ class/closure. <Citation source="swiftui-model" />
+
+Với D42, xác định class thực sự sở hữu callback hoặc timer. Nếu class vẫn bị callback giữ lại và định release callback trong deinitialization, chờ deinitialization không phá được cycle đang ngăn nó xảy ra. Dùng ranh giới stop/unregister rõ và capture phù hợp; SwiftUI view value không phải native resource handle.
+
+## Finalization không phải scheduler lưu lần cuối
+
+`Finalizer` thông thường của Dart không hứa callback sẽ được gọi. Nó không phù hợp làm cơ chế duy nhất để gỡ subscription kịp thời, thực hiện hành động ứng dụng bắt buộc hay lưu bền vững lần cuối. Phải đọc riêng bảo đảm từng finalizer API; không suy ra release xác định chỉ từ tên gọi. <Citation source="dart-finalizer" />
+
+Flutter cũng nêu State disposal không được bảo đảm khi application shutdown. Memory pressure hay termination bất ngờ có thể kết thúc process mà không chạy chuỗi cleanup ứng dụng mong muốn. Normal teardown rõ ràng giúp hành vi tốt khi process còn chạy; không thiết lập callback lưu lần cuối đáng tin cậy. <Citation source="flutter-state-dispose" />
+
+[Process death và khôi phục state](/vi/foundations/process-death-and-state-restoration) giải thích recovery bền vững. Resource cleanup và persistence là trách nhiệm riêng. Đóng stream hoặc hủy timer cũng không rollback server action đã hoàn tất.
+
+## Phân biệt leak, bloat và peak tạm thời
+
+Trong điều tra đề xuất, leak là giữ ngoài ý muốn quá lifetime dự kiến; bloat là bộ nhớ quá lớn vẫn được giữ có chủ đích; peak tạm thời là spike có giới hạn trong lúc xử lý. Các giả thuyết này cần bằng chứng khác nhau. Preview cache có thể cố ý reachable nhưng vượt budget; không tự động là listener bị quên.
+
+| Quan sát khi lặp mở/đóng D42                   | Câu hỏi điều tra                                | Bằng chứng cần tìm                                     |
+| ---------------------------------------------- | ----------------------------------------------- | ------------------------------------------------------ |
+| Owner E1 đã nghỉ tích lũy                      | Registration, task hay cache nào giữ chúng?     | Retaining path và số owner sau teardown dự kiến.       |
+| Số owner ổn định nhưng bộ nhớ cao              | Preview nào còn được giữ có chủ đích?           | Cache entry, kích thước, budget và eviction.           |
+| Spike lớn lúc xử lý image                      | Có tạm cần nhiều decoded buffer không?          | Thao tác đồng thời và peak native/graphics allocation. |
+| Callback vẫn chạy sau đóng editor              | Registration đúng đã thực sự dừng chưa?         | Subscription token, owner identity và late-event log.  |
+| Handle có vẻ đã đóng nhưng bộ nhớ bên dưới còn | Claim hoặc allocation khác còn hoạt động không? | Ownership riêng của resource và handle diagnostics.    |
+
+Flutter DevTools cung cấp snapshot diff và phân tích instance/retaining path. So sánh application state tương đương rồi xem object còn lại, thay vì coi mọi đoạn heap chart tăng là leak. Memory view phân biệt heap với external allocation, nên bổ sung bằng chứng native/graphics liên quan. <Citation source="flutter-memory" />
+
+Thiết kế này ghi acquisition/release count, operation ID và owner hoạt động mà không log văn bản report riêng tư. Lặp tương tác đại diện, chờ asynchronous teardown dự kiến ổn định rồi điều tra object bị giữ. Một lần ép collection hoặc một counter phẳng không chứng minh mọi ownership path đúng.
+
+Giới hạn preview và cache giảm retained memory nhưng có thể tăng tính lại. Listener scope hẹp giảm retention nhưng có thể cần đăng ký lại khi quay về. Chọn tradeoff theo lifetime sản phẩm thực tế và số đo. Đọc [Vòng đời ứng dụng và màn hình](/vi/foundations/application-and-screen-lifecycle) để phân biệt visibility với lifetime owner; [so sánh lifecycle/cleanup](/vi/compare/lifecycle) và [so sánh side effects](/vi/compare/side-effects) cung cấp API tập trung. Bài này không khẳng định số đo bộ nhớ trên thiết bị hay native compilation.

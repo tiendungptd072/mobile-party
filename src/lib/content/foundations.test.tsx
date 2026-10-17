@@ -86,6 +86,18 @@ describe("Foundations reader", () => {
     ["vi", "rendering-and-frame-scheduling", "frame-pipeline"],
     ["en", "input-gestures-focus-and-keyboard", "input-ownership"],
     ["vi", "input-gestures-focus-and-keyboard", "input-ownership"],
+    ["en", "memory-and-resource-lifetimes", "retaining-path"],
+    ["vi", "memory-and-resource-lifetimes", "retaining-path"],
+    ["en", "time-money-and-data-representation", "representation-boundaries"],
+    ["vi", "time-money-and-data-representation", "representation-boundaries"],
+    ["en", "concurrency-and-execution-contexts", "execution-handoff"],
+    ["vi", "concurrency-and-execution-contexts", "execution-handoff"],
+    ["en", "task-ownership-and-cancellation", "cancellation-tree"],
+    ["vi", "task-ownership-and-cancellation", "cancellation-tree"],
+    ["en", "races-and-request-coordination", "request-order"],
+    ["vi", "races-and-request-coordination", "request-order"],
+    ["en", "streams-and-backpressure", "delivery-policies"],
+    ["vi", "streams-and-backpressure", "delivery-policies"],
   ] as const)(
     "renders the published %s %s article with localized figure, sources, and related discovery",
     async (locale, slug, figureId) => {
@@ -281,6 +293,12 @@ describe("Foundations reader", () => {
       { locale: "en", slug: "state-ownership-and-data-flow" },
       { locale: "en", slug: "rendering-and-frame-scheduling" },
       { locale: "en", slug: "input-gestures-focus-and-keyboard" },
+      { locale: "en", slug: "memory-and-resource-lifetimes" },
+      { locale: "en", slug: "time-money-and-data-representation" },
+      { locale: "en", slug: "concurrency-and-execution-contexts" },
+      { locale: "en", slug: "task-ownership-and-cancellation" },
+      { locale: "en", slug: "races-and-request-coordination" },
+      { locale: "en", slug: "streams-and-backpressure" },
       { locale: "vi", slug: "mobile-runtime-and-sandbox" },
       { locale: "vi", slug: "application-and-screen-lifecycle" },
       { locale: "vi", slug: "process-death-and-state-restoration" },
@@ -288,6 +306,12 @@ describe("Foundations reader", () => {
       { locale: "vi", slug: "state-ownership-and-data-flow" },
       { locale: "vi", slug: "rendering-and-frame-scheduling" },
       { locale: "vi", slug: "input-gestures-focus-and-keyboard" },
+      { locale: "vi", slug: "memory-and-resource-lifetimes" },
+      { locale: "vi", slug: "time-money-and-data-representation" },
+      { locale: "vi", slug: "concurrency-and-execution-contexts" },
+      { locale: "vi", slug: "task-ownership-and-cancellation" },
+      { locale: "vi", slug: "races-and-request-coordination" },
+      { locale: "vi", slug: "streams-and-backpressure" },
     ]);
     for (const locale of ["en", "vi", "fr"]) {
       const props = {
@@ -376,6 +400,12 @@ describe("Foundations MDX pipeline", () => {
       "state-ownership-and-data-flow",
       "rendering-and-frame-scheduling",
       "input-gestures-focus-and-keyboard",
+      "memory-and-resource-lifetimes",
+      "time-money-and-data-representation",
+      "concurrency-and-execution-contexts",
+      "task-ownership-and-cancellation",
+      "races-and-request-coordination",
+      "streams-and-backpressure",
     ]);
     expect(
       getFoundationArticles("vi").map((article) => article.metadata.slug),
@@ -387,6 +417,12 @@ describe("Foundations MDX pipeline", () => {
       "state-ownership-and-data-flow",
       "rendering-and-frame-scheduling",
       "input-gestures-focus-and-keyboard",
+      "memory-and-resource-lifetimes",
+      "time-money-and-data-representation",
+      "concurrency-and-execution-contexts",
+      "task-ownership-and-cancellation",
+      "races-and-request-coordination",
+      "streams-and-backpressure",
     ]);
     expect(getFoundationArticle("pipeline-fixture", "en")).toBeUndefined();
   });

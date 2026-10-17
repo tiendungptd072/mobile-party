@@ -1,0 +1,121 @@
+## A task needs an owner before it needs a cancellation button
+
+Editor owner `E1` opens report `D42` and starts preview operation `P1`. P1 needs attachment content and metadata; both are required before publishing the preview. The user can replace D42 or leave the editor while either child is still running. Who requests cancellation, observes failure, waits for cleanup, and decides whether a result may appear?
+
+This article proposes an ownership contract for that flow. Its task tree and diagnostic cases are explanatory designs, not executable mobile snippets. React Native, Flutter, Jetpack Compose, and SwiftUI have **similar** needs to bound work but **different** scope, cancellation, and failure contracts. A language task hierarchy, an abort signal, and a widget lifecycle are not equivalent mechanisms.
+
+| Responsibility              | Proposed D42 owner               | Required decision                                     |
+| --------------------------- | -------------------------------- | ----------------------------------------------------- |
+| Start a preview             | E1 or its chosen state holder.   | Which identity/key makes this preview relevant?       |
+| Own required child work     | P1.                              | Does one child failure invalidate the whole preview?  |
+| Request cancellation        | The owner whose need ended.      | Which child APIs observe that request?                |
+| Release temporary resources | The task/resource owner.         | What cleanup must finish before replacement or reuse? |
+| Observe completion/failure  | P1's owner.                      | Where does the result or error go after E1 retires?   |
+| Publish preview state       | The current state authority.     | Is this still the current owner and operation?        |
+| Own a committed write       | A separately chosen write owner. | Does the operation intentionally outlive the editor?  |
+
+[State Ownership and Data Flow](/en/foundations/state-ownership-and-data-flow) covers publication authority. Task ownership adds a lifetime and completion responsibility; [Concurrency and Execution Contexts](/en/foundations/concurrency-and-execution-contexts) separately explains where its synchronous segments run.
+
+## Structured concurrency binds child lifetime to a scope
+
+In Kotlin, Job hierarchies propagate parent cancellation to children. With an ordinary parent Job, a non-cancellation child failure also cancels the parent and its other children; supervision can change that failure policy. A Job is complete only after its children complete, and a cancelled Job can still be finishing. <Citation source="kotlin-job" />
+
+Swift's task groups and `async let` form structured parent-child relationships. The parent cannot forget to wait for its structured children, and parent cancellation propagates to them. An unstructured `Task` does not gain that parent relationship merely because it was created inside a function or inherited actor isolation. <Citation source="swift-concurrency" />
+
+For P1, both content and metadata are required, so this design treats either required failure as failure of the preview. It requests sibling cancellation and observes all completions before releasing resources that the children can still access. This is the selected policy, not a promise that every framework automatically implements this tree.
+
+<Figure
+  id="cancellation-tree"
+  src="/illustrations/foundations/task-ownership-and-cancellation/cancellation-tree-en.svg"
+  alt="Editor owner E1 owns preview operation P1, which owns required content child C1 and metadata child M1. Ownership and cancellation flow downward. A separate three-step panel shows requesting cancellation, children observing it and cleaning up, and confirming completion. Requesting cancellation is not the final completion state and does not undo a server write."
+  caption="A proposed D42 ownership tree and separate cancellation progression. Self-authored diagram; Kotlin and Swift support structured hierarchies, while React Native and Flutter need their actual API and owner contracts. The panel is conceptual, not a fixed scheduler timeline."
+  sources={["kotlin-job", "swift-concurrency"]}
+/>
+
+Retiring E1 first removes P1's permission to publish, then requests cancellation through the child APIs. P1 can remain alive long enough to observe completions and perform required cleanup without continuing to update the retired editor. In this design, retirement and cleanup completion are separate states.
+
+A longer-lived owner is appropriate only when the work must actually outlive E1. Moving every operation to a global scope avoids one cancellation boundary while losing useful lifetime control. If a save must continue, choose its owner at launch; do not assume an already cancelled operation can be safely “rescued” by transferring its handle.
+
+## Cancellation is a request, observation, and completion protocol
+
+Kotlin coroutine cancellation is cooperative. A CPU loop that does not suspend can check the current coroutine context with `ensureActive`; a check cannot retroactively interrupt an opaque blocking call already in progress. Choose checkpoints between bounded units of work and use an API's own interruption/cancellation adapter where supported. <Citation source="kotlin-ensure-active" />
+
+Swift also uses cooperative cancellation. `Task.checkCancellation()` throws when the task is cancelled; `Task.isCancelled` allows a task to choose a suitable stopping/cleanup path. Setting cancellation state alone does not force every instruction, library call, or external operation to stop. <Citation source="swift-concurrency" />
+
+AbortController supplies another model. The DOM standard says promises have no built-in abort mechanism: an API accepts an AbortSignal and defines how it responds. A caller aborting its controller does not make an arbitrary Promise executor or unrelated callback cancellable. The signal must reach each operation that is meant to observe it. <Citation source="dom-abort" />
+
+For D42, keep three observations distinct: the owner requested cancellation; a child acknowledged it at a supported boundary; the child finished and released its owned resources. A late success can still arrive from a source that ignores cancellation. Publication checks remain necessary even when cancellation usually saves work.
+
+Kotlin `cancelAndJoin` requests cancellation and suspends the caller until the target completes. That wait is itself cancellable, so it is not an unconditional guarantee that a cancelled caller will finish waiting. Never replace a suspension-based wait with blocking the UI thread. <Citation source="kotlin-cancel-join" />
+
+## Failure policy is separate from cancellation policy
+
+Kotlin's normal Job hierarchy and supervision differ. A SupervisorJob isolates a child failure from the supervisor and sibling jobs, while cancellation of the supervisor still reaches its children. Supervised children still need explicit error observation; supervision does not turn failure into success. <Citation source="kotlin-exceptions" />
+
+For the proposed preview, content and metadata fail together because the product requires both. Optional diagnostics could instead use a deliberately supervised, independently observed path. Do not put a required content failure behind a catch-all that returns an empty successful preview merely to keep the parent alive.
+
+In Kotlin, cancellation is conveyed through CancellationException. Preserve that cancellation when a broad error handler is necessary, rather than reporting it as an ordinary retryable failure. At an intentional outer owner boundary, classify the final outcome according to the API contract: success, cancellation, or an actual error. Do not assume every error that happens near an abort was caused by the abort. <Citation source="kotlin-exceptions" />
+
+The task owner must also observe failures after cancellation was requested. A source can fail during cleanup or finish normally before noticing the request. Record the actual terminal outcome and any remaining resource responsibility, not only a “cancel clicked” event.
+
+## Four frameworks expose different lifetime boundaries
+
+### React Native
+
+React Effect cleanup runs with the old dependencies before replacement setup and when the component is removed. Development Strict Mode also exercises an extra setup/cleanup cycle. This is a registration lifetime, not automatic structured cancellation of every Promise created by the Effect. <Citation source="react-effect" />
+
+React Native documents a global AbortController, but its API page is explicitly incomplete. Use the installed runtime/data-source contract for request cancellation; the DOM standard establishes signal semantics without proving identical behavior for every native adapter. For E1, create a fresh controller for a new operation, pass its signal through the data layer, abort the old operation at its ownership boundary, and suppress obsolete publication. An already aborted signal represents cancellation, not a reusable fresh lifetime. <Citation source="rn-abort-controller" /> <Citation source="dom-abort" />
+
+React's data-fetching Effect example separately prevents a retired Effect from publishing a late response. That publication guard protects state; it does not stop the request or create an asynchronous join of every child. If shutdown requires awaiting cleanup, a coordinator must own that completion outside the synchronous Effect cleanup contract. Navigation blur also need not mean the component was removed. <Citation source="react-effect" />
+
+### Flutter
+
+A Future describes eventual completion; giving up a particular wait is not proof that the underlying operation stopped. Dart `Future.timeout` explicitly allows the source future to finish later while its late result is ignored by the timeout future. Use an operation-specific cancellation API or an explicit cooperative protocol when work must stop. <Citation source="dart-future-timeout" />
+
+Flutter State disposal marks permanent removal of that State. Its contract describes unsubscribing from changing event sources, and calling setState after disposal is an error. A still-mounted State can nevertheless be waiting for an obsolete report operation, so `mounted` alone is not an operation-identity check. Disposal is also not guaranteed at application shutdown. <Citation source="flutter-dispose" />
+
+Dart `StreamSubscription.cancel()` stops further event delivery and returns a Future that completes when stream cleanup finishes. That is a concrete asynchronous cleanup contract; it is not a generic cancellation method on every Future. For D42, keep any completion obligation with an owner that can await it, rather than treating a synchronous State disposal callback as proof of finished asynchronous cleanup. <Citation source="dart-subscription-cancel" />
+
+### Jetpack Compose
+
+LaunchedEffect launches a coroutine on entering composition, cancels it on leaving, and cancels/restarts it when its keys change. `rememberCoroutineScope` is another composition-bound scope for work launched by events. Neither contract means every recomposition is removal or that composition membership equals visible screen time. <Citation source="compose-effects" />
+
+Android's lifecycle guide distinguishes composition-bound work from `viewModelScope`, whose jobs are cancelled when the ViewModel is cleared. A retained ViewModel can therefore own work across a shorter UI lifetime. Select E1's actual scope from product lifetime; moving to a worker dispatcher does not change that owner. Off-screen composed content may still have a live LaunchedEffect. <Citation source="android-lifecycle-scopes" />
+
+Within the chosen coroutine scope, pass cancellation through suspend APIs and add current-context checks to long CPU phases. Use `finally` for owned teardown; if cleanup truly requires a non-cancellable region, keep it narrowly bounded and preserve error reporting. A cancelled screen should not run unlimited business work inside cleanup. Kotlin's exception guide demonstrates that parents may still wait for child cleanup. <Citation source="kotlin-ensure-active" /> <Citation source="kotlin-exceptions" />
+
+### SwiftUI
+
+SwiftUI's task modifier with an `id` cancels and restarts the task when that value changes, and SwiftUI can automatically cancel unfinished work after the view disappears. The documented API is available on iOS/iPadOS 15+. Use a key that represents the required operation; cancellation remains cooperative rather than instantaneous stopping at the disappearance event. <Citation source="swiftui-task" />
+
+Inside that owned operation, structured task groups or `async let` bind required child lifetimes. Creating an unstructured Task or detached task instead changes the ownership contract: inherited actor isolation does not establish a structured parent, and a discarded handle is not a cancellation request. Store and manage an unstructured handle when that model is actually required. <Citation source="swift-concurrency" />
+
+For D42, check cancellation at suitable parser boundaries, return/rethrow according to the task's result contract, and keep publication on the correct state owner. [Concurrency and Execution Contexts](/en/foundations/concurrency-and-execution-contexts) covers actor/executor placement; cancellation does not grant safe access to another actor's state.
+
+## Cleanup and remote effects have different completion boundaries
+
+For P1, owned temporary buffers and subscriptions must follow their resource APIs. Cleanup should stop new deliveries where supported, release owned resources, and report failures. It cannot assume every close/cancel method is idempotent or that borrowing a resource grants release ownership. [Memory and Resource Lifetimes](/en/foundations/memory-and-resource-lifetimes) explains those obligations.
+
+Now consider a separate D42 write in the proposed system: the server commits revision `R8`, then E1 requests cancellation before receiving the response. Stopping the client's wait does not establish that R8 was rolled back. Without a server contract proving otherwise, the client has an unknown outcome, not proof that no write occurred.
+
+A recovery design can query the operation/result and reconcile current authoritative state. A compensating action, when supported, is a separate operation with its own failure cases. Do not turn “cancelled locally” into an unconditional retry of a potentially committed write. This scenario illustrates the boundary; it does not claim a cancellation API implements transactions or durable retry.
+
+Likewise, a task scope existing in memory does not survive process replacement. Persist required intent and committed data under an explicit recovery policy instead of relying on a final cancellation callback. [Process Death and State Restoration](/en/foundations/process-death-and-state-restoration) covers reconstruction after that boundary.
+
+## Verify the whole stopping path
+
+| D42 acceptance case                            | Evidence the proposed implementation needs                                                           |
+| ---------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| E1 retires while both children wait            | Both receive supported cancellation, obsolete publication is disabled, and completions are observed. |
+| A child ignores cancellation and succeeds late | No preview reaches the retired/currently different operation; remaining work is accounted for.       |
+| CPU parsing has no natural suspension          | Bounded cancellation checkpoints demonstrate acceptable stop latency on the target.                  |
+| Required content fails while metadata waits    | Selected fail-fast policy requests sibling cancellation and observes both outcomes.                  |
+| An optional supervised child fails             | Required preview work follows its policy; the optional error is still observed.                      |
+| Subscription cleanup is delayed or fails       | Completion/resource state is recorded; replacement does not assume cleanup already succeeded.        |
+| The caller is cancelled while joining          | The coordinator handles its own cancellation and remaining completion obligation explicitly.         |
+| A write commits before local cancellation      | Recovery reconciles actual server state instead of assuming rollback.                                |
+| Process termination skips teardown             | Persisted recovery works without a guaranteed final callback.                                        |
+
+Trace operation/owner IDs, cancellation request time, observation points, terminal outcomes, and cleanup completion without logging private report content. Distinguish a task that is still stopping from a leak or a finished cancellation. Use a suitable elapsed clock for stop latency; there is no universal zero-latency cancellation promise.
+
+These are proposed mobile acceptance cases, not compiler/device results from four native applications. The [coroutine scope comparison](/en/compare/coroutine-scopes), [async work comparison](/en/compare/async), and [side effects comparison](/en/compare/side-effects) provide narrower API examples. Choose ownership first, propagate supported cancellation, observe completion, and keep publication and remote-effect recovery explicit.

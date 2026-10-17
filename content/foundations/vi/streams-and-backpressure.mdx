@@ -1,0 +1,127 @@
+## Chuỗi dữ liệu cần contract delivery
+
+Báo cáo `D42` hiển thị tiến độ upload trong khi đọc các chunk của file attachment. UI chậm có thể bỏ qua phần trăm trung gian và hiển thị giá trị hiện tại. File decoder không thể bỏ chunk tùy ý mà vẫn dựng lại cùng attachment. Cả hai đầu vào đều là chuỗi, nhưng cần chính sách mất dữ liệu, thứ tự và retention khác nhau.
+
+Bài viết đề xuất các chính sách đó. Sơ đồ và trường hợp acceptance là thiết kế minh họa, không phải snippet mobile thực thi hoặc số đo throughput. React Native, Flutter, Jetpack Compose và SwiftUI có nhu cầu quan sát **tương tự**, nhưng contract subscription, sharing, replay và flow control **khác nhau**. Snapshot store, broadcast stream, StateFlow và AsyncStream không phải event log hoán đổi được.
+
+| Chiều contract | Câu hỏi cho D42                                                 | Quyết định độc lập                               |
+| -------------- | --------------------------------------------------------------- | ------------------------------------------------ |
+| Production     | Mỗi subscription bắt đầu công việc hay quan sát producer đã có? | Owner nào bắt đầu/dừng producer.                 |
+| Distribution   | Một consumer hay nhiều subscriber?                              | Consumer chậm có ảnh hưởng nhau không.           |
+| Replay         | Subscriber mới nhận gì?                                         | Lịch sử trong bộ nhớ hay phục hồi bền vững.      |
+| Capacity       | Giữ được bao nhiêu giá trị hoặc byte đang chờ?                  | Công việc đang xử lý và queue ngoài adapter này. |
+| Overflow       | Suspend, reject, bỏ cũ, bỏ mới hay coalesce?                    | Nguồn có thật sự hỗ trợ giảm tốc không.          |
+| Termination    | Completion, error và cancellation biểu đạt thế nào?             | Chính sách cleanup và reconnect.                 |
+
+Contract hữu ích phải nói rõ tất cả. Chỉ “reactive” hoặc “bất đồng bộ” không xác lập bộ nhớ có giới hạn, delivery khi quay lại màn hình hoặc persistence.
+
+## Tách vòng đời production khỏi số subscriber
+
+Cold production recipe có thể chạy riêng cho mỗi collector. Tài liệu SharedFlow Kotlin phân biệt hot instance tồn tại độc lập với `flow` builder thông thường bắt đầu lại cho từng collector. Vì vậy, subscribe hai lần vào cold network recipe có thể tạo hai thao tác nếu chưa chọn sharing rõ ràng. Hot nghĩa là instance tồn tại độc lập với collector; không có nghĩa tài nguyên upstream phải chạy mãi. <Citation source="kotlin-shared-flow" />
+
+Dart phân biệt single-subscription và broadcast stream. Single-subscription stream chỉ được listen một lần; nó không tự giống cold Flow recipe có thể dùng lại. Broadcast stream cho listener đến rồi rời, nhưng lựa chọn distribution đó không cung cấp replay hoặc current-value snapshot. Đọc riêng contract producer/controller. <Citation source="dart-streams" />
+
+Với D42, repository sở hữu một upload producer đã chọn, còn mỗi màn hình sở hữu subscription. Màn hình thứ hai có thể quan sát cùng upload thay vì bắt đầu upload khác. Khi màn hình cuối rời đi, sản phẩm phải chọn upload tiếp tục, dừng hay trở thành công việc có thể phục hồi dưới owner khác. Chỉ đổi stream type không đưa ra quyết định đó.
+
+[Quyền sở hữu task và cancellation](/vi/foundations/task-ownership-and-cancellation) giải thích vòng đời công việc và cleanup. Giữ riêng vòng đời subscriber, shared producer, giá trị được giữ và dữ liệu đã commit.
+
+## State hiện tại có thể bỏ chuyển tiếp; dữ liệu bắt buộc thì không
+
+StateFlow Kotlin luôn có current value, replay giá trị mới nhất cho subscriber mới và conflate cập nhật nhanh với collector chậm. Conflation dựa trên equality còn chặn giá trị bằng nhau. Nó phù hợp current UI projection; không hứa mọi chuyển tiếp trung gian đều được quan sát. Dùng giá trị immutable có ý nghĩa thay vì âm thầm sửa object đã emit rồi mong có observation mới. <Citation source="kotlin-state-flow" />
+
+Trong thiết kế này, progress 25%, 50% và 75% đến trước lần UI đọc tiếp. Latest-value projection có thể chỉ giữ 75%. Ngược lại, chunk attachment C1, C2 và C3 phải giữ thứ tự và nội dung. Nếu buffer hai phần tử chứa C1 và C2, producer cooperative phải chờ trước khi thêm C3 theo chính sách không bỏ dữ liệu đã chọn.
+
+<Figure
+  id="delivery-policies"
+  src="/illustrations/foundations/streams-and-backpressure/delivery-policies-vi.svg"
+  alt="Hai chính sách delivery đề xuất được tách riêng. Progress upload 25, 50 và 75 phần trăm thành một latest value pending là 75, nên UI có thể bỏ cập nhật trung gian. Chunk file bắt buộc C1, C2 và C3 dùng queue capacity hai chứa C1 và C2; C3 chờ chỗ trống, consumer đọc đủ chunk theo thứ tự. Đường chờ giả định nguồn cooperative, không phải cam kết chung của mọi callback."
+  caption="Chính sách state và dữ liệu có thứ tự đề xuất cho D42. Sơ đồ tự biên soạn: conflation chủ ý làm mất thông tin, còn delivery không bỏ dữ liệu với buffer có giới hạn cần nguồn hợp tác. Không đường nào là durable event log hoặc timeline đo thực tế."
+  sources={["kotlin-state-flow", "kotlin-buffer"]}
+/>
+
+Đường progress chỉ hợp lệ vì consumer cần phần trăm hiện tại. Nếu một chuyển tiếp cần acknowledgement, audit record hoặc đúng một tác động bên ngoài, bỏ giá trị trung gian làm đổi yêu cầu. Mô hình hóa công việc bắt buộc bằng giao thức acknowledgement/retention rõ ràng, thay vì giả định UI observer đã thấy mọi thay đổi state.
+
+Conflation không phải cancellation công việc đang xử lý giá trị trước. Nó đổi giá trị pending nào còn được giữ. Tương tự, replay cho subscriber mới khác buffering cho consumer đã subscribe nhưng chậm. Các chính sách có thể dùng storage liên quan, nhưng trả lời câu hỏi khác nhau.
+
+## Backpressure phải đến producer có thể phản hồi
+
+Backpressure là cơ chế phản hồi giới hạn production/admission khi capacity downstream không đủ. Buffering hấp thụ burst tạm thời; không xóa chênh lệch tốc độ kéo dài. Nếu nguồn tiếp tục tạo nhanh hơn consumer xử lý, buffer hữu hạn cuối cùng phải dùng overflow policy.
+
+Flow `buffer` Kotlin tách upstream và downstream bằng channel. Overflow policy SUSPEND mặc định suspend producer coroutine khi channel đầy; DROP_OLDEST và DROP_LATEST bỏ các giá trị khác nhau. Coroutine riêng không tự nghĩa là physical thread riêng. Nên chỉ rõ capacity thay vì giả định mặc định chưa định lượng đáp ứng ngân sách bộ nhớ sản phẩm. <Citation source="kotlin-buffer" />
+
+Suspension đó chỉ điều khiển ranh giới có tham gia. Callback bên ngoài có thể tiếp tục tạo vào queue khác khi coroutine adapter suspend. Theo dõi toàn bộ đường: nguồn thiết bị/server, native callback queue, adapter, downstream buffer, consumer và rendering. Buffer giữa có giới hạn chưa chứng minh toàn pipeline có giới hạn.
+
+Với D42, buffer minh họa gồm 32 payload trung bình 2 KiB tính ra khoảng 64 KiB chỉ cho payload. Nó chưa gồm object overhead, payload biến thiên, công việc đang xử lý, buffer trùng và subscriber khác. Giới hạn byte hoặc kích thước payload cùng số phần tử khi kích thước thay đổi. Đây là số học lập kế hoạch, không phải heap measurement.
+
+| Chính sách đề xuất  | Giữ gì khi capacity đầy                   | Chi phí hoặc điều kiện                            |
+| ------------------- | ----------------------------------------- | ------------------------------------------------- |
+| Suspend/cooperate   | Phần tử hiện có, trong khi admission chờ. | Nguồn phải tôn trọng phản hồi; chờ tăng latency.  |
+| Drop oldest         | Giá trị pending mới hơn.                  | Mất thông tin cũ có thể bắt buộc.                 |
+| Drop newest         | Giá trị pending hiện có.                  | Consumer có thể tiếp tục chậm hơn state hiện tại. |
+| Conflate latest     | Một current projection pending.           | Chủ ý bỏ chuyển tiếp trung gian.                  |
+| Reject/fail rõ ràng | Không âm thầm nhận giá trị mới.           | Caller/nguồn cần overflow recovery contract.      |
+
+Bỏ dữ liệu sớm ở upstream có thể tiết kiệm CPU, còn buffer sau decode tốn kém vẫn giữ chi phí đó. Chọn ranh giới từ yêu cầu ngữ nghĩa và ngân sách tài nguyên, không chỉ từ operator ngắn nhất.
+
+## Không có subscriber là trường hợp delivery riêng
+
+Replay SharedFlow quyết định subscriber đến sau nhận gì. Khi không có subscriber, chỉ giữ giá trị replay; extra buffer capacity không trở thành backlog offline, và SUSPEND không khiến emitter chờ subscriber tương lai. MutableSharedFlow mặc định không replay: `tryEmit` có thể thành công khi không có subscriber trong khi giá trị bị mất ngay. Thành công ở đây không phải acknowledgement delivery. <Citation source="kotlin-shared-flow" />
+
+StreamController.broadcast Dart cũng bỏ event/error thêm vào khi không có listener. Listener đã subscribe nhưng pause lại khác: listener đó buffer event độc lập trong khi listener khác có thể tiếp tục. Không suy ra current-value replay kiểu StateFlow chỉ từ chữ broadcast. <Citation source="dart-broadcast" />
+
+Với progress UI đề xuất, subscribe lại đọc current snapshot mới hoặc cơ chế latest-state tường minh của producer. Với dữ liệu bắt buộc bị lỡ khi vắng mặt, dùng authoritative reload, phục hồi theo cursor/checkpoint hoặc durable backlog có acknowledgement được chọn có chủ ý. Thêm replay vào notification tạm còn có thể lặp lại action khi màn hình trở về; chọn event identity và consumption policy rõ ràng.
+
+[Process death và khôi phục state](/vi/foundations/process-death-and-state-restoration) giải thích vì sao replay cache trong bộ nhớ không phục hồi được dữ liệu mất cùng process. [Quyền sở hữu state và luồng dữ liệu](/vi/foundations/state-ownership-and-data-flow) xác định current state có thẩm quyền.
+
+## Bốn framework cung cấp công cụ quan sát khác nhau
+
+### React Native
+
+React `useSyncExternalStore` đọc external store qua subscribe/getSnapshot. Subscription trả unsubscribe function; snapshot phải immutable và được cache khi không đổi. Điều này đưa current external snapshot vào React, không tạo producer, replay log hoặc backpressure protocol cho mọi event upstream. <Citation source="react-external-store" />
+
+Với D42, store do ứng dụng sở hữu có thể cung cấp current upload progress, còn producer owner riêng quản lý upload. Nếu nguồn native event nhanh hơn JavaScript xử lý, chỉ snapshot rendering không giới hạn event queue đó. Chọn coalescing, admission hoặc giới hạn tài nguyên rõ ràng tại ranh giới nguồn/adapter phù hợp. Subscribe lại nên đọc current state, không phụ thuộc việc đã nhận mọi notification.
+
+### Flutter
+
+Stream Dart mang data, error và done event. Vòng await-for kết thúc khi stream done và ném lỗi khi có error; contract tiêu thụ stream khác có thể xử lý error event khác. Chọn hành vi đó thay vì giả định error luôn là event cuối. <Citation source="dart-streams" />
+
+StreamSubscription.pause dừng delivery cho subscription đó, buffer event đến cho tới resume. Nguồn non-broadcast thường được thông báo để có thể dừng tạo event, nhưng không bảo đảm chung rằng nguồn từ xa hoặc mọi adapter đều pause. Pause broadcast listener có thể làm buffer cục bộ tăng; nếu event trung gian không quan trọng, API gợi ý cancel rồi listen lại. Lựa chọn đó cần chính sách current-state/phục hồi cho khoảng vắng mặt. <Citation source="dart-pause" />
+
+Với D42, phân biệt stream factory mới với listen hai lần vào cùng single-subscription instance. Khi quan sát broadcast, quy định initial state và hành vi producer onListen/onCancel rõ ràng. Broadcast không tự cache progress mới nhất hoặc restart dữ liệu file bắt buộc an toàn. <Citation source="dart-broadcast" />
+
+### Jetpack Compose
+
+StateFlow biểu diễn current state; SharedFlow cung cấp replay/buffering cấu hình được cho shared emission. Không loại nào complete bình thường hoặc trực tiếp báo terminal failure bằng stream close; cần biểu đạt loading/error/completion dưới dạng domain value khi cần. Không coi last value được giữ là bằng chứng producer upstream vẫn khỏe. <Citation source="kotlin-state-flow" /> <Citation source="kotlin-shared-flow" />
+
+Android khuyến nghị `collectAsStateWithLifecycle` để thu Flow thành Compose State theo lifecycle. Chính sách subscriber đó tách khỏi chính sách shared upstream. `SharingStarted.WhileSubscribed` bắt đầu sharing khi có subscriber đầu; mặc định dừng sharing ngay khi subscriber cuối rời nhưng giữ replay vô hạn. Stop timeout và replay expiration là hai điều khiển riêng; replay hết hạn đưa stateIn về initial value ban đầu. Các mặc định không tự là vòng đời account/cache phù hợp. <Citation source="android-compose-state" /> <Citation source="kotlin-while-subscribed" />
+
+Với D42, chọn upload ngoài màn hình tiếp tục bao lâu độc lập với collection. Cancellation của sharing coroutine vẫn phải tới producer/registration thật để giải phóng tài nguyên. Collector dừng không chứng minh nguồn callback bên ngoài dừng. [So sánh Flow/StateFlow](/vi/compare/flow-and-stateflow) giải thích ánh xạ snapshot/shared-state hẹp hơn.
+
+### SwiftUI
+
+Swift AsyncStream chuyển production dạng callback thành AsyncSequence. Buffer mặc định được tài liệu hóa là unbounded; consumer dùng for-await không tự làm chậm callback gọi continuation.yield. Yield trả ngay thay vì chặn chờ tiêu thụ và báo YieldResult. Quan sát delivery không thành công theo contract adapter, thay vì coi mọi lần gọi là acknowledgement. <Citation source="swift-async-stream" /> <Citation source="swift-yield" />
+
+Chọn buffering rõ ràng: bufferingNewest giữ giá trị mới nhất bằng cách bỏ phần tử cũ nhất khi đầy; bufferingOldest giữ phần tử cũ nhất bằng cách bỏ phần tử vừa đến. Đây là chính sách mất dữ liệu có chủ ý, không phải cooperative suspension nguồn callback. AsyncStream và các API này có availability iOS/iPadOS 13+ được tài liệu hóa; kiểm tra contract Swift/SDK đã cài khi triển khai adapter. <Citation source="swift-buffer-newest" /> <Citation source="swift-buffer-oldest" />
+
+Combine có cơ chế khác: Subscription.request báo publisher được gửi thêm giá trị. Chỉ demand contract đó không chứng minh sensor/native callback bên ngoài đã được điều khiển tốc độ vật lý; publisher/adapter phải nối demand đúng cách. Không giả định mọi AsyncSequence hoặc callback wrapper triển khai demand kiểu Combine. <Citation source="combine-demand" />
+
+Task modifier SwiftUI có id có thể sở hữu việc tiêu thụ sequence, hủy/restart khi id đổi, với availability iOS/iPadOS 15+ được tài liệu hóa. Ví dụ callback adapter của AsyncStream dùng onTermination để dừng nguồn. Giữ rõ consumer task, stream termination và trách nhiệm cleanup source registration; cancellation không phải phục hồi bền vững. <Citation source="swiftui-task" /> <Citation source="swift-async-stream" />
+
+## Quy định completion, phục hồi và bằng chứng quan sát
+
+Trong thiết kế này, progress state chứa upload identity, current progress, status và lỗi cần xử lý. Chunk bắt buộc có kiểm tra thứ tự và integrity. Error value trong current state, stream error, normal completion, subscription cancellation và source disconnection là quan sát khác nhau; mỗi loại cần phản ứng đã chọn.
+
+Disconnect tạm có thể kích hoạt reconnect được kiểm soát và authoritative reload. Reconnect có thể lặp giá trị hoặc để lại gap, nên mang identity/version/cursor khi nguồn hỗ trợ. Chỉ buffer trong bộ nhớ không xác lập exactly-once delivery. Không âm thầm hiển thị phần trăm cuối đứng yên như upload live khỏe mạnh.
+
+| Trường hợp acceptance đề xuất                   | Bằng chứng cần cho D42                                                                               |
+| ----------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| Producer burst trong khi UI chậm                | Current progress đúng; cập nhật chủ ý bỏ và peak capacity quan sát được.                             |
+| Chunk bắt buộc làm đầy buffer                   | Không mất âm thầm; chờ cooperative hoặc overflow/failure rõ ràng theo contract.                      |
+| Listener đến sau emission                       | Initial snapshot/replay/hành vi khi vắng mặt khớp nguồn đã chọn.                                     |
+| Một subscriber pause khi subscriber khác active | Buffering theo subscriber và hành vi producer khớp API thật.                                         |
+| Subscriber cuối rời rồi trở lại                 | Kiểm tra riêng stop timeout, replay expiry, restart và current-state recovery.                       |
+| State được cập nhật bằng giá trị bằng nhau      | Equality/conflation đúng dự kiến; event bắt buộc không được mã hóa thành state không phân biệt được. |
+| Stream lỗi hoặc complete                        | UI status và source cleanup phản ánh đúng điều kiện terminal hoặc recoverable.                       |
+| Consumer bị hủy hoặc process kết thúc           | Kiểm tra riêng registration cleanup và nghĩa vụ persisted recovery.                                  |
+
+Trace số produced, admitted, observed, dropped/coalesced, buffered và acknowledged thành metric riêng. Render một giá trị không đồng nghĩa acknowledgement mọi event producer. Dùng nguồn điều khiển được và consumer chậm để test policy, rồi đo adapter/thiết bị thật độc lập. [So sánh flow composition](/vi/compare/flow-composition) cung cấp ví dụ derivation/error tập trung; [Race và điều phối request](/vi/foundations/races-and-request-coordination) giải thích admission và công bố lỗi thời. Bài không khẳng định native compilation bốn framework hoặc số đo throughput.

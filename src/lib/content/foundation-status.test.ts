@@ -377,7 +377,7 @@ describe("Foundations quality report", () => {
     const output = new TextDecoder().decode(result.stdout);
     expect(output).toContain("Required cells: 864; ready: 864; missing: 0.");
     expect(output).toContain(
-      "Foundation registry: 7 articles; published: 7; drafts: 0;",
+      "Foundation registry: 13 articles; published: 13; drafts: 0;",
     );
     expect(output).toContain("errors: 0; pending: 0.");
   });

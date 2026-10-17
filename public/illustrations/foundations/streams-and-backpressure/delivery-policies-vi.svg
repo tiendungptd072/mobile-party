@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="480" height="920" viewBox="0 0 480 920" role="img" aria-labelledby="title desc">
+<title id="title">Hai contract delivery</title>
+<desc id="desc">D42 · chính sách đề xuất. Khái niệm; không phải số đo throughput.</desc>
+<defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0L8 4L0 8Z" fill="#475569"/></marker></defs>
+<rect width="480" height="920" rx="20" fill="#f8fafc"/>
+<text x="28" y="48" font-family="system-ui,sans-serif" font-size="26" font-weight="700" fill="#0f172a">Hai contract delivery</text>
+<text x="28" y="80" font-family="system-ui,sans-serif" font-size="17" font-weight="400" fill="#0f172a">D42 · chính sách đề xuất</text>
+<rect x="28" y="110" width="424" height="325" rx="14" fill="#ffffff" stroke="#94a3b8"/>
+<text x="44" y="147" font-family="system-ui,sans-serif" font-size="22" font-weight="700" fill="#0f172a">Progress = state hiện tại</text>
+<text x="64" y="185" font-family="system-ui,sans-serif" font-size="21" font-weight="400" fill="#0f172a">25% → 50% → 75%</text>
+<rect x="48" y="215" width="384" height="75" rx="10" fill="#dbeafe" stroke="#64748b"/>
+<text x="64" y="245" font-family="system-ui,sans-serif" font-size="22" font-weight="700" fill="#0f172a">Latest pending: 75%</text>
+<text x="64" y="273" font-family="system-ui,sans-serif" font-size="17" font-weight="400" fill="#0f172a">Thay giá trị trung gian</text>
+<rect x="48" y="335" width="384" height="75" rx="10" fill="#d1fae5" stroke="#64748b"/>
+<text x="64" y="365" font-family="system-ui,sans-serif" font-size="22" font-weight="700" fill="#0f172a">UI đọc 75% hiện tại</text>
+<text x="64" y="393" font-family="system-ui,sans-serif" font-size="17" font-weight="400" fill="#0f172a">Không phải lịch sử chuyển tiếp</text>
+<path d="M240 190V205M240 293V325" fill="none" stroke="#475569" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="28" y="470" width="424" height="355" rx="14" fill="#ffffff" stroke="#94a3b8"/>
+<text x="44" y="507" font-family="system-ui,sans-serif" font-size="21" font-weight="700" fill="#0f172a">Chunk file = dữ liệu có thứ tự</text>
+<text x="64" y="546" font-family="system-ui,sans-serif" font-size="21" font-weight="400" fill="#0f172a">C1 → C2 → C3</text>
+<rect x="48" y="570" width="384" height="75" rx="10" fill="#dbeafe" stroke="#64748b"/>
+<text x="64" y="600" font-family="system-ui,sans-serif" font-size="22" font-weight="700" fill="#0f172a">Capacity 2: C1, C2</text>
+<text x="64" y="628" font-family="system-ui,sans-serif" font-size="17" font-weight="400" fill="#0f172a">Không mất chunk âm thầm</text>
+<rect x="48" y="685" width="384" height="75" rx="10" fill="#fef3c7" stroke="#64748b"/>
+<text x="64" y="715" font-family="system-ui,sans-serif" font-size="22" font-weight="700" fill="#0f172a">C3 chờ chỗ trống</text>
+<text x="64" y="743" font-family="system-ui,sans-serif" font-size="17" font-weight="400" fill="#0f172a">Nguồn phải hợp tác</text>
+<path d="M240 550V560M240 648V675" fill="none" stroke="#475569" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="48" y="798" font-family="system-ui,sans-serif" font-size="18" font-weight="400" fill="#0f172a">Đọc C1, rồi C2, rồi C3.</text>
+<text x="28" y="886" font-family="system-ui,sans-serif" font-size="17" font-weight="400" fill="#0f172a">Khái niệm; không phải số đo throughput.</text>
+</svg>

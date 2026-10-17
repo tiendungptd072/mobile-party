@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="480" height="920" viewBox="0 0 480 920" role="img" aria-labelledby="title desc">
+<title id="title">Representation boundaries</title>
+<desc id="desc">D42 · conceptual value flow. Persist canonical values. Display labels are projections.</desc>
+<defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0L8 4L0 8Z" fill="#526478"/></marker></defs>
+<rect width="480" height="920" rx="20" fill="#f8fafc"/>
+<text x="32" y="52" font-family="system-ui,sans-serif" font-size="25" font-weight="700" fill="#0f172a">Representation boundaries</text>
+<text x="32" y="83" font-family="system-ui,sans-serif" font-size="17" fill="#475569">D42 · conceptual value flow</text>
+<rect x="28" y="125" width="424" height="115" rx="14" fill="#e2e8f0" stroke="#64748b"/>
+<text x="48" y="165" font-family="system-ui,sans-serif" font-size="22" font-weight="650" fill="#0f172a">1. Input / wire values</text>
+<text x="48" y="203" font-family="system-ui,sans-serif" font-size="17" fill="#334155">Timestamp · amount · text</text>
+<path d="M240 242V270" stroke="#526478" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="28" y="280" width="424" height="115" rx="14" fill="#fef3c7" stroke="#64748b"/>
+<text x="48" y="320" font-family="system-ui,sans-serif" font-size="22" font-weight="650" fill="#0f172a">2. Validate the contract</text>
+<text x="48" y="358" font-family="system-ui,sans-serif" font-size="17" fill="#334155">Units · range · zone · text rules</text>
+<path d="M240 397V425" stroke="#526478" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="28" y="435" width="424" height="115" rx="14" fill="#d1fae5" stroke="#64748b"/>
+<text x="48" y="475" font-family="system-ui,sans-serif" font-size="22" font-weight="650" fill="#0f172a">3. Domain values</text>
+<text x="48" y="513" font-family="system-ui,sans-serif" font-size="17" fill="#334155">Instant · Money · Text</text>
+<path d="M240 552V580" stroke="#526478" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="28" y="590" width="424" height="115" rx="14" fill="#dbeafe" stroke="#64748b"/>
+<text x="48" y="630" font-family="system-ui,sans-serif" font-size="22" font-weight="650" fill="#0f172a">4. Localized display</text>
+<text x="48" y="668" font-family="system-ui,sans-serif" font-size="17" fill="#334155">Labels · separators · glyphs</text>
+<rect x="28" y="776" width="424" height="102" rx="14" fill="#ffffff" stroke="#64748b" stroke-dasharray="6 4"/>
+<text x="48" y="816" font-family="system-ui,sans-serif" font-size="22" font-weight="650" fill="#0f172a">Persist canonical values</text>
+<text x="48" y="850" font-family="system-ui,sans-serif" font-size="17" fill="#334155">Display labels are projections.</text>
+</svg>

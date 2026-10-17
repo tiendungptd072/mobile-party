@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="480" height="920" viewBox="0 0 480 920" role="img" aria-labelledby="title desc">
+<title id="title">Request order and intent</title>
+<desc id="desc">D42 · proposed event timeline. Event order only; not measured time.</desc>
+<defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0L8 4L0 8Z" fill="#475569"/></marker></defs>
+<rect width="480" height="920" rx="20" fill="#f8fafc"/>
+<text x="28" y="48" font-family="system-ui,sans-serif" font-size="25" font-weight="700" fill="#0f172a">Request order and intent</text>
+<text x="28" y="80" font-family="system-ui,sans-serif" font-size="17" font-weight="400" fill="#0f172a">D42 · proposed event timeline</text>
+<rect x="28" y="120" width="424" height="118" rx="12" fill="#dbeafe" stroke="#64748b"/>
+<text x="44" y="153" font-family="system-ui,sans-serif" font-size="22" font-weight="700" fill="#0f172a">1. Start Q1</text>
+<text x="44" y="187" font-family="system-ui,sans-serif" font-size="17" font-weight="400" fill="#0f172a">Query: cat · generation 1</text>
+<text x="44" y="215" font-family="system-ui,sans-serif" font-size="17" font-weight="400" fill="#0f172a">Current intent: generation 1</text>
+<path d="M240 240V265" fill="none" stroke="#475569" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="28" y="275" width="424" height="118" rx="12" fill="#dbeafe" stroke="#64748b"/>
+<text x="44" y="308" font-family="system-ui,sans-serif" font-size="22" font-weight="700" fill="#0f172a">2. Start Q2</text>
+<text x="44" y="342" font-family="system-ui,sans-serif" font-size="17" font-weight="400" fill="#0f172a">Query: car · generation 2</text>
+<text x="44" y="370" font-family="system-ui,sans-serif" font-size="17" font-weight="400" fill="#0f172a">Current intent: generation 2</text>
+<path d="M240 395V420" fill="none" stroke="#475569" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="28" y="430" width="424" height="118" rx="12" fill="#d1fae5" stroke="#64748b"/>
+<text x="44" y="463" font-family="system-ui,sans-serif" font-size="22" font-weight="700" fill="#0f172a">3. Q2 completes — accept</text>
+<text x="44" y="497" font-family="system-ui,sans-serif" font-size="17" font-weight="400" fill="#0f172a">Captured generation 2 matches.</text>
+<text x="44" y="525" font-family="system-ui,sans-serif" font-size="17" font-weight="400" fill="#0f172a">Publish current car results.</text>
+<path d="M240 550V575" fill="none" stroke="#475569" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="28" y="585" width="424" height="118" rx="12" fill="#fee2e2" stroke="#64748b"/>
+<text x="44" y="618" font-family="system-ui,sans-serif" font-size="22" font-weight="700" fill="#0f172a">4. Q1 completes — reject</text>
+<text x="44" y="652" font-family="system-ui,sans-serif" font-size="17" font-weight="400" fill="#0f172a">Captured generation 1 is obsolete.</text>
+<text x="44" y="680" font-family="system-ui,sans-serif" font-size="17" font-weight="400" fill="#0f172a">Keep current car results.</text>
+<rect x="28" y="765" width="424" height="85" rx="12" fill="#ffffff" stroke="#64748b"/>
+<text x="44" y="798" font-family="system-ui,sans-serif" font-size="22" font-weight="700" fill="#0f172a">Guard every publication</text>
+<text x="44" y="828" font-family="system-ui,sans-serif" font-size="17" font-weight="400" fill="#0f172a">Success · error · loading cleanup</text>
+<text x="28" y="890" font-family="system-ui,sans-serif" font-size="17" font-weight="400" fill="#0f172a">Event order only; not measured time.</text>
+</svg>

@@ -27,7 +27,7 @@ describe("Foundations discovery", () => {
     "finds the published %s pilot by title, keywords, and API without shipping article bodies",
     (locale) => {
       const index = createFoundationSearchIndex(getFoundationArticles(locale));
-      expect(index).toHaveLength(7);
+      expect(index).toHaveLength(13);
       const pilot = index.find((entry) => entry.slug === slug)!;
       for (const term of [pilot.title, "SavedStateHandle", "process death"])
         expect(
@@ -58,6 +58,32 @@ describe("Foundations discovery", () => {
           (entry) => entry.slug,
         ),
       ).toEqual(["input-gestures-focus-and-keyboard"]);
+      expect(
+        searchFoundationIndex(index, "RCTInvalidating").map(
+          (entry) => entry.slug,
+        ),
+      ).toEqual(["memory-and-resource-lifetimes"]);
+      expect(
+        searchFoundationIndex(index, "BigDecimal").map((entry) => entry.slug),
+      ).toEqual(["time-money-and-data-representation"]);
+      expect(
+        searchFoundationIndex(index, "Isolate.run").map((entry) => entry.slug),
+      ).toEqual(["concurrency-and-execution-contexts"]);
+      expect(
+        searchFoundationIndex(index, "cancelAndJoin").map(
+          (entry) => entry.slug,
+        ),
+      ).toEqual(["task-ownership-and-cancellation"]);
+      expect(
+        searchFoundationIndex(index, "limitedParallelism").map(
+          (entry) => entry.slug,
+        ),
+      ).toEqual(["races-and-request-coordination"]);
+      expect(
+        searchFoundationIndex(index, "BufferOverflow").map(
+          (entry) => entry.slug,
+        ),
+      ).toEqual(["streams-and-backpressure"]);
       expect(Object.keys(index[0]).sort()).toEqual([
         "description",
         "keywords",

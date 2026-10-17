@@ -1,0 +1,120 @@
+## Waiting and computing need different execution decisions
+
+Report `D42` loads a remote attachment, parses its contents, and publishes a preview. The network request can spend most of its lifetime waiting, while parsing spends time executing instructions. Putting both operations inside an `async` function does not establish where that CPU work runs or how long it occupies a UI-sensitive context.
+
+This article proposes a load → parse → publish pipeline. Its scheduling diagram and diagnostic cases are explanatory designs, not executable mobile snippets or device benchmarks. React Native, Flutter, Jetpack Compose, and SwiftUI offer **similar** ways to express asynchronous progress but **different** execution, isolation, and data-transfer contracts. A Promise, Future, coroutine, and Swift task are not interchangeable thread handles.
+
+| Term                | Meaning used here                                                                                   | What it does not establish                                                 |
+| ------------------- | --------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| Concurrency         | Multiple operations can make progress over overlapping lifetimes.                                   | Simultaneous CPU execution.                                                |
+| Parallelism         | Work executes at the same time on available processing resources.                                   | Faster completion for every workload.                                      |
+| Suspension          | A logical operation pauses until it can continue, allowing its execution resource to do other work. | A new thread or a guaranteed UI frame.                                     |
+| Blocking            | The executing thread cannot proceed with other work while the call waits or runs.                   | That the whole process is blocked.                                         |
+| Dispatcher/executor | A scheduling mechanism selecting where eligible work executes.                                      | Work ownership, durable execution, or exclusive access to all shared data. |
+| Isolate             | Dart execution with isolated state and its own event loop, communicating by messages.               | An arbitrary shared mutable object graph.                                  |
+
+The Dart concurrency guide distinguishes asynchronous event-loop progress from isolate-based parallel execution. Swift likewise separates asynchronous functions that can suspend from parallel work. These models support the terminology above; the pipeline is an application policy. <Citation source="dart-concurrency" /> <Citation source="swift-concurrency" />
+
+## Inspect each segment between suspension points
+
+An asynchronous operation has synchronous segments: start the request, process a completion, parse data, and update a model. The syntax at the call site can hide expensive work within those segments. If D42's parser runs on the UI-sensitive context, a completed network request does not make the parser nonblocking.
+
+In ECMAScript, an async function starts executing its body, and Await arranges continuation through promise reactions. The Promise constructor invokes its executor directly. Wrapping a synchronous parser in a Promise executor therefore does not move it to a worker. The language's execution contexts are specification bookkeeping, not operating-system threads. <Citation source="ecma-async" />
+
+Dart's event loop processes events one at a time within an isolate; lengthy synchronous processing delays subsequent events. Awaiting asynchronous I/O lets other Dart work progress while the operation waits, but parsing the returned bytes still executes somewhere. A Future records eventual completion, not a CPU-placement guarantee. <Citation source="dart-concurrency" />
+
+A Kotlin suspend function can suspend without blocking its thread, but the function can also call blocking or CPU-heavy code. Android's guidance makes the class performing blocking work responsible for switching context so the operation is safe to call from the main thread. The `suspend` modifier alone does not perform that switch. <Citation source="android-main-safe" />
+
+Treat `await` in Swift as a possible suspension point. The Swift concurrency model does not promise that arbitrary async code resumes on the same thread. Actor isolation constrains the execution allowed for actor-owned state; a thread ID alone is not a complete account of that contract. <Citation source="swift-concurrency" />
+
+## Separate UI-sensitive progress from expensive parsing
+
+For the proposed D42 flow, capture the attachment identity and input needed for parsing. Start an asynchronous read, allow the UI context to handle unrelated events while waiting, then explicitly schedule substantial CPU parsing in a suitable worker context. Return a result and publish it through the UI model's required context after checking that it still belongs to the current operation.
+
+<Figure
+  id="execution-handoff"
+  src="/illustrations/foundations/concurrency-and-execution-contexts/execution-handoff-en.svg"
+  alt="Two conceptual lanes show the UI context and I/O or worker execution. The UI starts a read, remains available while I/O waits, explicitly dispatches parsing, and handles input while CPU parsing runs elsewhere. A result returns to the UI context for validation and publication. The lanes do not assert a fixed thread count, exact timing, or a common worker API across frameworks."
+  caption="One proposed D42 execution handoff. Self-authored sequence, not a measured timeline: asynchronous waiting and explicit CPU placement are separate decisions. I/O may use platform mechanisms rather than a dedicated waiting thread."
+  sources={["dart-concurrency", "android-main-safe"]}
+/>
+
+The right lane deliberately combines two conceptual responsibilities, I/O progress and worker computation. It does not say the same thread performs both. During the read, the original logical operation is pending; during parsing, it awaits the worker result. Input can be handled only if the UI context has execution opportunities and is not occupied by other long work.
+
+Returning a result also has costs: queueing, validation, decoding/copying where required, model preparation, and rendering. Moving the parser does not move all downstream work. [Rendering and Frame Scheduling](/en/foundations/rendering-and-frame-scheduling) explains the presentation pipeline; this article concerns the context feeding it.
+
+In this design, results carry the request identity and immutable data needed by the consumer. A handoff does not prove a result is current or give permission to mutate UI from a worker. [State Ownership and Data Flow](/en/foundations/state-ownership-and-data-flow) covers the publication authority. Work owner, execution context, and data owner are separate choices.
+
+## Android and iOS constrain UI access
+
+Android's UI toolkit is not thread-safe, and its process/thread guide requires UI manipulation on the UI thread. Long operations there delay input and drawing. An ordinary app commonly starts its components on the main thread, but that does not imply every callback or library operation executes there. Read the API's callback/thread contract. <Citation source="android-threads" />
+
+On Apple platforms, MainActor is a singleton actor whose executor is equivalent to the main dispatch queue. Use the declared isolation of the UI model rather than treating any background completion as permission to modify it. A global actor is a language isolation boundary, not an independently persistent operating-system service. <Citation source="apple-main-actor" />
+
+“Background worker” here means execution away from a UI-sensitive context while the application can run. It does not grant operation after OS suspension or process termination. If D42 must recover after termination, it needs persisted intent and a recovery policy; [Process Death and State Restoration](/en/foundations/process-death-and-state-restoration) describes that boundary.
+
+## Four frameworks place work differently
+
+### React Native
+
+React Native's performance guide distinguishes the JavaScript thread from the native main UI thread. Business logic commonly occupies the JavaScript thread; blocking it can delay JS-driven interaction even while native scrolling or some native animations continue. Visible motion is therefore not proof that JavaScript is responsive. Test performance in release builds, as development work changes costs. <Citation source="rn-performance" />
+
+For D42, a Promise executor or a callback scheduled for later still runs its synchronous JavaScript computation in the context that executes it. A genuine offload requires a supported separate runtime or native execution facility with a documented handoff. Do not assume browser Web Workers exist in every RN runtime, or that a synchronous native call frees the JS caller. Verify the installed module's scheduling and serialization contract. <Citation source="ecma-async" />
+
+Splitting work into bounded chunks can reduce a single uninterrupted segment when offloading is inappropriate. It does not provide parallelism, reduce total CPU work automatically, or guarantee that promise continuation scheduling permits a rendered frame between chunks. Measure the actual input/frame delay instead of counting `await` keywords.
+
+### Flutter
+
+On Dart Native, worker isolates have isolated state and communicate through messages. `Isolate.run`, available since Dart 2.19, runs one computation in a new isolate; the computation and its result must be sendable. The API documents that its final result is transferred through isolate exit without copying, so do not generalize that every handoff copies every byte. Capturing a closure can also retain or send more state than intended. <Citation source="dart-isolate-run" />
+
+Flutter `compute` executes its callback in a separate isolate on native platforms, but on web it executes on the current event loop. Callback, input, and output must satisfy its sendability contract. A shared `compute` call site therefore does not establish equivalent parallelism on mobile and web. <Citation source="flutter-compute" />
+
+For D42, send only required parse input and return a bounded result. One-off isolates have setup/transfer costs; a reused worker can amortize setup but needs a message protocol, ownership, and shutdown policy. An asynchronous network read does not need a new isolate merely because it waits. <Citation source="dart-concurrency" />
+
+### Jetpack Compose
+
+A coroutine's context includes a dispatcher and other elements such as its Job. Builders inherit their scope's context unless it is changed; a coroutine is not tied to one physical thread and can resume on another. Creating a coroutine in a UI-owned scope is therefore not by itself a CPU offload. <Citation source="kotlin-dispatchers" />
+
+For this Android/JVM design, use an appropriate CPU dispatcher such as `Dispatchers.Default` for substantial parsing and `Dispatchers.IO` for blocking I/O. IO is documented as a shared pool for blocking I/O, not a promise of a dedicated thread per call. Inject the chosen dispatcher at the work boundary so tests can control scheduling; callers should not need to know that a repository internally uses a blocking API. An already nonblocking suspend API does not need an extra IO wrapper solely because it performs network access. <Citation source="kotlin-io" /> <Citation source="android-main-safe" />
+
+Keep parsing out of composable evaluation. Return the result through the state owner's context and publication rules; changing a dispatcher does not decide whether a screen, ViewModel, or longer-lived owner should keep the job alive.
+
+### SwiftUI
+
+A task created with `Task` inherits surrounding actor isolation where applicable; creating it inside a MainActor-isolated context is not a reliable way to move CPU parsing off that actor. Async code still contains uninterrupted synchronous segments. A non-main actor can also be occupied by a long segment; replacing MainActor with another actor does not make that work preemptively yielding. <Citation source="swift-concurrency" />
+
+Execution of nonisolated async functions is version/configuration-sensitive. SE-0461, implemented in Swift 6.2, makes caller-actor execution the default when `NonisolatedNonsendingByDefault` is enabled; `nonisolated(nonsending)` states that behavior explicitly. `@concurrent` explicitly switches off the caller's actor. Older semantics without that feature differ. Check compiler features and isolation declarations instead of assuming the word `nonisolated` always means a background thread. <Citation source="swift-async-isolation" />
+
+For D42, choose an explicit supported CPU execution boundary, pass values permitted across the isolation boundary, and return to the UI model's declared actor to publish. Off-actor execution does not promise a private thread or instantaneous scheduling. A detached task also changes context inheritance and ownership concerns; it is not a universal shortcut for making any UI operation safe. <Citation source="apple-main-actor" />
+
+## Choose granularity from the workload
+
+| D42 workload                           | Proposed decision                                         | Cost or limit to verify                                        |
+| -------------------------------------- | --------------------------------------------------------- | -------------------------------------------------------------- |
+| Waiting for a nonblocking network read | Suspend/await its completion.                             | Completion callback work and error paths still need a context. |
+| Small bounded transform                | Keep near its consumer if measurements permit.            | Avoid handoff overhead exceeding useful work.                  |
+| Substantial CPU parse                  | Use a suitable explicit worker/executor/isolate boundary. | Queue time, transfer, allocation, and result preparation.      |
+| Blocking file/library operation        | Use a context intended for that blocking contract.        | Thread/pool capacity and API thread affinity.                  |
+| Many independent parses                | Bound the admitted work and measure contention.           | More tasks can increase memory, queueing, and battery cost.    |
+| One dependent chain                    | Preserve required dependencies.                           | Parallel launch cannot remove a true data dependency.          |
+
+These are selection criteria, not measured thresholds. A worker can improve UI responsiveness while increasing total completion time. Parallelism is bounded by hardware, scheduler decisions, shared resources, and application limits; a thousand tasks do not imply a thousand simultaneous CPU operations.
+
+Cooperative suspension also cannot rescue a segment that never yields. Repeatedly launching work faster than it completes creates queueing even when each job uses the correct dispatcher. Work lifetime/cancellation and request coordination need their own contracts; this article introduces those boundaries without treating scheduling as a substitute for them.
+
+## Diagnose occupancy, queueing, and handoff separately
+
+For the proposed investigation, trace operation ID, phase, payload/result size, and execution context without logging attachment contents. Record enqueue, start, completion, and publication with a suitable same-scope elapsed clock, as explained in [Time, Money, and Data Representation](/en/foundations/time-money-and-data-representation). Thread names can aid diagnosis, but they do not replace dispatcher/actor/isolate identity or isolation checks.
+
+| Symptom                                  | Hypothesis to investigate                                     | Evidence for the proposed acceptance check                                  |
+| ---------------------------------------- | ------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| Input stalls after the response arrives  | Parsing or model preparation occupies a UI-sensitive context. | Phase trace plus input/frame behavior under a representative large payload. |
+| UI stays responsive but result is late   | Worker queueing, I/O delay, or result transfer dominates.     | Separate queue wait, run time, transfer, and publication measurements.      |
+| Flutter web still stalls with compute    | Callback runs on the current event loop.                      | Target-specific native/web test, not a shared call-site assumption.         |
+| Swift Task still occupies MainActor      | Inherited isolation or caller-actor async execution.          | Compiler feature settings, isolation declarations, and a runtime trace.     |
+| Worker completes but UI state is invalid | Incorrect publication context or obsolete operation.          | Context/isolation checks and operation-identity validation.                 |
+| More workers make the app slower         | Contention, setup, or excessive in-flight data.               | Compare bounded workloads and memory alongside elapsed time.                |
+
+Use representative failure paths too: I/O error, parser error, owner removal, and restart. A successful worker result is not evidence that cancellation rolled back external work or that in-memory work survived termination. No native compilation or device timing is claimed here; these acceptance cases describe what an implementation must demonstrate.
+
+The [async work comparison](/en/compare/async) shows the asynchronous call boundary, and the [coroutine scope comparison](/en/compare/coroutine-scopes) explains ownership/cancellation. Keep three questions explicit: who owns the work, where each segment executes, and who may publish its result.

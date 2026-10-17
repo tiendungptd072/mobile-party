@@ -1,0 +1,127 @@
+## Một giá trị đơn lẻ chưa nói rõ ý nghĩa
+
+Báo cáo `D42` ghi thời điểm phát sinh chi phí, lời nhắc cho ngày mai, thời gian lưu, số tiền và tiêu đề. Chỉ một số hoặc chuỗi chưa cho biết clock, đơn vị, tiền tệ, lịch hay quy tắc văn bản nào được dùng. Nhãn hiển thị có vẻ hợp lý vẫn có thể che giấu dữ liệu đã sai.
+
+Bài viết đề xuất contract rõ ràng cho các trường này. Contract và tình huống chẩn đoán là thiết kế minh họa, không phải snippet mobile thực thi. React Native, Flutter, Jetpack Compose và SwiftUI có vấn đề biểu diễn **tương tự** nhưng kiểu số, clock và ngữ nghĩa chuỗi **khác nhau**. Dùng chung wire schema không khiến giá trị runtime của chúng hoán đổi trực tiếp được.
+
+| Dữ kiện miền nghiệp vụ | Ý nghĩa cần có trong contract đề xuất                                           | Lựa chọn hiển thị riêng                     |
+| ---------------------- | ------------------------------------------------------------------------------- | ------------------------------------------- |
+| Thời điểm sự kiện      | Một điểm trên dòng thời gian, profile timestamp và độ chính xác được chấp nhận. | Múi giờ người xem và định dạng ngày giờ.    |
+| Ngày theo lịch         | Ngày trong hệ lịch đã chọn, không tự gán giờ trong ngày.                        | Nhãn ngày theo locale.                      |
+| Lời nhắc lặp lại       | Ý định ngày giờ địa phương, múi giờ có tên và chính sách xử lý giờ thiếu/trùng. | Lịch nhắc dễ đọc.                           |
+| Khoảng thời gian lưu   | Lượng thời gian đã trôi, đơn vị, gốc/phạm vi clock và cách tính thời gian ngủ.  | Mili giây hoặc giây đã làm tròn.            |
+| Tiền                   | Tiền tệ, lượng chính xác, scale, phạm vi hỗ trợ và quy tắc làm tròn.            | Ký hiệu tiền tệ, dấu nhóm và dấu thập phân. |
+| Tiêu đề                | Văn bản Unicode, chính sách so sánh/normalization và giới hạn độ dài.           | Glyph, xuống dòng và cắt ngắn.              |
+| Định danh opaque       | Danh tính chính xác và cú pháp chuỗi được phép.                                 | Thường không áp dụng định dạng số.          |
+
+[Quyền sở hữu state và luồng dữ liệu](/vi/foundations/state-ownership-and-data-flow) xác định giá trị nào là nguồn có thẩm quyền. Ở đây, thẩm quyền còn bao gồm ý nghĩa thật của giá trị và những phép biến đổi bảo toàn ý nghĩa đó.
+
+## Tách giá trị canonical khỏi phép chiếu hiển thị
+
+Với D42, kiểm tra giá trị đầu vào trước khi tạo domain value. Serialize theo contract rõ ràng khi lưu hoặc gửi; suy ra nhãn theo locale ở ranh giới hiển thị. Nhãn như `1,234` không truyền đạt số tiền an toàn nếu thiếu locale và contract số.
+
+<Figure
+  id="representation-boundaries"
+  src="/illustrations/foundations/time-money-and-data-representation/representation-boundaries-vi.svg"
+  alt="Bốn bước từ trên xuống: giá trị đầu vào hoặc truyền tải, kiểm tra contract, giá trị miền nghiệp vụ và hiển thị theo locale. Bước kiểm tra xét đơn vị, phạm vi, múi giờ và quy tắc văn bản. Domain value gồm thời điểm, tiền và văn bản. Ghi chú cuối yêu cầu lưu giá trị canonical thay vì nhãn hiển thị. Đây là ranh giới khái niệm, không bắt buộc thêm lớp kiến trúc."
+  caption="Ranh giới biểu diễn đề xuất cho D42. Sơ đồ tự biên soạn: tiêu chuẩn ràng buộc timestamp và số, còn ứng dụng xác định chính sách nghiệp vụ. Format tạo phép chiếu, không phải định dạng serialization luôn đảo ngược được."
+  sources={["rfc3339", "rfc8259"]}
+/>
+
+TypeScript interface hoặc JSON parse thành công không thay thế runtime validation. Kiểm tra đơn vị, cú pháp, phạm vi hỗ trợ, trường thiếu và độ chính xác được phép. Test round-trip cần encode domain value hợp lệ, decode rồi so sánh ý nghĩa cần giữ; kiểm tra riêng việc từ chối dữ liệu sai cú pháp hoặc ngoài phạm vi. Không yêu cầu chuỗi hiển thị bất kỳ phải round-trip qua bộ decode dữ liệu lưu.
+
+## Chọn clock theo câu hỏi cần trả lời
+
+Wall clock trả lời câu hỏi về thời gian dân sự. Android ghi rõ `System.currentTimeMillis()` có thể nhảy khi người dùng hoặc mạng chỉnh giờ. Vì vậy, trừ hai lần đọc wall clock có thể cho thời lượng thao tác sai. `SystemClock.uptimeMillis()` tăng đơn điệu và không tính deep sleep; `elapsedRealtime()` tăng đơn điệu và tính cả deep sleep. Cả hai có gốc tính từ lúc boot. <Citation source="android-clock" />
+
+Đây là hai thuộc tính riêng: đơn điệu nghĩa là clock không lùi, còn cách xử lý sleep quyết định những khoảng nào được tính. Độ phân giải cao không chứng minh độ chính xác đo tương ứng. Giá trị elapsed cũng không phải timestamp sự kiện để máy khác diễn giải.
+
+Với D42, đo một lần lưu bằng các lần đọc cùng clock và cùng phạm vi đã chọn. Không so sánh clock không liên quan hoặc lưu số từ lúc boot làm deadline vĩnh viễn. Sau khi khởi động lại, dựng lại deadline dân sự đã lưu theo chính sách thời gian của sản phẩm. [Process death và khôi phục state](/vi/foundations/process-death-and-state-restoration) giải thích ranh giới persistence; clock không thể khôi phục thao tác bị mất.
+
+Timer callback là cơ hội kiểm tra lại deadline, không chứng minh việc thực thi xảy ra chính xác tại đó. Chọn clock không tự cung cấp chạy nền hay clock đáng tin để kiểm soát truy cập giữa nhiều thiết bị. Chính sách hết hạn offline cần quyết định rõ cách xử lý wall time do người dùng chỉnh.
+
+## Phân biệt thời điểm, ngày và lịch nhắc
+
+RFC 3339 biểu diễn thời điểm bằng ngày giờ và UTC offset, ví dụ `2026-10-17T02:56:00Z`. Offset số liên hệ giờ địa phương đó với UTC; nó không xác định quy tắc múi giờ tương lai của một vùng. Với D42, chấp nhận một tập con và độ chính xác phần lẻ đã ghi rõ thay vì giả định mọi parser hỗ trợ mọi timestamp. Nếu dùng số nguyên epoch, phải chỉ rõ epoch và đơn vị giây/mili giây. <Citation source="rfc3339" />
+
+Cơ sở dữ liệu múi giờ IANA mô tả lịch sử offset theo vùng và thay đổi khi nhà chức trách sửa ranh giới múi giờ hoặc quy tắc daylight saving. Tên vùng như `America/New_York` biểu đạt quy tắc mà offset cố định `-04:00` không thay thế được. Thiết bị dùng phiên bản cơ sở dữ liệu khác nhau có thể giải lịch nhắc tương lai khác nhau. <Citation source="iana-zones" />
+
+Với lời nhắc đề xuất, giữ ý định theo lịch địa phương và định danh múi giờ. Chọn cách xử lý khi một giờ bị bỏ qua lúc chuyển tiến hoặc xuất hiện hai lần lúc chuyển lùi: từ chối, dịch chuyển hoặc chọn một lần theo chính sách đã ghi rõ. Không âm thầm dùng mặc định tình cờ của thư viện.
+
+Ví dụ, theo quy tắc múi giờ dùng trong kiểm tra của tác giả, `2026-11-01T05:30:00Z` và `2026-11-01T06:30:00Z` đều hiển thị là 01:30 tại New York, lần lượt có offset `-04:00` và `-05:00`. Cùng nhãn giờ có thể chỉ hai thời điểm khác nhau. Lưu instant cho sự kiện đã xảy ra; giữ ý định lịch khi cần lặp lại trong tương lai.
+
+Ngày sinh lại là loại dữ kiện khác: đổi trường chỉ có ngày thành nửa đêm UTC có thể làm ngày hiển thị thay đổi ở nơi khác. Tương tự, “09:00 ngày mai” là phép tính theo lịch, không nhất thiết là “sau 24 giờ đã trôi”. Dart ghi rõ khoảng cách giữa hai nửa đêm địa phương có thể ngắn hơn 24 giờ khi DST thay đổi; `Duration.inDays` đếm số ngày elapsed nguyên vẹn. <Citation source="dart-datetime" />
+
+## Cho tiền đơn vị chính xác và quy tắc làm tròn rõ ràng
+
+Số thực nhị phân không biểu diễn chính xác mọi phân số thập phân. ECMAScript `Number` dùng IEEE 754 binary64; `0.1 + 0.2` cho `0.30000000000000004`. Làm tròn khi hiển thị không sửa giá trị đã lưu hoặc cộng dồn sai. <Citation source="ecma-values" />
+
+Với chi phí D42 đề xuất, bộ tiền tệ `USD`, số đơn vị nguyên `1999` và scale `2` nghĩa là 19.99 USD. Đây là một contract ứng dụng, không khẳng định mọi tiền tệ hoặc phép tính nghiệp vụ đều dùng hai chữ số lẻ. Kiểm tra tổ hợp tiền tệ/scale hỗ trợ, phép toán có kiểm tra tràn và giới hạn trước khi chuyển đổi.
+
+Số học thập phân là lựa chọn khác. JVM `BigDecimal` biểu diễn số nguyên chưa áp scale cùng scale; tạo từ binary `double` 0.1 giữ lại giá trị xấp xỉ đó, còn tạo từ chuỗi thập phân `"0.1"` giữ đúng giá trị thập phân mong muốn. Kiểu decimal vẫn không biểu diễn hữu hạn được mọi thương, như một phần ba. Chọn rõ scale phép chia và `RoundingMode`. <Citation source="java-decimal" />
+
+Trong thiết kế này, chia 1000 đơn vị nguyên cho ba người nhận cho `334`, `333` và `333`, với phần dư gán theo thứ tự người nhận ổn định. Tổng vẫn là 1000. Làm tròn ba phần độc lập thành 333 sẽ mất một đơn vị. Chính sách phân bổ này là ví dụ; sản phẩm phải chọn thời điểm làm tròn, cách xử lý trường hợp hòa và quy tắc phần dư riêng.
+
+Xem format là phép chiếu cuối. Parse số tiền người dùng nhập là thao tác đầu vào riêng theo locale, có quy tắc xử lý mơ hồ và validation. Không xóa dấu câu khỏi nhãn tiền rồi coi kết quả là chuỗi thập phân canonical.
+
+## Giữ giá trị chính xác qua ranh giới JSON
+
+JSON cho phép cú pháp số nhưng không yêu cầu mọi bên nhận giữ độ chính xác tùy ý. RFC 8259 xác định số nguyên từ `-(2^53) + 1` đến `(2^53) - 1` tương tác chính xác được giữa các implementation dùng binary64. Parse `9007199254740993` thành JavaScript Number làm mất danh tính chính xác; kiểm tra của tác giả cho `9007199254740992`. <Citation source="rfc8259" />
+
+Với D42, dùng chuỗi cho ID opaque và chuỗi thập phân canonical cho đại lượng chính xác vượt phạm vi số đã thống nhất. Đây là chính sách truyền tải đề xuất, không phải yêu cầu JSON. Quy định dấu được phép, số 0 đầu, chữ số thập phân và độ lớn tối đa; kiểm tra trước khi ép sang số. Bọc giá trị trong dấu nháy chưa khiến cú pháp hay phạm vi của nó hợp lệ.
+
+Kiểu số nguyên native không sửa được dữ liệu đã mất qua bên nhận JavaScript trung gian. Dart ghi rõ hành vi số nguyên 64-bit trên implementation mặc định và khả năng biểu diễn khác khi biên dịch sang JavaScript. Giữ cam kết truyền tải độc lập với kiểu cục bộ rộng nhất. <Citation source="dart-int" />
+
+## Đếm văn bản theo đơn vị tính năng cam kết
+
+Code unit, Unicode scalar/code point, grapheme cluster và byte mã hóa là các đơn vị khác nhau. Độ dài ECMAScript String đếm UTF-16 code unit. Extended grapheme cluster của Unicode xấp xỉ ký tự người dùng cảm nhận; một cluster có thể chứa nhiều code point. Không đơn vị nào tự cung cấp giới hạn byte chung. <Citation source="ecma-values" /> <Citation source="unicode-segmentation" />
+
+| Văn bản chính xác                   | UTF-16 code unit | Unicode code point | Extended grapheme cluster | Byte UTF-8 |
+| ----------------------------------- | ---------------- | ------------------ | ------------------------- | ---------- |
+| `é` dạng U+00E9                     | 1                | 1                  | 1                         | 2          |
+| `e` + U+0301 combining acute accent | 2                | 2                  | 1                         | 3          |
+| `😀` dạng U+1F600                   | 2                | 1                  | 1                         | 4          |
+
+Với giới hạn tiêu đề đề xuất, đếm và cắt ở ranh giới grapheme để không tách chuỗi có dấu kết hợp. Áp dụng riêng giới hạn byte cho storage/request. Quy tắc Unicode phát triển theo thời gian; kiểm tra hành vi segmentation đã thống nhất trên runtime hỗ trợ thay vì giả định mọi thiết bị dùng cùng phiên bản Unicode.
+
+Normalization cũng là chính sách. NFC có thể đưa hai cách biểu diễn `é` về cùng dạng canonical. NFKC còn áp dụng biến đổi compatibility, có thể xóa khác biệt mà một trường cần giữ. Chọn normalization cho comparison key khi phù hợp, giữ văn bản gốc cần thiết và tránh âm thầm sửa payload đã ký hoặc định danh opaque. Chỉ normalization không đồng nghĩa case folding. <Citation source="unicode-normalization" />
+
+Hai cách biểu diễn thô trong JavaScript so sánh không bằng nhau trước normalization. Ngược lại, Swift String equality dùng canonical equivalence; `count` đếm Character dựa trên extended grapheme cluster. Không xuất chỉ số chuỗi từ một encoding/runtime rồi dùng nó làm chỉ số ở runtime khác. Thống nhất quy tắc so sánh và đơn vị offset tại ranh giới. <Citation source="swift-strings" />
+
+## Bốn framework cung cấp công cụ biểu diễn khác nhau
+
+### React Native
+
+JavaScript Number và String giữ ngữ nghĩa ECMAScript vừa nêu. Type annotation không thay đổi độ chính xác số hoặc cách đánh chỉ số UTF-16. Với D42, giữ nguyên lượng chính xác và ID opaque từ wire, kiểm tra rồi chọn chiến lược decimal hoặc integer thực tế trước khi tính. Không giả định native bridge khôi phục được độ chính xác đã mất lúc JavaScript parse. <Citation source="ecma-values" />
+
+### Flutter
+
+Dart DateTime là UTC hoặc local; biểu diễn cốt lõi không phải lịch nhắc có múi giờ tùy ý mang tên. `Stopwatch` đo tick đã trôi khi đang chạy, tạm dừng khi stop và tiếp tục khi start lại. Không suy ra cam kết sleep/reboot dùng chung cho mọi nền tảng mà tài liệu API chưa nêu. Chọn giải pháp múi giờ có tên theo yêu cầu lập lịch thực tế. <Citation source="dart-datetime" /> <Citation source="dart-stopwatch" />
+
+Với D42, tách sự kiện DateTime, chính sách lời nhắc theo lịch và thời lượng đo. Kiểm tra phạm vi tiền chính xác và target native/web dự kiến; contract tiền dạng integer vẫn cần phép toán kiểm tra tràn và chính sách truyền tải. <Citation source="dart-int" />
+
+### Jetpack Compose
+
+Compose UI không chọn clock hoặc quy tắc làm tròn tiền cho domain. Trên Android, chọn uptime hoặc elapsed realtime theo việc có tính deep sleep hay không. Trên JVM, tạo BigDecimal từ đầu vào chính xác và chọn làm tròn trước phép chia có thể mất thông tin. Đây là lựa chọn nền tảng/ngôn ngữ bên dưới ranh giới composable, không phải lý do đặt parse trong recomposition. <Citation source="android-clock" /> <Citation source="java-decimal" />
+
+### SwiftUI
+
+Swift `ContinuousClock` tính cả thời gian hệ thống ngủ, còn `SuspendingClock` dừng khi hệ thống ngủ; cả hai có trên iOS/iPadOS 16+. Hệ thống ngủ không đồng nghĩa view biến mất hoặc task của ứng dụng bị suspend. Instant của chúng phục vụ đo elapsed cục bộ, không phải timestamp dân sự truyền giữa máy. <Citation source="swift-continuous" /> <Citation source="swift-suspending" />
+
+Foundation Decimal biểu diễn số cơ số 10; điều đó không tự chọn tiền tệ, độ chính xác vô hạn hoặc chính sách làm tròn nghiệp vụ. Giữ rõ chuyển đổi và giới hạn hỗ trợ. Mô hình văn bản dựa trên Character của Swift cũng khác độ dài code unit của JavaScript; contract tiêu đề chung cần cùng đơn vị văn bản dự kiến ở hai phía. <Citation source="apple-decimal" /> <Citation source="swift-strings" />
+
+## Chẩn đoán ranh giới làm mất ý nghĩa
+
+| Lỗi trong D42                                        | Ranh giới cần kiểm tra                                         | Bằng chứng acceptance cho thiết kế đề xuất                  |
+| ---------------------------------------------------- | -------------------------------------------------------------- | ----------------------------------------------------------- |
+| Thời lượng lưu âm sau khi chỉnh giờ                  | Dùng wall clock đo elapsed.                                    | Test thời lượng cùng clock khi mô phỏng wall time thay đổi. |
+| Deadline sai sau reboot                              | Lưu giá trị từ lúc boot như giờ dân sự.                        | Test khởi động lại dựng đúng deadline đã lưu.               |
+| Lời nhắc chạy ở lần DST không mong muốn              | Giải lịch địa phương thiếu chính sách giờ thiếu/trùng.         | Test cả hai loại chuyển tiếp và chính sách đã chọn.         |
+| Tổng chi phí lệch hoặc phân bổ mất đơn vị            | Chuyển đổi nhị phân, thời điểm làm tròn, tràn số hoặc phần dư. | Test tổng chính xác, biên phạm vi và phân bổ tất định.      |
+| Hai ID báo cáo nhập thành một                        | Parse số JSON trước khi kiểm tra danh tính.                    | Round-trip chuỗi chính xác và từ chối số ngoài phạm vi.     |
+| Cắt tiêu đề làm hỏng dấu hoặc emoji                  | Cắt code unit cho giới hạn grapheme.                           | Test dấu kết hợp/emoji và giới hạn byte UTF-8 riêng.        |
+| Văn bản canonical tương đương xử lý khác theo client | Contract so sánh/normalization khác nhau.                      | Fixture chung và comparison key chuẩn hóa đã thống nhất.    |
+
+Đây là các trường hợp acceptance mobile đề xuất, không khẳng định repo biên dịch hoặc chạy bốn implementation native. Tác giả kiểm tra số học, JSON, ví dụ đơn vị văn bản và chuyển tiếp New York đã nêu bằng JavaScript runtime hiện có. Xác minh nguồn làm rõ ý nghĩa API; không thay thế test trên thiết bị target.
+
+Giữ giá trị canonical có kiểu và được kiểm tra, rồi suy ra nhãn. Xem [so sánh data classes](/vi/compare/data-classes) để mô hình hóa giá trị và [so sánh text input](/vi/compare/text-input) về ranh giới chỉnh sửa. Nhãn theo locale chứng minh cách trình bày; test round-trip chính xác và test domain chứng minh ý nghĩa được giữ nguyên.
