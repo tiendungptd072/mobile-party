@@ -240,6 +240,25 @@ Boundaries:
 
 Next eligible task: A01 — `mobile-runtime-and-sandbox` (Wave 1). The remaining 47 articles require their own paired-locale authoring, illustrations, primary-source review, and acceptance evidence.
 
+## F07 — Relocated workspace verification — 2026-10-16
+
+Additional F07 evidence from the relocated macOS workspace. Counts and local-only statements below describe the one-article pilot snapshot at that checkpoint. The earlier F07 record and subsequent article records remain preserved.
+
+Verification:
+
+- `bun lint`, `bun typecheck`, and `bun test` pass: 210 tests, zero failures, 3,815 assertions across 13 files. The prior shared snippet-path repair remains in the diff and its regression cases pass.
+- Normal `bun run build` passes with Next.js 16.3.5/Turbopack using installed Node 22.22.1, generating 694 static pages, including both real pilot reader routes. No Webpack fallback or build configuration change was needed in the relocated workspace.
+- `bun run content:status --strict --built` passes: 864/864 concept/stage cells ready; one article published, zero drafts, 2/2 locale bodies ready, zero errors, zero pending issues. Schema and collection tests still cover incomplete/draft exclusion; the search projection rejects drafts even if passed directly.
+- Chrome headless checked the production build at 390 and 1440 px, EN/VI, light/dark: eight combinations for both index and reader. Search finds the pilot by API or unaccented Vietnamese; unknown queries show localized empty text; Tab/Enter opens the result. The index has a labeled input and topic group; no document-level horizontal overflow was found. Both reader figures load after scrolling to their lazy-loaded images. Heading anchors resolve; switching locales preserves the slug and drops the old heading fragment. No uncaught browser exception was recorded. Representative screenshots were visually reviewed.
+- Browser smoke checks confirm six contextual Dictionary links, omission on an unrelated entry, existing Dictionary search, eight existing Learn/Compare/Dictionary/Recipes routes, both locale unknown-article 404s, and the served sitemap's index/article inclusion and fixture exclusion. Unit tests compare sitemap URLs with canonical/language-alternate metadata.
+- Focused formatting, documentation-link review, and `git diff --check` pass. Browser scripts, reports, screenshots, and command logs remain under `/private/tmp/mobile-party-f07-*`, outside the repository.
+
+Environment and boundaries:
+
+- macOS denied the original Desktop workspace even for approved reads. The user copied the full repository, including uncommitted changes, to `~/Projects/mobile-party`. Work continued there with approved write/build permissions because this session still lists the old Desktop directory as its writable root. All edits are in the relocated repository.
+- Early browser script attempts were corrected to select query text directly and scroll lazy-loaded figures before checking image readiness. These were automation issues; no application behavior was changed to accommodate them.
+- The earlier CI fixes remain local and are preserved. Native snippets and verification inputs did not change in F07, so native compilation was not rerun; the prior Android Java 11 limitation is not relabeled as a pass. No commit, push, deployment, remote CI success, or native-device verification is claimed.
+
 ## A01 — Mobile runtime and sandbox — 2026-10-16
 
 Changed:
